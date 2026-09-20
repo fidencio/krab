@@ -1,0 +1,35 @@
+apiVersion: v2
+name: krab
+description: Kata Reference Architecture Builder umbrella chart
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/fidencio/krab
+icon: https://fidencio.github.io/krab/favicon.png
+sources:
+  - https://github.com/fidencio/krab
+keywords:
+  - kata-containers
+  - confidential-containers
+  - reference-architecture
+  - gpu
+maintainers:
+  - name: Fabiano Fidêncio
+    url: https://github.com/fidencio
+annotations:
+  artifacthub.io/license: Apache-2.0
+dependencies:
+  - name: node-feature-discovery
+    version: "0.19.0"
+    repository: https://kubernetes-sigs.github.io/node-feature-discovery/charts
+  - name: kata-deploy
+    version: "4.2.0"
+    repository: oci://ghcr.io/kata-containers/kata-deploy-charts
+  - name: kata-device-plugin
+    version: "0.1.0"
+    repository: oci://ghcr.io/kata-containers/kata-device-plugin-charts
+    condition: nvidia.enabled
+  - name: kata-device-provisioner
+    version: "0.1.0"
+    repository: oci://ghcr.io/kata-containers/kata-device-provisioner-charts
+    condition: nvidia.enabled

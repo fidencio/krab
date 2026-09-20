@@ -1,0 +1,36 @@
+name: Refresh pinned upstream data
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Fetch and validate pinned files
+        run: npm run sync:upstream
+      - run: npm test
+      - run: npm run test:chart
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/refresh-upstream-data
+          delete-branch: true
+          commit-message: "chore: refresh pinned upstream data"
+          title: "chore: refresh pinned upstream data"
+          body: |
+            Regenerates the explorer catalog from the reviewed refs in
+            `upstream/sources.lock.yaml`.
+
+            All fetched files are checksum-validated before generation.

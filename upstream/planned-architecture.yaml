@@ -1,0 +1,48 @@
+schemaVersion: 1
+status: planned
+notice: These repositories and chart interfaces are a mockup contract and do not exist yet.
+namespace: kata-system
+cluster:
+  distributions:
+    - id: kubeadm
+      displayName: kubeadm
+      kataDeployValue: k8s
+      defaultConfigurationOnly: false
+    - id: k0s
+      displayName: k0s
+      kataDeployValue: k0s
+      defaultConfigurationOnly: true
+    - id: k3s
+      displayName: K3s
+      kataDeployValue: k3s
+      defaultConfigurationOnly: true
+    - id: microk8s
+      displayName: MicroK8s
+      kataDeployValue: microk8s
+      defaultConfigurationOnly: true
+    - id: rke2
+      displayName: RKE2
+      kataDeployValue: rke2
+      defaultConfigurationOnly: true
+  selinuxValuesPath: selinux.enabled
+charts:
+  krab:
+    repository: fidencio/krab
+    chartName: krab
+    releaseName: krab
+    ociReference: oci://ghcr.io/fidencio/krab
+    valuesFileName: values.yaml
+    dependencies:
+      nvidiaValuesKey: nvidia
+      runtimeValuesKey: kata-deploy
+      runtimeRequired: true
+      devicePluginValuesKey: kata-device-plugin
+      devicePluginRequired: false
+      devicePluginRequiredBy:
+        - nvidia
+      provisionerValuesKey: kata-device-provisioner
+      provisionerRequired: false
+      provisionerRequiredBy:
+        - nvidia
+      nfdValuesKey: node-feature-discovery
+      nfdRequired: true

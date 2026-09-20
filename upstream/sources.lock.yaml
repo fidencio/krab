@@ -1,0 +1,152 @@
+schemaVersion: 1
+sources:
+  - id: kata-chart
+    repository: kata-containers/kata-containers
+    ref: c7351e797efff8bfc6bd73da0eb1909be12e2cfe
+    release: "4.2.0"
+    path: tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml
+    cache: kata-containers/Chart.yaml
+    sha256: 67a1820c792411ac0497f5881168939135a2011f0e003334c9da105eaddf80a4
+  - id: kata-values
+    repository: kata-containers/kata-containers
+    ref: c7351e797efff8bfc6bd73da0eb1909be12e2cfe
+    release: "4.2.0"
+    path: tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml
+    cache: kata-containers/values.yaml
+    sha256: 9f5a43a2cc9f9e0f19006c1d9ded0ebb9b067dabb97b636bc939ac95c683898e
+  - id: kata-nvidia-profile
+    repository: kata-containers/kata-containers
+    ref: c7351e797efff8bfc6bd73da0eb1909be12e2cfe
+    release: "4.2.0"
+    path: tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml
+    cache: kata-containers/try-kata-nvidia-gpu.values.yaml
+    sha256: 277a081cfb5220886b77e2553ad5dc6b40cc1628bfadcba85b7f41ea031c6450
+  - id: device-plugin-code
+    repository: kata-containers/kata-device-plugin
+    ref: 6a4d891aa453cd4bc4738cb3a71001fae141a2af
+    path: src/vfio.rs
+    cache: kata-device-plugin/vfio.rs
+    sha256: ef5de967def81289c4b9d761df1c9a8dc657f02675f2bfedecc565d625f04c77
+  - id: device-plugin-chart
+    repository: kata-containers/kata-device-plugin
+    ref: 6a4d891aa453cd4bc4738cb3a71001fae141a2af
+    path: deploy/helm/kata-device-plugin/Chart.yaml
+    cache: kata-device-plugin/Chart.yaml
+    sha256: 39a1db0e3de006f8ef6658dd6b33a8e9322a5f0b05b2c31dbbb31f8f7a41b5b5
+  - id: device-plugin-values
+    repository: kata-containers/kata-device-plugin
+    ref: 6a4d891aa453cd4bc4738cb3a71001fae141a2af
+    path: deploy/helm/kata-device-plugin/values.yaml
+    cache: kata-device-plugin/values.yaml
+    sha256: 4863740bb108d71ad214a6e79d77fe57e7765cc5063281c1a8298faeed1bfa84
+  - id: provisioner-chart
+    repository: kata-containers/kata-device-provisioner
+    ref: 852bdb7a02d2075804bc055da00d31da1b6f8e3d
+    pullRequest: 4
+    draft: true
+    path: deploy/helm/kata-device-provisioner/Chart.yaml
+    cache: kata-device-provisioner/Chart.yaml
+    sha256: bd180b9ad6a3d2e977405547c0e59c8389f89f06d51051c7f8d0601ac85a61ef
+  - id: provisioner-values
+    repository: kata-containers/kata-device-provisioner
+    ref: 852bdb7a02d2075804bc055da00d31da1b6f8e3d
+    pullRequest: 4
+    draft: true
+    path: deploy/helm/kata-device-provisioner/values.yaml
+    cache: kata-device-provisioner/values.yaml
+    sha256: 88aa2b18bc460ba0aab0306ac71d33b5b8420a62cb2e7f16be75a52fd0efc243
+  - id: provisioner-profiles
+    repository: kata-containers/kata-device-provisioner
+    ref: 852bdb7a02d2075804bc055da00d31da1b6f8e3d
+    pullRequest: 4
+    draft: true
+    path: deploy/helm/kata-device-provisioner/profiles/README.md
+    cache: kata-device-provisioner/profiles-README.md
+    sha256: 7decf5730af2d3adfc6039523ba72e19bd0fe924f68046c2fb5391664a67a1c2
+  - id: hopper-passthrough
+    repository: kata-containers/kata-device-provisioner
+    ref: 852bdb7a02d2075804bc055da00d31da1b6f8e3d
+    pullRequest: 4
+    draft: true
+    path: deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml
+    cache: kata-device-provisioner/HGX-Hx00.values.yaml
+    sha256: 631b8e5819a6566a598e50d5838826483d39333ad76d588c517c2ad51ecbc0bb
+  - id: hopper-confidential
+    repository: kata-containers/kata-device-provisioner
+    ref: 852bdb7a02d2075804bc055da00d31da1b6f8e3d
+    pullRequest: 4
+    draft: true
+    path: deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml
+    cache: kata-device-provisioner/HGX-Hx00-PPCIE.values.yaml
+    sha256: 58cd68dbad5a29622212c8ddddaefa1620270831217e11209673def8c572b832
+  - id: blackwell-passthrough
+    repository: kata-containers/kata-device-provisioner
+    ref: 852bdb7a02d2075804bc055da00d31da1b6f8e3d
+    pullRequest: 4
+    draft: true
+    path: deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml
+    cache: kata-device-provisioner/HGX-Bx00.values.yaml
+    sha256: f63c4668d6be4f502ad59abf1c03f4ba49cbc26cf81724a5f578915d22c893ba
+  - id: blackwell-confidential
+    repository: kata-containers/kata-device-provisioner
+    ref: 852bdb7a02d2075804bc055da00d31da1b6f8e3d
+    pullRequest: 4
+    draft: true
+    path: deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml
+    cache: kata-device-provisioner/HGX-Bx00-CC.values.yaml
+    sha256: f3b30d14b4302f866f201afeb6df817ebdcb4fc8c694bb20406858752edd37e9
+  - id: pcie-gpu-passthrough
+    repository: kata-containers/kata-device-provisioner
+    ref: 852bdb7a02d2075804bc055da00d31da1b6f8e3d
+    pullRequest: 4
+    draft: true
+    path: deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml
+    cache: kata-device-provisioner/PCIE-GPU.values.yaml
+    sha256: 58305ba45c3351029848d8314f68cc7b33381d900db9962ac5ba57b94e661888
+  - id: pcie-gpu-confidential
+    repository: kata-containers/kata-device-provisioner
+    ref: 852bdb7a02d2075804bc055da00d31da1b6f8e3d
+    pullRequest: 4
+    draft: true
+    path: deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml
+    cache: kata-device-provisioner/PCIE-GPU-CC.values.yaml
+    sha256: 69213efb25c8788a88814ec32174dc493689cc2fa1e6ea21d7bb0b353379fae9
+  - id: grace-blackwell-passthrough
+    repository: kata-containers/kata-device-provisioner
+    ref: 852bdb7a02d2075804bc055da00d31da1b6f8e3d
+    pullRequest: 4
+    draft: true
+    path: deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml
+    cache: kata-device-provisioner/GBx00.values.yaml
+    sha256: b06fe38375fe2a2196f33c6e6a4ef8bd945c965a5399476677f314d39fc68c87
+  - id: nvidia-operator-values
+    repository: NVIDIA/gpu-operator
+    ref: 10ee5b3638b89e11e949412aafa5ba99279c3721
+    release: v26.7.0
+    path: deployments/gpu-operator/values.yaml
+    cache: nvidia-gpu-operator/values.yaml
+    sha256: 21ebfaa82dbfb6ad92b3c0ff33d7c891c7e66c9a0b008ce1c60a1897bae34418
+  - id: nvidia-supported-platforms
+    repository: NVIDIA/confidential-containers-documentation
+    ref: "1.0.0"
+    path: supported-platforms.html
+    url: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html
+    sourceUrl: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html
+    cache: nvidia-confidential-containers/supported-platforms.html
+    sha256: 7c2038fba116eba1b7cf7c5fcc303c87ff06711a390fb4ded1b4bcbc67c04ccb
+  - id: nvidia-cc-modes
+    repository: NVIDIA/confidential-containers-documentation
+    ref: "1.0.0"
+    path: configure-cc-mode.html
+    url: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-cc-mode.html
+    sourceUrl: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-cc-mode.html
+    cache: nvidia-confidential-containers/configure-cc-mode.html
+    sha256: 38b5a51a26cfa2ebc6bc64f04c69755faccb5c5750ee89b73560965fcef5d4bb
+  - id: nvidia-workloads
+    repository: NVIDIA/confidential-containers-documentation
+    ref: "1.0.0"
+    path: configure-workloads.html
+    url: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-workloads.html
+    sourceUrl: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-workloads.html
+    cache: nvidia-confidential-containers/configure-workloads.html
+    sha256: e43507cbe23f41abe8fe54e5242eee05e2811dde4544581acc863d725c6be8be

@@ -1,0 +1,27 @@
+# Vendor feature gates. NVIDIA dependencies are disabled unless selected.
+nvidia:
+  enabled: false
+
+# KRAB owns the shared NFD release.
+node-feature-discovery: {}
+
+kata-deploy:
+  # NFD is installed directly by KRAB, so the nested dependency stays disabled.
+  node-feature-discovery:
+    enabled: false
+  k8sDistribution: k8s
+  selinux:
+    enabled: false
+  shims:
+    disableAll: true
+
+# Used only when nvidia.enabled=true.
+kata-device-plugin:
+  resourceNaming: alias
+
+# Multi-profile contract proposed for kata-device-provisioner.
+# Each key renders an independently named profile Job/resource set.
+kata-device-provisioner:
+  node-feature-discovery:
+    enabled: false
+  profiles: {}

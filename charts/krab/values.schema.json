@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KRAB values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nvidia": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Install NVIDIA-specific device plugin and provisioner dependencies."
+        }
+      }
+    },
+    "node-feature-discovery": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "kata-deploy": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "k8sDistribution": {
+          "type": "string",
+          "enum": ["k8s", "k0s", "k3s", "microk8s", "rke2"]
+        },
+        "selinux": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Confine kata-deploy installation containers on SELinux-enforcing nodes."
+            }
+          }
+        },
+        "shims": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "snapshotter": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "node-feature-discovery": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "const": false,
+              "description": "KRAB installs NFD as a direct dependency."
+            }
+          }
+        }
+      }
+    },
+    "kata-device-plugin": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "kata-device-provisioner": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "node-feature-discovery": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "const": false,
+              "description": "KRAB installs NFD as a direct dependency."
+            }
+          }
+        },
+        "profiles": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "$ref": "#/definitions/provisionerProfile"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "provisionerProfile": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["enabled", "ccMode"],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "ccMode": {
+          "type": "string",
+          "enum": ["off", "on", "ppcie"]
+        },
+        "nodeSelector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "nodeSelectorExpressions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nodeFeatureRule": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "job": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

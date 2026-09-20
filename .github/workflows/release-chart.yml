@@ -1,0 +1,60 @@
+name: Release KRAB Helm chart
+
+on:
+  push:
+    tags:
+      - "chart-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run generate
+      - run: npm run test:chart
+
+      - name: Verify upstream OCI chart dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          declare -a missing=()
+          while read -r chart version; do
+            if ! helm show chart "${chart}" --version "${version}" >/dev/null 2>&1; then
+              missing+=("${chart}:${version}")
+            fi
+          done <<'CHARTS'
+          oci://ghcr.io/kata-containers/kata-device-plugin-charts/kata-device-plugin 0.1.0
+          oci://ghcr.io/kata-containers/kata-device-provisioner-charts/kata-device-provisioner 0.1.0
+          CHARTS
+
+          if (( ${#missing[@]} > 0 )); then
+            printf '::error::KRAB chart publication is blocked. Missing upstream OCI chart: %s\n' "${missing[@]}"
+            exit 1
+          fi
+
+      - name: Build and lint chart
+        run: |
+          helm dependency build charts/krab
+          helm lint charts/krab
+          helm package charts/krab --destination dist-chart
+
+      - name: Log in to GHCR
+        if: startsWith(github.ref, 'refs/tags/chart-v')
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" |
+            helm registry login ghcr.io --username "${{ github.actor }}" --password-stdin
+
+      - name: Publish chart
+        if: startsWith(github.ref, 'refs/tags/chart-v')
+        run: helm push dist-chart/krab-*.tgz oci://ghcr.io/fidencio
