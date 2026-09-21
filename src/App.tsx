@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Clipboard,
   Copy,
+  Download,
   ExternalLink,
   FileCode2,
   Plus,
@@ -418,6 +419,21 @@ function App() {
     await navigator.clipboard.writeText(artifacts[target])
     setCopied(target)
     window.setTimeout(() => setCopied(null), 1600)
+  }
+
+  const downloadValues = () => {
+    if (!valuesReady) return
+    const blob = new Blob([`${artifacts.values}\n`], {
+      type: 'application/yaml',
+    })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = catalog.plannedArchitecture.charts.krab.valuesFileName
+    document.body.append(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 0)
   }
 
   const restart = () => {
@@ -1985,14 +2001,25 @@ function App() {
                           : 'Complete the required configuration first'}
                       </small>
                     </div>
-                    <button
-                      className="copy-artifact-button"
-                      disabled={!valuesReady}
-                      onClick={() => copyCode('values')}
-                    >
-                      {copied === 'values' ? <Check size={15} /> : <Clipboard size={15} />}
-                      {copied === 'values' ? 'Copied' : 'Copy values.yaml'}
-                    </button>
+                    <div className="artifact-actions">
+                      {valuesReady && (
+                        <button
+                          className="download-artifact-button"
+                          onClick={downloadValues}
+                        >
+                          <Download size={15} />
+                          Download as a file
+                        </button>
+                      )}
+                      <button
+                        className="copy-artifact-button"
+                        disabled={!valuesReady}
+                        onClick={() => copyCode('values')}
+                      >
+                        {copied === 'values' ? <Check size={15} /> : <Clipboard size={15} />}
+                        {copied === 'values' ? 'Copied' : 'Copy values.yaml'}
+                      </button>
+                    </div>
                   </div>
                   {valuesReady ? (
                     <div className="code-preview">

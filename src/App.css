@@ -993,7 +993,14 @@ button.vendor-card {
   white-space: nowrap;
 }
 
-.copy-artifact-button {
+.artifact-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.copy-artifact-button,
+.download-artifact-button {
   flex: 0 0 126px;
   width: 126px;
   height: 36px;
@@ -1011,7 +1018,28 @@ button.vendor-card {
   cursor: pointer;
 }
 
-.copy-artifact-button:disabled {
+.download-artifact-button {
+  width: 142px;
+  flex-basis: 142px;
+  border: 1px solid #485650;
+  background: #1b2723;
+  color: #dbe3df;
+}
+
+.artifact-actions .copy-artifact-button {
+  border: 1px solid #485650;
+  background: #1b2723;
+  color: #dbe3df;
+}
+
+.download-artifact-button:hover:not(:disabled),
+.artifact-actions .copy-artifact-button:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green-bright);
+}
+
+.copy-artifact-button:disabled,
+.download-artifact-button:disabled {
   background: #34413d;
   color: #78847f;
   cursor: not-allowed;
@@ -2490,6 +2518,12 @@ button.vendor-card {
   gap: 4px;
 }
 
+.code-heading > .artifact-actions {
+  align-items: center;
+  flex-direction: row;
+  gap: 8px;
+}
+
 .code-heading > div > span {
   display: inline-flex;
   align-items: center;
@@ -2692,6 +2726,21 @@ button.vendor-card {
 
   .builder-heading {
     align-items: flex-start;
+  }
+
+  .artifact-heading,
+  .code-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .artifact-actions {
+    width: 100%;
+  }
+
+  .artifact-actions button {
+    width: auto;
+    flex: 1;
   }
 
   .builder-vendor {
