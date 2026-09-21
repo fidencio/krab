@@ -630,31 +630,6 @@ function App() {
                 )}
               </div>
 
-              {valuesReady && (
-                <section className="install-command-callout">
-                  <div className="artifact-heading">
-                    <div>
-                      <span className="section-kicker">Install with KRAB</span>
-                      <h2>One command for every architecture</h2>
-                      <p>
-                        The command stays constant. Only the generated values.yaml
-                        changes.
-                      </p>
-                    </div>
-                    <button
-                      className="copy-artifact-button"
-                      onClick={() => copyCode('install')}
-                    >
-                      {copied === 'install' ? <Check size={15} /> : <Copy size={15} />}
-                      {copied === 'install' ? 'Copied' : 'Copy command'}
-                    </button>
-                  </div>
-                  <div className="install-command">
-                    <code>{artifacts.install}</code>
-                  </div>
-                </section>
-              )}
-
               <section
                 className={`cluster-config cluster-config-wide ${
                   cluster.distributionId ? '' : 'incomplete'
@@ -1877,6 +1852,9 @@ function App() {
                   ))}
                 </div>
 
+                <section className="summary-section">
+                  <h2 className="builder-section-title">Summary</h2>
+                  <div className="summary-workspace">
                 <section className="runtime-install-summary">
                   <header>
                     <div>
@@ -1951,7 +1929,6 @@ function App() {
                   )}
                 </section>
 
-                <div className="artifact-workspace">
                   <details className="architecture-details" open>
                     <summary>
                       <span>
@@ -2011,6 +1988,33 @@ function App() {
                       </div>
                     </div>
                   </details>
+
+                  </div>
+                </section>
+
+                <section className="deploy-section">
+                  <h2 className="builder-section-title">Deploy</h2>
+                  <section className="install-command-callout">
+                    <div className="artifact-heading">
+                      <div>
+                        <span className="section-kicker">Install with KRAB</span>
+                        <h2>One command for every architecture</h2>
+                        <p>
+                          The command stays constant. Only the generated values.yaml
+                          changes.
+                        </p>
+                      </div>
+                      <button
+                        className="copy-artifact-button"
+                        onClick={() => copyCode('install')}
+                      >
+                        {copied === 'install' ? <Check size={15} /> : <Copy size={15} />}
+                        {copied === 'install' ? 'Copied' : 'Copy command'}
+                      </button>
+                    </div>
+                    <div className="install-command">
+                      <code>{artifacts.install}</code>
+                    </div>
 
                   <aside className="code-column">
                   <div className="code-heading">
@@ -2081,7 +2085,8 @@ function App() {
                     </div>
                   )}
                   </aside>
-                </div>
+                  </section>
+                </section>
               </div>
             </div>
           )}

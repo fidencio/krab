@@ -1055,27 +1055,49 @@ button.vendor-card {
   display: contents;
 }
 
-.artifact-workspace {
+.summary-section {
   order: 6;
+  padding: 32px 0 28px;
+}
+
+.deploy-section {
+  order: 7;
+  padding: 10px 0 0;
+}
+
+.builder-section-title {
+  margin: 0 0 24px;
+  color: #edf1ef;
+  font: 700 25px 'Manrope', sans-serif;
+  letter-spacing: -0.035em;
+}
+
+.summary-workspace {
   display: grid;
-  grid-template-columns: minmax(320px, 0.72fr) minmax(0, 1.28fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
   gap: 20px;
-  padding: 24px 0 28px;
 }
 
-.artifact-workspace .architecture-details {
+.summary-workspace .architecture-details {
   order: initial;
-  margin: 5px 0 0;
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
 }
 
-.artifact-workspace .architecture-chain {
+.summary-workspace .architecture-chain {
   grid-template-columns: 1fr;
 }
 
-.artifact-workspace .architecture-chain > svg {
+.summary-workspace .architecture-chain > svg {
   margin: -7px auto;
   transform: rotate(90deg);
+}
+
+.summary-workspace .runtime-install-summary {
+  grid-column: 2;
+  grid-row: 1;
 }
 
 .profile-list {
@@ -2360,11 +2382,6 @@ button.vendor-card {
   padding: 4px 0 28px;
 }
 
-.artifact-workspace .code-column {
-  order: initial;
-  padding: 0;
-}
-
 .runtime-install-summary {
   order: 5;
   padding: 24px;
@@ -2591,7 +2608,7 @@ button.vendor-card {
 }
 
 .values-blocked {
-  min-height: 620px;
+  height: 520px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -2602,6 +2619,11 @@ button.vendor-card {
   background:
     radial-gradient(circle at 100% 0, rgba(232, 104, 16, 0.06), transparent 45%),
     #151e22;
+}
+
+.install-command-callout .code-column {
+  order: initial;
+  padding: 28px 0 0;
 }
 
 .values-blocked > span {
@@ -2757,8 +2779,14 @@ button.vendor-card {
     grid-template-columns: 1fr;
   }
 
-  .artifact-workspace {
+  .summary-workspace {
     grid-template-columns: 1fr;
+  }
+
+  .summary-workspace .architecture-details,
+  .summary-workspace .runtime-install-summary {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .architecture-chain {
