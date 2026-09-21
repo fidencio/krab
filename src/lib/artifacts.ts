@@ -29,6 +29,8 @@ export type HardwareFamilyCatalog = {
 export type VendorCatalog = {
   id: string
   displayName: string
+  tagline: string
+  description: string
   logo: string
   capabilities: Array<{
     id: string

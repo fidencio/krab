@@ -273,32 +273,57 @@ button.vendor-card {
   object-position: left center;
 }
 
-.vendor-logo-wrap.local-brand {
+.vendor-logo-wrap.named-brand {
   gap: 12px;
   padding-block: 9px;
 }
 
-.vendor-logo-wrap.local-brand img {
+.vendor-logo-wrap.named-brand:not(.vendor-local) {
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+  padding-block: 10px;
+}
+
+.vendor-logo-wrap.named-brand:not(.vendor-local) img {
+  width: 118px;
+  height: 38px;
+  flex: 0 0 auto;
+  object-position: center;
+}
+
+.vendor-logo-wrap.named-brand img {
+  width: 70px;
+  height: 28px;
+  flex: 0 0 70px;
+}
+
+.vendor-logo-wrap.named-brand.vendor-local img {
   width: 42px;
   height: 42px;
-  flex: 0 0 42px;
+  flex-basis: 42px;
   max-height: 42px;
 }
 
-.vendor-logo-wrap.local-brand > span {
+.vendor-logo-wrap.vendor-amd img,
+.builder-vendor-mark.vendor-amd img {
+  filter: brightness(0);
+}
+
+.vendor-logo-wrap.named-brand > span {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 
-.vendor-logo-wrap.local-brand strong {
+.vendor-logo-wrap.named-brand strong {
   color: #111916;
   font: 800 21px 'Manrope', sans-serif;
   letter-spacing: -0.03em;
 }
 
-.vendor-logo-wrap.local-brand small {
+.vendor-logo-wrap.named-brand small {
   color: #53615b;
   font-size: 8px;
   font-weight: 700;
@@ -572,13 +597,18 @@ button.vendor-card {
   object-fit: contain;
 }
 
-.builder-vendor-mark.local img {
+.builder-vendor-mark.named img {
+  width: 100%;
+  height: 100%;
+}
+
+.builder-vendor-mark.named.vendor-local img {
   width: 20px;
   height: 20px;
   flex: 0 0 20px;
 }
 
-.builder-vendor-mark.local strong {
+.builder-vendor-mark.named strong {
   color: #111916;
   font: 800 12px 'Manrope', sans-serif;
   letter-spacing: -0.02em;

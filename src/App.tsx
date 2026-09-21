@@ -29,7 +29,7 @@ import {
 import './App.css'
 
 const catalog = catalogData as unknown as ExplorerCatalog
-const brandLogos = import.meta.glob('./assets/brands/*.svg', {
+const brandLogos = import.meta.glob('./assets/brands/*.{svg,png}', {
   eager: true,
   import: 'default',
   query: '?url',
@@ -37,6 +37,9 @@ const brandLogos = import.meta.glob('./assets/brands/*.svg', {
 
 const logoFor = (vendor: { logo: string }) =>
   brandLogos[`./assets/brands/${vendor.logo}`]
+
+const isRuntimeOnlyVendor = (vendor: VendorCatalog) =>
+  vendor.hardwareFamilies.length === 0
 
 const initialSelections = (vendor: VendorCatalog): FamilySelections =>
   Object.fromEntries(
@@ -126,6 +129,7 @@ function App() {
   const [selectedVendorId, setSelectedVendorId] = useState(catalog.vendors[0]?.id ?? '')
   const selectedVendor = catalog.vendors.find(({ id }) => id === selectedVendorId) ??
     catalog.vendors[0]
+  const runtimeOnlyVendor = isRuntimeOnlyVendor(selectedVendor)
   const [copied, setCopied] = useState<'install' | 'values' | null>(null)
   const [selections, setSelections] = useState<FamilySelections>(() =>
     initialSelections(selectedVendor),
@@ -217,14 +221,17 @@ function App() {
     cluster.distributionId !== null &&
     incompleteFamilies.length === 0 &&
     !erofsDiskSizeMissing &&
-    (selectedVendor.id !== 'local' || runtime.selectedShimIds.length > 0)
+    (!runtimeOnlyVendor || runtime.selectedShimIds.length > 0)
 
   const selectVendor = (vendor: VendorCatalog) => {
     setSelectedVendorId(vendor.id)
     setSelections(initialSelections(vendor))
     setCluster({ distributionId: null, selinuxEnabled: false })
     setRuntime({
-      selectedShimIds: [],
+      selectedShimIds:
+        isRuntimeOnlyVendor(vendor) && vendor.id !== 'local'
+          ? vendor.runtime.shims.map(({ id }) => id)
+          : [],
       runtimeHttpsProxy: '',
       runtimeNoProxy: '',
       nvidiaDcgmEnabled: false,
@@ -393,25 +400,22 @@ function App() {
                       </span>
                     </div>
                     <div
-                      className={`vendor-logo-wrap ${
-                        vendor.id === 'local' ? 'local-brand' : ''
+                      className={`vendor-logo-wrap vendor-${vendor.id} ${
+                        isRuntimeOnlyVendor(vendor) ? 'named-brand' : ''
                       }`}
                     >
-                      <img src={logoFor(vendor)} alt={vendor.displayName} />
+                      <img
+                        src={logoFor(vendor)}
+                        alt={vendor.id === 'local' ? '' : vendor.displayName}
+                      />
                       {vendor.id === 'local' && (
                         <span>
-                          <strong>Local</strong>
-                          <small>Standard Kata deployment</small>
+                          <strong>{vendor.displayName}</strong>
+                          <small>{vendor.tagline}</small>
                         </span>
                       )}
                     </div>
-                    <p>
-                      {vendor.id === 'local'
-                        ? `${vendor.runtime.shims.length} upstream RuntimeClasses ` +
-                          'available for a standard Kata deployment.'
-                        : `${vendor.hardwareFamilies.length} hardware families and ` +
-                          `${vendor.runtime.shims.length} RuntimeClasses discovered.`}
-                    </p>
+                    <p>{vendor.description}</p>
                     <div className="capabilities">
                       {vendor.capabilities.map((capability) => (
                         <span key={capability.id}>
@@ -431,12 +435,16 @@ function App() {
             <div className="install-builder">
               <div className="builder-toolbar">
                 <button className="back-link" onClick={restart}>← Back to vendors</button>
-                {selectedVendor.id === 'local' ? (
+                {runtimeOnlyVendor ? (
                   <span className="builder-vendor-context">
                     <span>Building for</span>
-                    <span className="builder-vendor-mark local">
+                    <span
+                      className={`builder-vendor-mark named vendor-${selectedVendor.id}`}
+                    >
                       <img src={logoFor(selectedVendor)} alt="" />
-                      <strong>Local</strong>
+                      {selectedVendor.id === 'local' && (
+                        <strong>{selectedVendor.displayName}</strong>
+                      )}
                     </span>
                   </span>
                 ) : (
@@ -1340,7 +1348,7 @@ function App() {
                     selectedVendor.id === 'nvidia' ? 'nvidia-profiles' : ''
                   }`}
                 >
-                  {selectedVendor.id === 'local' && (
+                  {runtimeOnlyVendor && (
                     <section
                       className={`local-runtime-selection ${
                         runtime.selectedShimIds.length === 0 ? 'incomplete' : ''
@@ -1348,12 +1356,14 @@ function App() {
                     >
                       <header>
                         <div>
-                          <span>Local deployment</span>
+                          <span>{selectedVendor.displayName} deployment</span>
                           <h2>Select RuntimeClasses</h2>
                           <p>
-                            Choose every Kata runtime that should be installed on
-                            this cluster. QEMU runtime-rs is the broadly supported
-                            default.
+                            {selectedVendor.runtime.shims.length === 1
+                              ? `This path installs the Kata runtime for ${selectedVendor.tagline}.`
+                              : 'Choose every Kata runtime that should be installed ' +
+                                'on this cluster. QEMU runtime-rs is the broadly ' +
+                                'supported default.'}
                           </p>
                         </div>
                         <em>
@@ -1579,7 +1589,7 @@ function App() {
                         {!cluster.distributionId && (
                           <li>Kubernetes distribution</li>
                         )}
-                        {selectedVendor.id === 'local' &&
+                        {runtimeOnlyVendor &&
                           runtime.selectedShimIds.length === 0 && (
                             <li>At least one Kata RuntimeClass</li>
                           )}

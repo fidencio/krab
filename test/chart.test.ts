@@ -14,7 +14,9 @@ import {
 const root = resolve(import.meta.dirname, '..')
 const catalog = catalogData as unknown as ExplorerCatalog
 const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
-const localVendor = catalog.vendors.find(({ id }) => id === 'local')!
+const runtimeVendors = catalog.vendors.filter(
+  ({ hardwareFamilies }) => hardwareFamilies.length === 0,
+)
 
 const readYaml = async (path: string) =>
   parse(await readFile(resolve(root, path), 'utf8'))
@@ -98,23 +100,29 @@ test('chart defaults and generated values satisfy the values schema', async () =
     undefined,
   )
 
-  const localGenerated = parse(
-    buildValuesBundle(
-      catalog,
-      localVendor,
-      {},
-      { distributionId: 'kubeadm', selinuxEnabled: false },
-      {
-        selectedShimIds: ['qemu-runtime-rs'],
-        runtimeHttpsProxy: '',
-        runtimeNoProxy: '',
-        nvidiaDcgmEnabled: false,
-      },
-      createAdvancedConfiguration(),
-    ),
-  )
-  assert.equal(validate(localGenerated), true, JSON.stringify(validate.errors))
-  assert.equal(localGenerated.nvidia.enabled, false)
+  for (const runtimeVendor of runtimeVendors) {
+    const runtimeGenerated = parse(
+      buildValuesBundle(
+        catalog,
+        runtimeVendor,
+        {},
+        { distributionId: 'kubeadm', selinuxEnabled: false },
+        {
+          selectedShimIds: [runtimeVendor.runtime.shims[0].id],
+          runtimeHttpsProxy: '',
+          runtimeNoProxy: '',
+          nvidiaDcgmEnabled: false,
+        },
+        createAdvancedConfiguration(),
+      ),
+    )
+    assert.equal(
+      validate(runtimeGenerated),
+      true,
+      JSON.stringify(validate.errors),
+    )
+    assert.equal(runtimeGenerated.nvidia.enabled, false)
+  }
 })
 
 test('non-NVIDIA generated values omit conditional dependencies', () => {

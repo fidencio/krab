@@ -22,7 +22,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
 
   assert.deepEqual(
     catalog.vendors.map(({ id }) => id),
-    ['nvidia', 'local'],
+    ['nvidia', 'local', 'amd', 'ibm', 'intel'],
   )
   assert.equal(vendor.displayName, 'NVIDIA')
   assert.equal(local.displayName, 'Local')
@@ -48,6 +48,36 @@ test('generated catalog carries accurate upstream chart data', async () => {
     containerdUserDropIn:
       "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n",
   })
+  assert.deepEqual(
+    catalog.vendors
+      .filter(({ id }) => ['amd', 'ibm', 'intel'].includes(id))
+      .map(({ id, runtime }) => ({
+        id,
+        shimId: runtime.shims[0]?.id,
+        arches: runtime.shims[0]?.supportedArches,
+        snapshotter: runtime.shims[0]?.snapshotter,
+      })),
+    [
+      {
+        id: 'amd',
+        shimId: 'qemu-snp-runtime-rs',
+        arches: ['amd64'],
+        snapshotter: 'nydus',
+      },
+      {
+        id: 'ibm',
+        shimId: 'qemu-se-runtime-rs',
+        arches: ['s390x'],
+        snapshotter: 'nydus',
+      },
+      {
+        id: 'intel',
+        shimId: 'qemu-tdx-runtime-rs',
+        arches: ['amd64'],
+        snapshotter: 'nydus',
+      },
+    ],
+  )
   assert.equal(
     vendor.sourceUrl,
     'https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/latest/',

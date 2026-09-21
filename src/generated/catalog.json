@@ -107,6 +107,8 @@
     {
       "id": "nvidia",
       "displayName": "NVIDIA",
+      "tagline": "GPU and confidential computing",
+      "description": "4 hardware families and 3 RuntimeClasses.",
       "logo": "nvidia.svg",
       "capabilities": [
         {
@@ -699,6 +701,8 @@
     {
       "id": "local",
       "displayName": "Local",
+      "tagline": "Standard Kata deployment",
+      "description": "6 upstream RuntimeClasses for a standard Kata deployment.",
       "logo": "local.svg",
       "capabilities": [
         {
@@ -929,6 +933,396 @@
           "ccModesUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
           "workloadsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
           "runtimeRsStatus": "RuntimeClasses are derived from pinned kata-deploy values."
+        }
+      }
+    },
+    {
+      "id": "amd",
+      "displayName": "AMD",
+      "tagline": "SEV-SNP",
+      "description": "Deploy the Kata QEMU runtime-rs class for AMD SEV-SNP confidential workloads.",
+      "logo": "amd.svg",
+      "capabilities": [
+        {
+          "id": "confidential-computing"
+        }
+      ],
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+      "hardwareFamilies": [],
+      "runtime": {
+        "chart": {
+          "name": "kata-deploy",
+          "version": "4.2.0",
+          "appVersion": "4.2.0",
+          "ociReference": "oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy",
+          "namespace": "kata-system",
+          "valuesFileName": "kata-amd.values.yaml",
+          "values": {
+            "debug": false,
+            "deploymentMode": "daemonset",
+            "snapshotter": {
+              "setup": [
+                "nydus"
+              ],
+              "erofsMergeMode": "",
+              "erofsSnapshotterMode": "",
+              "erofsDmverity": false
+            },
+            "shims": {
+              "disableAll": true,
+              "qemu-snp-runtime-rs": {
+                "enabled": null,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                }
+              }
+            },
+            "defaultShim": {
+              "amd64": "qemu-runtime-rs",
+              "arm64": "qemu-runtime-rs",
+              "s390x": "qemu-runtime-rs",
+              "ppc64le": "qemu-runtime-rs"
+            },
+            "runtimeClasses": {
+              "enabled": true,
+              "createDefault": false,
+              "defaultName": "kata",
+              "overheadEnabled": true
+            },
+            "node-feature-discovery": {
+              "enabled": false
+            }
+          },
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
+        },
+        "shims": [
+          {
+            "id": "qemu-snp-runtime-rs",
+            "runtimeClass": "kata-qemu-snp-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+          }
+        ],
+        "cpuTees": []
+      },
+      "provisioner": {
+        "chart": {
+          "name": "kata-device-provisioner",
+          "version": "0.1.0",
+          "appVersion": "0.1.0",
+          "namespace": "kata-system",
+          "repository": "kata-containers/kata-device-provisioner",
+          "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
+          "pullRequest": 4,
+          "chartPath": "deploy/helm/kata-device-provisioner",
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/Chart.yaml",
+          "experimental": true
+        }
+      },
+      "devicePlugin": {
+        "chart": {
+          "chartName": "kata-device-plugin",
+          "version": "0.1.0",
+          "appVersion": "0.2.0",
+          "required": false,
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/6a4d891aa453cd4bc4738cb3a71001fae141a2af/deploy/helm/kata-device-plugin/Chart.yaml"
+        },
+        "values": {},
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/6a4d891aa453cd4bc4738cb3a71001fae141a2af/deploy/helm/kata-device-plugin/Chart.yaml"
+      },
+      "workload": {
+        "resourceName": "",
+        "nvSwitchResourceName": "",
+        "resourceNaming": "",
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+      },
+      "integration": {
+        "sandboxWorkloads": {},
+        "defaultCcMode": "",
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+        "officialSupport": {
+          "documentationVersion": "4.2.0",
+          "supportedGpuModels": [],
+          "supportedPlatformsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+          "ccModesUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+          "workloadsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+          "runtimeRsStatus": "RuntimeClass configuration is derived from pinned kata-deploy values."
+        }
+      }
+    },
+    {
+      "id": "ibm",
+      "displayName": "IBM",
+      "tagline": "Secure Execution for Linux",
+      "description": "Deploy the Kata QEMU runtime-rs class for IBM Z Secure Execution workloads.",
+      "logo": "ibm.png",
+      "capabilities": [
+        {
+          "id": "confidential-computing"
+        }
+      ],
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+      "hardwareFamilies": [],
+      "runtime": {
+        "chart": {
+          "name": "kata-deploy",
+          "version": "4.2.0",
+          "appVersion": "4.2.0",
+          "ociReference": "oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy",
+          "namespace": "kata-system",
+          "valuesFileName": "kata-ibm.values.yaml",
+          "values": {
+            "debug": false,
+            "deploymentMode": "daemonset",
+            "snapshotter": {
+              "setup": [
+                "nydus"
+              ],
+              "erofsMergeMode": "",
+              "erofsSnapshotterMode": "",
+              "erofsDmverity": false
+            },
+            "shims": {
+              "disableAll": true,
+              "qemu-se-runtime-rs": {
+                "enabled": null,
+                "supportedArches": [
+                  "s390x"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                }
+              }
+            },
+            "defaultShim": {
+              "amd64": "qemu-runtime-rs",
+              "arm64": "qemu-runtime-rs",
+              "s390x": "qemu-runtime-rs",
+              "ppc64le": "qemu-runtime-rs"
+            },
+            "runtimeClasses": {
+              "enabled": true,
+              "createDefault": false,
+              "defaultName": "kata",
+              "overheadEnabled": true
+            },
+            "node-feature-discovery": {
+              "enabled": false
+            }
+          },
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
+        },
+        "shims": [
+          {
+            "id": "qemu-se-runtime-rs",
+            "runtimeClass": "kata-qemu-se-runtime-rs",
+            "supportedArches": [
+              "s390x"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+          }
+        ],
+        "cpuTees": []
+      },
+      "provisioner": {
+        "chart": {
+          "name": "kata-device-provisioner",
+          "version": "0.1.0",
+          "appVersion": "0.1.0",
+          "namespace": "kata-system",
+          "repository": "kata-containers/kata-device-provisioner",
+          "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
+          "pullRequest": 4,
+          "chartPath": "deploy/helm/kata-device-provisioner",
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/Chart.yaml",
+          "experimental": true
+        }
+      },
+      "devicePlugin": {
+        "chart": {
+          "chartName": "kata-device-plugin",
+          "version": "0.1.0",
+          "appVersion": "0.2.0",
+          "required": false,
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/6a4d891aa453cd4bc4738cb3a71001fae141a2af/deploy/helm/kata-device-plugin/Chart.yaml"
+        },
+        "values": {},
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/6a4d891aa453cd4bc4738cb3a71001fae141a2af/deploy/helm/kata-device-plugin/Chart.yaml"
+      },
+      "workload": {
+        "resourceName": "",
+        "nvSwitchResourceName": "",
+        "resourceNaming": "",
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+      },
+      "integration": {
+        "sandboxWorkloads": {},
+        "defaultCcMode": "",
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+        "officialSupport": {
+          "documentationVersion": "4.2.0",
+          "supportedGpuModels": [],
+          "supportedPlatformsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+          "ccModesUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+          "workloadsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+          "runtimeRsStatus": "RuntimeClass configuration is derived from pinned kata-deploy values."
+        }
+      }
+    },
+    {
+      "id": "intel",
+      "displayName": "Intel",
+      "tagline": "TDX",
+      "description": "Deploy the Kata QEMU runtime-rs class for Intel TDX confidential workloads.",
+      "logo": "intel.png",
+      "capabilities": [
+        {
+          "id": "confidential-computing"
+        }
+      ],
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+      "hardwareFamilies": [],
+      "runtime": {
+        "chart": {
+          "name": "kata-deploy",
+          "version": "4.2.0",
+          "appVersion": "4.2.0",
+          "ociReference": "oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy",
+          "namespace": "kata-system",
+          "valuesFileName": "kata-intel.values.yaml",
+          "values": {
+            "debug": false,
+            "deploymentMode": "daemonset",
+            "snapshotter": {
+              "setup": [
+                "nydus"
+              ],
+              "erofsMergeMode": "",
+              "erofsSnapshotterMode": "",
+              "erofsDmverity": false
+            },
+            "shims": {
+              "disableAll": true,
+              "qemu-tdx-runtime-rs": {
+                "enabled": null,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                }
+              }
+            },
+            "defaultShim": {
+              "amd64": "qemu-runtime-rs",
+              "arm64": "qemu-runtime-rs",
+              "s390x": "qemu-runtime-rs",
+              "ppc64le": "qemu-runtime-rs"
+            },
+            "runtimeClasses": {
+              "enabled": true,
+              "createDefault": false,
+              "defaultName": "kata",
+              "overheadEnabled": true
+            },
+            "node-feature-discovery": {
+              "enabled": false
+            }
+          },
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
+        },
+        "shims": [
+          {
+            "id": "qemu-tdx-runtime-rs",
+            "runtimeClass": "kata-qemu-tdx-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+          }
+        ],
+        "cpuTees": []
+      },
+      "provisioner": {
+        "chart": {
+          "name": "kata-device-provisioner",
+          "version": "0.1.0",
+          "appVersion": "0.1.0",
+          "namespace": "kata-system",
+          "repository": "kata-containers/kata-device-provisioner",
+          "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
+          "pullRequest": 4,
+          "chartPath": "deploy/helm/kata-device-provisioner",
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/Chart.yaml",
+          "experimental": true
+        }
+      },
+      "devicePlugin": {
+        "chart": {
+          "chartName": "kata-device-plugin",
+          "version": "0.1.0",
+          "appVersion": "0.2.0",
+          "required": false,
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/6a4d891aa453cd4bc4738cb3a71001fae141a2af/deploy/helm/kata-device-plugin/Chart.yaml"
+        },
+        "values": {},
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/6a4d891aa453cd4bc4738cb3a71001fae141a2af/deploy/helm/kata-device-plugin/Chart.yaml"
+      },
+      "workload": {
+        "resourceName": "",
+        "nvSwitchResourceName": "",
+        "resourceNaming": "",
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+      },
+      "integration": {
+        "sandboxWorkloads": {},
+        "defaultCcMode": "",
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+        "officialSupport": {
+          "documentationVersion": "4.2.0",
+          "supportedGpuModels": [],
+          "supportedPlatformsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+          "ccModesUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+          "workloadsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
+          "runtimeRsStatus": "RuntimeClass configuration is derived from pinned kata-deploy values."
         }
       }
     }

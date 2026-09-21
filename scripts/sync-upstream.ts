@@ -412,6 +412,125 @@ async function main() {
     'node-feature-discovery': kataValues['node-feature-discovery'],
   }
 
+  const teeVendorDefinitions = [
+    {
+      id: 'amd',
+      displayName: 'AMD',
+      tagline: 'SEV-SNP',
+      description:
+        'Deploy the Kata QEMU runtime-rs class for AMD SEV-SNP ' +
+        'confidential workloads.',
+      logo: 'amd.svg',
+      shimId: 'qemu-snp-runtime-rs',
+    },
+    {
+      id: 'ibm',
+      displayName: 'IBM',
+      tagline: 'Secure Execution for Linux',
+      description:
+        'Deploy the Kata QEMU runtime-rs class for IBM Z Secure Execution workloads.',
+      logo: 'ibm.png',
+      shimId: 'qemu-se-runtime-rs',
+    },
+    {
+      id: 'intel',
+      displayName: 'Intel',
+      tagline: 'TDX',
+      description:
+        'Deploy the Kata QEMU runtime-rs class for Intel TDX confidential workloads.',
+      logo: 'intel.png',
+      shimId: 'qemu-tdx-runtime-rs',
+    },
+  ]
+  const teeVendors = teeVendorDefinitions.map((definition) => {
+    const config = requireValue(
+      kataValues.shims[definition.shimId],
+      `Kata values are missing ${definition.shimId}`,
+    )
+    const shim = {
+      id: definition.shimId,
+      runtimeClass: `kata-${definition.shimId}`,
+      supportedArches:
+        (config as { supportedArches?: string[] }).supportedArches ?? [],
+      snapshotter:
+        (config as { containerd?: { snapshotter?: string } }).containerd
+          ?.snapshotter || 'default',
+      nodeSelector:
+        (config as { runtimeClass?: { nodeSelector?: Record<string, string> } })
+          .runtimeClass?.nodeSelector ?? {},
+      sourceUrl: sourceLink('kata-values'),
+    }
+    return {
+      id: definition.id,
+      displayName: definition.displayName,
+      tagline: definition.tagline,
+      description: definition.description,
+      logo: definition.logo,
+      capabilities: [{ id: 'confidential-computing' }],
+      sourceUrl: sourceLink('kata-values'),
+      hardwareFamilies: [],
+      runtime: {
+        chart: {
+          name: kataChart.name,
+          version: String(kataChart.version),
+          appVersion: String(kataChart.appVersion),
+          ociReference: kataChartReference,
+          namespace: plannedArchitecture.namespace,
+          valuesFileName: `kata-${definition.id}.values.yaml`,
+          values: {
+            ...localRuntimeValues,
+            shims: {
+              disableAll: true,
+              [definition.shimId]: config,
+            },
+          },
+          sourceUrl: sourceLink('kata-chart'),
+        },
+        shims: [shim],
+        cpuTees: [],
+      },
+      provisioner: {
+        chart: {
+          name: provisionerChart.name,
+          version: String(provisionerChart.version),
+          appVersion: String(provisionerChart.appVersion),
+          namespace: plannedArchitecture.namespace,
+          repository: source('provisioner-chart').repository,
+          ref: source('provisioner-chart').ref,
+          pullRequest: source('provisioner-chart').pullRequest,
+          chartPath: dirname(source('provisioner-chart').path),
+          sourceUrl: sourceLink('provisioner-chart'),
+          experimental: true,
+        },
+      },
+      devicePlugin: {
+        chart: plannedArchitecture.charts.devicePlugin,
+        values: {},
+        sourceUrl: sourceLink('device-plugin-chart'),
+      },
+      workload: {
+        resourceName: '',
+        nvSwitchResourceName: '',
+        resourceNaming: '',
+        sourceUrl: sourceLink('kata-values'),
+      },
+      integration: {
+        sandboxWorkloads: {},
+        defaultCcMode: '',
+        sourceUrl: sourceLink('kata-values'),
+        officialSupport: {
+          documentationVersion: String(kataChart.version),
+          supportedGpuModels: [],
+          supportedPlatformsUrl: sourceLink('kata-values'),
+          ccModesUrl: sourceLink('kata-values'),
+          workloadsUrl: sourceLink('kata-values'),
+          runtimeRsStatus:
+            'RuntimeClass configuration is derived from pinned kata-deploy values.',
+        },
+      },
+    }
+  })
+
   const gpuResource = requireValue(
     pluginCode.match(/name:\s*"(nvidia\.com\/gpu)"/)?.[1],
     'Unable to find the NVIDIA GPU resource name',
@@ -547,6 +666,9 @@ async function main() {
       {
         id: 'local',
         displayName: 'Local',
+        tagline: 'Standard Kata deployment',
+        description:
+          `${localShims.length} upstream RuntimeClasses for a standard Kata deployment.`,
         logo: 'local.svg',
         capabilities: [
           { id: 'runtime-classes' },
@@ -610,6 +732,9 @@ async function main() {
       {
         id: 'nvidia',
         displayName: source('nvidia-operator-values').repository.split('/')[0],
+        tagline: 'GPU and confidential computing',
+        description:
+          `${families.length} hardware families and ${runtimeRsShims.length} RuntimeClasses.`,
         logo: 'nvidia.svg',
         capabilities: [
           { id: 'gpu', resourceName: gpuResource },
@@ -673,9 +798,10 @@ async function main() {
           },
         },
       },
+      ...teeVendors,
     ],
   }
-  const vendorOrder = ['nvidia', 'local']
+  const vendorOrder = ['nvidia', 'local', 'amd', 'ibm', 'intel']
   catalog.vendors.sort(
     (left, right) =>
       vendorOrder.indexOf(left.id) - vendorOrder.indexOf(right.id),
