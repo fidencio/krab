@@ -1358,6 +1358,29 @@ button.vendor-card {
   text-align: right;
 }
 
+.containerd-drop-in {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.containerd-drop-in > span {
+  color: #a0aaa5;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.advanced-group > .drop-in-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  color: var(--kata-orange-bright);
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .advanced-list-heading {
   display: flex;
   align-items: center;

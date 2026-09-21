@@ -946,7 +946,7 @@ function App() {
                     <section className="advanced-group">
                       <header>
                         <span>Kata runtime</span>
-                        <strong>Custom containerd paths</strong>
+                        <strong>Custom containerd configuration</strong>
                         <small>Optional overrides for non-standard kubeadm nodes.</small>
                       </header>
                       <div className="advanced-field-grid three-columns">
@@ -993,6 +993,25 @@ function App() {
                           />
                         </label>
                       </div>
+                      <small className="drop-in-warning" role="note">
+                        <AlertTriangle size={12} />
+                        KRAB does not validate this drop-in.
+                      </small>
+                      <label className="containerd-drop-in">
+                        <span>Containerd configuration drop-in</span>
+                        <textarea
+                          aria-label="Containerd configuration drop-in"
+                          value={advanced.containerdUserDropIn}
+                          placeholder={'[plugins."io.containerd.grpc.v1.cri"]\n  disable_tcp_service = true'}
+                          spellCheck={false}
+                          onChange={(event) =>
+                            setAdvanced((current) => ({
+                              ...current,
+                              containerdUserDropIn: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
                     </section>
                   )}
 

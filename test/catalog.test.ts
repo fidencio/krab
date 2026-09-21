@@ -194,6 +194,8 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
             '[agent.kata]\ndial_timeout = 999\n',
           'unselected-runtime': '[agent.kata]\ndebug_console = true\n',
         },
+        containerdUserDropIn:
+          '[plugins."io.containerd.grpc.v1.cri"]\n  disable_tcp_service = true\n',
         erofsSnapshotterMode: 'disk',
         erofsDiskSize: '24G',
         erofsDmverity: false,
@@ -209,7 +211,9 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
   assert.equal(
     configuredValues['kata-deploy'].containerd.userDropIn,
     "[plugins.'io.containerd.snapshotter.v1.erofs']\n" +
-      '  enable_fsverity = true\n  default_size = "24G"\n',
+      '  enable_fsverity = true\n  default_size = "24G"\n\n' +
+      '[plugins."io.containerd.grpc.v1.cri"]\n' +
+      '  disable_tcp_service = true\n',
   )
   assert.equal(
     configuredValues['kata-deploy'].shims['qemu-nvidia-cpu-runtime-rs'].dropIn,
@@ -232,7 +236,10 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
         runtimeNoProxy: '',
         nvidiaDcgmEnabled: false,
       },
-      createAdvancedConfiguration(),
+      {
+        ...createAdvancedConfiguration(),
+        containerdUserDropIn: '[debug]\n  level = "debug"\n',
+      },
     ),
   )
   assert.deepEqual(Object.keys(cocoDevValues['kata-deploy'].shims), [
@@ -242,7 +249,10 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
   assert.deepEqual(cocoDevValues['kata-deploy'].snapshotter, {
     setup: ['nydus'],
   })
-  assert.equal(cocoDevValues['kata-deploy'].containerd, undefined)
+  assert.equal(
+    cocoDevValues['kata-deploy'].containerd.userDropIn,
+    '[debug]\n  level = "debug"\n',
+  )
 })
 
 test('artifacts wrap upstream profiles in the planned KRAB parent chart', async () => {
@@ -530,7 +540,10 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
         runtimeNoProxy: '',
         nvidiaDcgmEnabled: false,
       },
-      createAdvancedConfiguration(),
+      {
+        ...createAdvancedConfiguration(),
+        containerdUserDropIn: '[debug]\n  level = "debug"\n',
+      },
     ),
   )
   assert.equal(emptyValues['kata-deploy'].snapshotter, undefined)

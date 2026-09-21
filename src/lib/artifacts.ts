@@ -238,6 +238,7 @@ export type AdvancedConfiguration = {
   containerdConfigDir: string
   containerdRuntimeSocket: string
   containerdConfigFileName: string
+  containerdUserDropIn: string
   shimDropIns: Record<string, string>
   erofsSnapshotterMode: 'memory' | 'disk'
   erofsDiskSize: string
@@ -273,6 +274,7 @@ export const createAdvancedConfiguration = (): AdvancedConfiguration => ({
   containerdConfigDir: '',
   containerdRuntimeSocket: '',
   containerdConfigFileName: '',
+  containerdUserDropIn: '',
   shimDropIns: {},
   erofsSnapshotterMode: 'memory',
   erofsDiskSize: '256M',
@@ -519,6 +521,14 @@ export function buildValuesBundle(
   if (runtimeValues['node-feature-discovery']) {
     runtimeValues['node-feature-discovery'].enabled = false
   }
+  const generatedContainerdDropIn = runtimeValues.containerd?.userDropIn
+  const customContainerdDropIn = advanced.containerdUserDropIn
+  const containerdUserDropIn =
+    typeof generatedContainerdDropIn === 'string' && customContainerdDropIn.trim()
+      ? `${generatedContainerdDropIn.trimEnd()}\n\n${customContainerdDropIn}`
+      : customContainerdDropIn.trim()
+        ? customContainerdDropIn
+        : generatedContainerdDropIn
   const customContainerd =
     cluster.distributionId === 'kubeadm'
       ? {
@@ -530,6 +540,9 @@ export function buildValuesBundle(
             : {}),
           ...(advanced.containerdConfigFileName.trim()
             ? { configFileName: advanced.containerdConfigFileName.trim() }
+            : {}),
+          ...(containerdUserDropIn
+            ? { userDropIn: containerdUserDropIn }
             : {}),
         }
       : {}
