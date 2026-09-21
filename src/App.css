@@ -237,7 +237,7 @@ button.vendor-card {
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
 }
 
-.openshift-card {
+.external-platform-card {
   display: flex;
   flex-direction: column;
   padding: 24px 26px;
@@ -250,19 +250,19 @@ button.vendor-card {
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
-.openshift-card:hover {
+.external-platform-card:hover {
   transform: translateY(-3px);
   border-color: rgba(241, 246, 243, 0.7);
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
 }
 
-.openshift-status {
+.external-platform-status {
   color: #c9d2ce;
   font-size: 11px;
   font-weight: 700;
 }
 
-.openshift-status::before {
+.external-platform-status::before {
   content: '';
   width: 6px;
   height: 6px;
@@ -274,7 +274,7 @@ button.vendor-card {
   vertical-align: 1px;
 }
 
-.openshift-external {
+.external-platform-link {
   width: 26px;
   height: 26px;
   display: grid;
@@ -284,26 +284,26 @@ button.vendor-card {
   color: #17201d;
 }
 
-.openshift-brand {
+.external-platform-brand {
   display: flex;
   align-items: center;
   gap: 13px;
   margin: 30px 0 22px;
 }
 
-.openshift-brand img {
+.external-platform-brand img {
   width: 52px;
   height: 52px;
 }
 
-.openshift-brand span {
+.external-platform-brand span {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.openshift-brand small {
+.external-platform-brand small {
   color: #aeb9b4;
   font-size: 10px;
   font-weight: 800;
@@ -311,13 +311,13 @@ button.vendor-card {
   text-transform: uppercase;
 }
 
-.openshift-brand strong {
+.external-platform-brand strong {
   color: #f1f4f2;
   font: 700 21px 'Manrope', sans-serif;
   letter-spacing: -0.03em;
 }
 
-.openshift-card > p {
+.external-platform-card > p {
   display: -webkit-box;
   overflow: hidden;
   color: var(--muted);
@@ -327,10 +327,20 @@ button.vendor-card {
   -webkit-line-clamp: 2;
 }
 
-.openshift-card .card-link {
+.external-platform-card .card-link {
   margin-top: auto;
   padding-top: 15px;
   color: #e3e9e6;
+}
+
+.azure-card .external-platform-brand img {
+  width: 48px;
+  height: 48px;
+  margin: 2px;
+  box-sizing: border-box;
+  padding: 6px;
+  border-radius: 9px;
+  background: #eef5f9;
 }
 
 .card-topline {
