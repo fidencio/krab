@@ -14,13 +14,18 @@ import {
 import catalogData from './generated/catalog.json'
 import provenanceData from './generated/provenance.json'
 import {
+  buildCustomRuntimeClass,
   buildInstallScript,
   buildValuesBundle,
   createAdvancedConfiguration,
+  customRuntimeClassName,
+  customRuntimeSnapshotter,
   resolveRuntimeShimIds,
+  validateCustomRuntimes,
   type AdvancedConfiguration,
   type ChartImageConfiguration,
   type ClusterConfiguration,
+  type CustomRuntimeConfiguration,
   type ExplorerCatalog,
   type FamilySelections,
   type RuntimeConfiguration,
@@ -211,6 +216,14 @@ function App() {
       return [{ ...shim, purpose, contexts }]
     })
   }, [runtime, selectedVendor, selections])
+  const customRuntimeErrors = useMemo(
+    () => validateCustomRuntimes(selectedVendor, advanced.customRuntimes),
+    [advanced.customRuntimes, selectedVendor],
+  )
+  const hasRuntimeSelection =
+    installedRuntimeClasses.length > 0 || advanced.customRuntimes.length > 0
+  const installedRuntimeClassCount =
+    installedRuntimeClasses.length + advanced.customRuntimes.length
   const requiresErofs =
     selectedVendor.hardwareFamilies.some(
       (family) => selections[family.id]?.modeId === 'off',
@@ -218,6 +231,10 @@ function App() {
     selectedVendor.runtime.shims.some(
       ({ id, snapshotter }) =>
         runtime.selectedShimIds.includes(id) && snapshotter === 'erofs',
+    ) ||
+    advanced.customRuntimes.some(
+      (customRuntime) =>
+        customRuntimeSnapshotter(selectedVendor, customRuntime) === 'erofs',
     )
   const erofsDiskSizeMissing =
     requiresErofs &&
@@ -227,7 +244,8 @@ function App() {
     cluster.distributionId !== null &&
     incompleteFamilies.length === 0 &&
     !erofsDiskSizeMissing &&
-    (!runtimeOnlyVendor || runtime.selectedShimIds.length > 0)
+    customRuntimeErrors.length === 0 &&
+    (!runtimeOnlyVendor || hasRuntimeSelection)
 
   const selectVendor = (vendor: VendorCatalog) => {
     setSelectedVendorId(vendor.id)
@@ -333,6 +351,66 @@ function App() {
         [chart]: { ...current.images[chart], ...changes },
       },
     }))
+  }
+
+  const addCustomRuntime = () => {
+    const usedNames = new Set(
+      advanced.customRuntimes.map(({ name }) => name.trim()),
+    )
+    let name = 'custom-runtime'
+    let suffix = 2
+    while (usedNames.has(name)) {
+      name = `custom-runtime-${suffix}`
+      suffix += 1
+    }
+    const baseRuntime = installedRuntimeClasses[0] ?? selectedVendor.runtime.shims[0]
+    if (!baseRuntime) return
+    setAdvanced((current) => ({
+      ...current,
+      customRuntimes: [
+        ...current.customRuntimes,
+        {
+          name,
+          baseConfig: baseRuntime.id,
+          dropIn: '',
+          runtimeClass: buildCustomRuntimeClass(name),
+        },
+      ],
+    }))
+  }
+
+  const updateCustomRuntime = (
+    index: number,
+    changes: Partial<CustomRuntimeConfiguration>,
+  ) => {
+    setAdvanced((current) => ({
+      ...current,
+      customRuntimes: current.customRuntimes.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, ...changes } : entry,
+      ),
+    }))
+  }
+
+  const updateCustomRuntimeName = (index: number, name: string) => {
+    setAdvanced((current) => ({
+      ...current,
+      customRuntimes: current.customRuntimes.map((entry, entryIndex) =>
+        entryIndex === index
+          ? {
+              ...entry,
+              name,
+              runtimeClass:
+                entry.runtimeClass === buildCustomRuntimeClass(entry.name)
+                  ? buildCustomRuntimeClass(name)
+                  : entry.runtimeClass,
+            }
+          : entry,
+      ),
+    }))
+  }
+
+  const updateCustomRuntimeBase = (index: number, baseConfig: string) => {
+    updateCustomRuntime(index, { baseConfig })
   }
 
   const copyCode = async (target: 'install' | 'values') => {
@@ -732,6 +810,149 @@ function App() {
                       </div>
                     </section>
                   )}
+                  <section className="advanced-group">
+                    <header>
+                      <span>Kata runtime · Custom RuntimeClasses</span>
+                      <strong>Custom runtimes</strong>
+                      <small>
+                        Create an additional runtime from a pinned base and an
+                        editable Kubernetes RuntimeClass manifest.
+                      </small>
+                    </header>
+                    <div className="advanced-list-heading">
+                      <span>
+                        {advanced.customRuntimes.length === 0
+                          ? 'No custom runtimes configured'
+                          : `${advanced.customRuntimes.length} custom runtime${
+                              advanced.customRuntimes.length === 1 ? '' : 's'
+                            }`}
+                      </span>
+                      <button type="button" onClick={addCustomRuntime}>
+                        <Plus size={13} /> Add runtime
+                      </button>
+                    </div>
+                    {advanced.customRuntimes.length > 0 && (
+                      <div className="custom-runtime-list">
+                        {advanced.customRuntimes.map((customRuntime, index) => {
+                          const errors = customRuntimeErrors.filter(
+                            (error) => error.index === index,
+                          )
+                          return (
+                            <article className="custom-runtime-card" key={index}>
+                              <header>
+                                <div>
+                                  <strong>
+                                    {customRuntime.name.trim() || 'Unnamed runtime'}
+                                  </strong>
+                                  <small>
+                                    {customRuntimeClassName(customRuntime)}
+                                  </small>
+                                </div>
+                                <button
+                                  type="button"
+                                  aria-label={`Remove custom runtime ${index + 1}`}
+                                  onClick={() =>
+                                    setAdvanced((current) => ({
+                                      ...current,
+                                      customRuntimes:
+                                        current.customRuntimes.filter(
+                                          (_, entryIndex) => entryIndex !== index,
+                                        ),
+                                    }))
+                                  }
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </header>
+                              <div className="advanced-field-grid two-columns">
+                                <label>
+                                  <span>Runtime name</span>
+                                  <input
+                                    type="text"
+                                    value={customRuntime.name}
+                                    placeholder="my-runtime"
+                                    onChange={(event) =>
+                                      updateCustomRuntimeName(
+                                        index,
+                                        event.target.value,
+                                      )
+                                    }
+                                  />
+                                </label>
+                                <label>
+                                  <span>Base runtime</span>
+                                  <select
+                                    value={customRuntime.baseConfig}
+                                    onChange={(event) =>
+                                      updateCustomRuntimeBase(
+                                        index,
+                                        event.target.value,
+                                      )
+                                    }
+                                  >
+                                    {selectedVendor.runtime.shims.map((shim) => (
+                                      <option key={shim.id} value={shim.id}>
+                                        {runtimeName(shim.id)}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              </div>
+                              <div className="custom-runtime-editors">
+                                <label>
+                                  <span>Kata configuration drop-in</span>
+                                  <small className="drop-in-warning" role="note">
+                                    <AlertTriangle size={12} />
+                                    KRAB does not validate this drop-in.
+                                  </small>
+                                  <textarea
+                                    aria-label={
+                                      `Custom runtime ${index + 1} ` +
+                                      'Kata configuration drop-in'
+                                    }
+                                    value={customRuntime.dropIn}
+                                    placeholder={'[hypervisor.qemu]\ndefault_memory = 1024'}
+                                    spellCheck={false}
+                                    onChange={(event) =>
+                                      updateCustomRuntime(index, {
+                                        dropIn: event.target.value,
+                                      })
+                                    }
+                                  />
+                                </label>
+                                <label>
+                                  <span>RuntimeClass manifest</span>
+                                  <small className="drop-in-warning" role="note">
+                                    <AlertTriangle size={12} />
+                                    KRAB does not validate this manifest.
+                                  </small>
+                                  <textarea
+                                    aria-label={`Custom runtime ${index + 1} RuntimeClass manifest`}
+                                    value={customRuntime.runtimeClass}
+                                    spellCheck={false}
+                                    onChange={(event) =>
+                                      updateCustomRuntime(index, {
+                                        runtimeClass: event.target.value,
+                                      })
+                                    }
+                                  />
+                                </label>
+                              </div>
+                              {errors.length > 0 && (
+                                <ul className="custom-runtime-errors">
+                                  {errors.map((error, errorIndex) => (
+                                    <li key={`${error.field}-${errorIndex}`}>
+                                      {error.message}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </article>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </section>
                   {selectedVendor.id === 'nvidia' && (
                     <section className="advanced-group component-toggle-group">
                     <div>
@@ -1417,7 +1638,7 @@ function App() {
                   {runtimeOnlyVendor && (
                     <section
                       className={`local-runtime-selection ${
-                        runtime.selectedShimIds.length === 0 ? 'incomplete' : ''
+                        !hasRuntimeSelection ? 'incomplete' : ''
                       }`}
                     >
                       <header>
@@ -1433,8 +1654,8 @@ function App() {
                           </p>
                         </div>
                         <em>
-                          {runtime.selectedShimIds.length > 0
-                            ? `${runtime.selectedShimIds.length} selected`
+                          {hasRuntimeSelection
+                            ? `${installedRuntimeClassCount} configured`
                             : 'Required'}
                         </em>
                       </header>
@@ -1581,13 +1802,13 @@ function App() {
                       </p>
                     </div>
                     <strong>
-                      {installedRuntimeClasses.length}{' '}
-                      {installedRuntimeClasses.length === 1
+                      {installedRuntimeClassCount}{' '}
+                      {installedRuntimeClassCount === 1
                         ? 'RuntimeClass'
                         : 'RuntimeClasses'}
                     </strong>
                   </header>
-                  {installedRuntimeClasses.length > 0 ? (
+                  {installedRuntimeClassCount > 0 ? (
                     <div className="runtime-summary-grid">
                       {installedRuntimeClasses.map((shim) => (
                         <article key={shim.id}>
@@ -1610,6 +1831,28 @@ function App() {
                             {shim.supportedArches.length === 1
                               ? `Architecture: ${shim.supportedArches[0]}`
                               : `Architectures: ${shim.supportedArches.join(' · ')}`}
+                          </small>
+                        </article>
+                      ))}
+                      {advanced.customRuntimes.map((customRuntime, index) => (
+                        <article key={`custom-runtime-${index}`}>
+                          <div className="runtime-summary-title">
+                            <Check size={14} />
+                            <div>
+                              <span>Custom · {runtimeName(customRuntime.baseConfig)}</span>
+                              <code>{customRuntimeClassName(customRuntime)}</code>
+                            </div>
+                          </div>
+                          <p>
+                            Custom runtime based on{' '}
+                            <code>{customRuntime.baseConfig}</code>.
+                          </p>
+                          <small>
+                            Snapshotter:{' '}
+                            {customRuntimeSnapshotter(
+                              selectedVendor,
+                              customRuntime,
+                            ) || 'default'}
                           </small>
                         </article>
                       ))}
@@ -1656,9 +1899,14 @@ function App() {
                           <li>Kubernetes distribution</li>
                         )}
                         {runtimeOnlyVendor &&
-                          runtime.selectedShimIds.length === 0 && (
+                          !hasRuntimeSelection && (
                             <li>At least one Kata RuntimeClass</li>
                           )}
+                        {customRuntimeErrors.map((error, index) => (
+                          <li key={`custom-runtime-error-${index}`}>
+                            Custom runtime {error.index + 1}: {error.message}
+                          </li>
+                        ))}
                         {erofsDiskSizeMissing && (
                           <li>EROFS disk-backed writable-layer size</li>
                         )}

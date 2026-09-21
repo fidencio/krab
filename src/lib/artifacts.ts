@@ -1,4 +1,4 @@
-import { stringify } from 'yaml'
+import { parse, stringify } from 'yaml'
 
 export type ModeCatalog = {
   id: string
@@ -234,12 +234,26 @@ export type ChartImageConfiguration = {
   dispatcherTag: string
 }
 
+export type CustomRuntimeConfiguration = {
+  name: string
+  baseConfig: string
+  dropIn: string
+  runtimeClass: string
+}
+
+export type CustomRuntimeValidationError = {
+  index: number
+  field: 'name' | 'baseConfig'
+  message: string
+}
+
 export type AdvancedConfiguration = {
   containerdConfigDir: string
   containerdRuntimeSocket: string
   containerdConfigFileName: string
   containerdUserDropIn: string
   shimDropIns: Record<string, string>
+  customRuntimes: CustomRuntimeConfiguration[]
   erofsSnapshotterMode: 'memory' | 'disk'
   erofsDiskSize: string
   erofsDmverity: boolean
@@ -276,6 +290,7 @@ export const createAdvancedConfiguration = (): AdvancedConfiguration => ({
   containerdConfigFileName: '',
   containerdUserDropIn: '',
   shimDropIns: {},
+  customRuntimes: [],
   erofsSnapshotterMode: 'memory',
   erofsDiskSize: '256M',
   erofsDmverity: true,
@@ -300,6 +315,87 @@ export const createAdvancedConfiguration = (): AdvancedConfiguration => ({
 
 const yaml = (value: unknown) =>
   stringify(value, { lineWidth: 0 }).trim()
+
+const runtimeNamePattern = /^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$/
+
+export const buildCustomRuntimeClass = (name: string) => {
+  const runtimeName = name.trim() || 'custom-runtime'
+  const handler = `kata-${runtimeName}`
+  return `${yaml({
+    apiVersion: 'node.k8s.io/v1',
+    kind: 'RuntimeClass',
+    metadata: {
+      name: handler,
+      labels: { 'app.kubernetes.io/managed-by': 'kata-deploy' },
+    },
+    handler,
+  })}\n`
+}
+
+export function customRuntimeClassName(runtime: CustomRuntimeConfiguration) {
+  try {
+    const manifest = parse(runtime.runtimeClass) as {
+      metadata?: { name?: unknown }
+    } | null
+    return typeof manifest?.metadata?.name === 'string'
+      ? manifest.metadata.name
+      : `kata-${runtime.name.trim() || 'custom-runtime'}`
+  } catch {
+    return `kata-${runtime.name.trim() || 'custom-runtime'}`
+  }
+}
+
+export function customRuntimeSnapshotter(
+  vendor: VendorCatalog,
+  runtime: CustomRuntimeConfiguration,
+) {
+  const snapshotter = vendor.runtime.shims.find(
+    ({ id }) => id === runtime.baseConfig,
+  )?.snapshotter
+  return !snapshotter || snapshotter === 'default' ? '' : snapshotter
+}
+
+export function validateCustomRuntimes(
+  vendor: VendorCatalog,
+  runtimes: CustomRuntimeConfiguration[],
+) {
+  const errors: CustomRuntimeValidationError[] = []
+  const names = new Map<string, number[]>()
+
+  runtimes.forEach((runtime, index) => {
+    const name = runtime.name.trim()
+    names.set(name, [...(names.get(name) ?? []), index])
+    if (!name || name.length > 63 || !runtimeNamePattern.test(name)) {
+      errors.push({
+        index,
+        field: 'name',
+        message:
+          'Use 1–63 lowercase letters, numbers, or hyphens; start and end with a letter or number.',
+      })
+    }
+    if (!vendor.runtime.shims.some(({ id }) => id === runtime.baseConfig)) {
+      errors.push({
+        index,
+        field: 'baseConfig',
+        message: 'Select a base runtime from this vendor.',
+      })
+    }
+
+  })
+
+  for (const [name, indexes] of names) {
+    if (name && indexes.length > 1) {
+      for (const index of indexes) {
+        errors.push({
+          index,
+          field: 'name',
+          message: `Runtime name ${name} must be unique.`,
+        })
+      }
+    }
+  }
+  return errors
+}
 
 export function resolveRuntimeShimIds(
   vendor: VendorCatalog,
@@ -356,6 +452,10 @@ export function buildValuesBundle(
       } | boolean
     >
     defaultShim?: unknown
+    customRuntimes?: {
+      enabled: boolean
+      runtimes: Record<string, unknown>
+    }
     'node-feature-discovery'?: { enabled?: boolean }
     snapshotter?: {
       setup?: string[]
@@ -461,23 +561,42 @@ export function buildValuesBundle(
     }
   }
   runtimeValues.shims = selectedShims
+  if (advanced.customRuntimes.length > 0) {
+    runtimeValues.customRuntimes = {
+      enabled: true,
+      runtimes: Object.fromEntries(
+        advanced.customRuntimes.map((customRuntime) => [
+          customRuntime.name.trim(),
+          {
+            baseConfig: customRuntime.baseConfig,
+            ...(customRuntime.dropIn.trim()
+              ? { dropIn: customRuntime.dropIn }
+              : {}),
+            runtimeClass: customRuntime.runtimeClass,
+            containerd: {
+              snapshotter: customRuntimeSnapshotter(vendor, customRuntime),
+            },
+          },
+        ]),
+      ),
+    }
+  } else {
+    delete runtimeValues.customRuntimes
+  }
   const requiredSnapshotters = new Set(
-    [...enabledShims]
-      .map((shimId) =>
+    [
+      ...[...enabledShims].map((shimId) =>
         vendor.runtime.shims.find(({ id }) => id === shimId)?.snapshotter,
-      )
+      ),
+      ...advanced.customRuntimes.map((customRuntime) =>
+        customRuntimeSnapshotter(vendor, customRuntime),
+      ),
+    ]
       .filter(
         (snapshotter): snapshotter is string =>
           Boolean(snapshotter) && snapshotter !== 'default',
       ),
   )
-  const snapshotterConfiguration = [...enabledShims]
-    .map(
-      (shimId) =>
-        vendor.runtime.shims.find(({ id }) => id === shimId)
-          ?.snapshotterConfiguration,
-    )
-    .find(Boolean)
   if (advanced.installErofsUtils && requiredSnapshotters.has('erofs')) {
     runtimeValues.nodeBinaries = {
       ...(runtimeValues.nodeBinaries ?? {}),
@@ -495,7 +614,7 @@ export function buildValuesBundle(
     delete runtimeValues.containerd
   } else if (runtimeValues.snapshotter) {
     runtimeValues.snapshotter.setup = [...requiredSnapshotters]
-    if (snapshotterConfiguration) {
+    if (requiredSnapshotters.has('erofs')) {
       delete runtimeValues.snapshotter.erofsMergeMode
       runtimeValues.snapshotter.erofsSnapshotterMode =
         advanced.erofsSnapshotterMode

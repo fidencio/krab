@@ -4,10 +4,13 @@ import { resolve } from 'node:path'
 import test from 'node:test'
 import { parse } from 'yaml'
 import {
+  buildCustomRuntimeClass,
   buildInstallScript,
   buildValuesBundle,
   createAdvancedConfiguration,
+  customRuntimeSnapshotter,
   type ExplorerCatalog,
+  validateCustomRuntimes,
 } from '../src/lib/artifacts.ts'
 
 const root = resolve(import.meta.dirname, '..')
@@ -253,6 +256,86 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
     cocoDevValues['kata-deploy'].containerd.userDropIn,
     '[debug]\n  level = "debug"\n',
   )
+})
+
+test('custom runtimes generate independent RuntimeClasses and snapshotters', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const local = catalog.vendors.find(({ id }) => id === 'local')!
+  const runtimeClass = buildCustomRuntimeClass('my-runtime')
+  const customRuntime = {
+    name: 'my-runtime',
+    baseConfig: 'qemu-nvidia-cpu-runtime-rs',
+    dropIn: '[hypervisor.qemu]\ndefault_memory = 1024\n',
+    runtimeClass,
+  }
+
+  assert.deepEqual(validateCustomRuntimes(local, [customRuntime]), [])
+  assert.equal(customRuntimeSnapshotter(local, customRuntime), 'erofs')
+  assert.equal(
+    customRuntimeSnapshotter(local, {
+      ...customRuntime,
+      baseConfig: 'qemu-runtime-rs',
+    }),
+    '',
+  )
+  assert.deepEqual(
+    validateCustomRuntimes(local, [
+      { ...customRuntime, runtimeClass: 'passed through as-is' },
+    ]),
+    [],
+  )
+
+  const generated = parse(
+    buildValuesBundle(
+      catalog,
+      local,
+      {},
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: [],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      {
+        ...createAdvancedConfiguration(),
+        customRuntimes: [customRuntime],
+      },
+    ),
+  )
+
+  assert.deepEqual(generated['kata-deploy'].shims, { disableAll: true })
+  assert.deepEqual(generated['kata-deploy'].customRuntimes, {
+    enabled: true,
+    runtimes: {
+      'my-runtime': {
+        baseConfig: 'qemu-nvidia-cpu-runtime-rs',
+        dropIn: '[hypervisor.qemu]\ndefault_memory = 1024\n',
+        runtimeClass,
+        containerd: { snapshotter: 'erofs' },
+      },
+    },
+  })
+  assert.deepEqual(generated['kata-deploy'].snapshotter, {
+    setup: ['erofs'],
+    erofsSnapshotterMode: 'memory',
+    erofsDmverity: true,
+  })
+  assert.equal(
+    generated['kata-deploy'].containerd.userDropIn,
+    "[plugins.'io.containerd.snapshotter.v1.erofs']\n" +
+      '  enable_fsverity = false\n',
+  )
+
+  const validationErrors = validateCustomRuntimes(local, [
+    customRuntime,
+    {
+      ...customRuntime,
+      baseConfig: 'missing-runtime',
+    },
+  ])
+  assert.ok(validationErrors.some(({ field }) => field === 'name'))
+  assert.ok(validationErrors.some(({ field }) => field === 'baseConfig'))
 })
 
 test('artifacts wrap upstream profiles in the planned KRAB parent chart', async () => {

@@ -1262,6 +1262,11 @@ button.vendor-card {
   font-weight: 700;
 }
 
+.advanced-field-grid label > small {
+  color: #77847e;
+  font-size: 8px;
+}
+
 .advanced-field-grid label > span em {
   margin-left: 6px;
   padding: 2px 4px;
@@ -1379,6 +1384,107 @@ button.vendor-card {
   color: var(--kata-orange-bright);
   font-size: 10px;
   font-weight: 700;
+}
+
+.custom-runtime-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.custom-runtime-card {
+  padding: 12px;
+  border: 1px solid #33413c;
+  border-radius: 8px;
+  background: rgba(9, 16, 14, 0.28);
+}
+
+.custom-runtime-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+
+.custom-runtime-card > header > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.custom-runtime-card > header strong {
+  color: #dfe5e2;
+  font-size: 10px;
+}
+
+.custom-runtime-card > header small {
+  overflow: hidden;
+  color: #77847e;
+  font: 8px 'IBM Plex Mono', monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-runtime-card > header button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #4a3937;
+  border-radius: 6px;
+  background: #171514;
+  color: #b9897b;
+  cursor: pointer;
+}
+
+.custom-runtime-card > header button:hover {
+  border-color: var(--kata-orange);
+  color: var(--kata-orange-bright);
+}
+
+.custom-runtime-editors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 11px;
+}
+
+.custom-runtime-editors > label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.custom-runtime-editors > label > span {
+  color: #a0aaa5;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.custom-runtime-editors .drop-in-warning {
+  min-height: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--kata-orange-bright);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.custom-runtime-editors textarea {
+  min-height: 180px;
+}
+
+.custom-runtime-errors {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: #e69662;
+  font-size: 9px;
+  line-height: 1.55;
 }
 
 .advanced-list-heading {
@@ -2471,6 +2577,11 @@ button.vendor-card {
   .shim-drop-in-list {
     grid-template-columns: 1fr;
   }
+
+  .custom-runtime-editors {
+    grid-template-columns: 1fr;
+  }
+
 }
 
 @media (max-width: 480px) {
