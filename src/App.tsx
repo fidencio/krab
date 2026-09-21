@@ -562,62 +562,6 @@ function App() {
                 <span>{provenanceData.generatedFrom.length} pinned source files</span>
               </div>
 
-              <details className="architecture-details">
-                <summary>
-                  <span>
-                    <strong>How KRAB assembles this architecture</strong>
-                    <small>View chart dependencies and ownership</small>
-                  </span>
-                  <ChevronDown size={17} />
-                </summary>
-                <div className="architecture-chain">
-                  <div className="architecture-node planned">
-                    <small>Planned parent chart</small>
-                    <strong>{catalog.plannedArchitecture.charts.krab.chartName}</strong>
-                    <span>Reference architecture entry point</span>
-                  </div>
-                  <ArrowRight size={18} />
-                  <div className="architecture-dependencies">
-                    <div className="architecture-node required">
-                      <small>Required dependency</small>
-                      <strong>
-                        {catalog.plannedArchitecture.charts.nfd.chartName}{' '}
-                        {catalog.plannedArchitecture.charts.nfd.version}
-                      </strong>
-                      <span>Always installed by KRAB</span>
-                    </div>
-                    <div className="architecture-node required">
-                      <small>Required dependency</small>
-                      <strong>
-                        {catalog.plannedArchitecture.charts.kataDeploy.chartName}{' '}
-                        {catalog.plannedArchitecture.charts.kataDeploy.version}
-                      </strong>
-                      <span>Installs Kata runtimes and RuntimeClasses</span>
-                    </div>
-                    {selectedVendor.id === 'nvidia' && (
-                      <>
-                        <div className="architecture-node vendor-specific">
-                          <small>NVIDIA dependency</small>
-                          <strong>
-                            {catalog.plannedArchitecture.charts.devicePlugin.chartName}{' '}
-                            {catalog.plannedArchitecture.charts.devicePlugin.version}
-                          </strong>
-                          <span>Advertises VFIO devices to kubelet</span>
-                        </div>
-                        <div className="architecture-node planned vendor-specific">
-                          <small>Planned NVIDIA dependency</small>
-                          <strong>
-                            {catalog.plannedArchitecture.charts.provisioner.chartName}{' '}
-                            {catalog.plannedArchitecture.charts.provisioner.version}
-                          </strong>
-                          <span>Provisions multiple hardware profiles in one release</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </details>
-
               <section className="install-command-callout">
                 <div className="artifact-heading">
                   <div>
@@ -778,10 +722,6 @@ function App() {
                           Optional TOML appended to each selected runtime&apos;s
                           Kata configuration as config.d/50-user-overrides.toml.
                         </small>
-                        <small className="drop-in-warning" role="note">
-                          <AlertTriangle size={12} />
-                          KRAB does not validate these drop-ins.
-                        </small>
                       </header>
                       <div className="shim-drop-in-list">
                         {installedRuntimeClasses.map((shim) => (
@@ -790,6 +730,10 @@ function App() {
                               <strong>{shim.runtimeClass}</strong>
                               <small>{runtimeName(shim.id)}</small>
                             </span>
+                            <small className="drop-in-warning" role="note">
+                              <AlertTriangle size={12} />
+                              KRAB does not validate this drop-in.
+                            </small>
                             <textarea
                               aria-label={`${shim.runtimeClass} Kata configuration drop-in`}
                               value={advanced.shimDropIns[shim.id] ?? ''}
@@ -1214,12 +1158,12 @@ function App() {
                           />
                         </label>
                       </div>
-                      <small className="drop-in-warning" role="note">
-                        <AlertTriangle size={12} />
-                        KRAB does not validate this drop-in.
-                      </small>
                       <label className="containerd-drop-in">
                         <span>Containerd configuration drop-in</span>
+                        <small className="drop-in-warning" role="note">
+                          <AlertTriangle size={12} />
+                          KRAB does not validate this drop-in.
+                        </small>
                         <textarea
                           aria-label="Containerd configuration drop-in"
                           value={advanced.containerdUserDropIn}
@@ -1865,7 +1809,68 @@ function App() {
                   )}
                 </section>
 
-                <aside className="code-column">
+                <div className="artifact-workspace">
+                  <details className="architecture-details" open>
+                    <summary>
+                      <span>
+                        <strong>How KRAB assembles this architecture</strong>
+                        <small>View chart dependencies and ownership</small>
+                      </span>
+                      <ChevronDown size={17} />
+                    </summary>
+                    <div className="architecture-chain">
+                      <div className="architecture-node planned">
+                        <small>Planned parent chart</small>
+                        <strong>
+                          {catalog.plannedArchitecture.charts.krab.chartName}
+                        </strong>
+                        <span>Reference architecture entry point</span>
+                      </div>
+                      <ArrowRight size={18} />
+                      <div className="architecture-dependencies">
+                        <div className="architecture-node required">
+                          <small>Required dependency</small>
+                          <strong>
+                            {catalog.plannedArchitecture.charts.nfd.chartName}{' '}
+                            {catalog.plannedArchitecture.charts.nfd.version}
+                          </strong>
+                          <span>Always installed by KRAB</span>
+                        </div>
+                        <div className="architecture-node required">
+                          <small>Required dependency</small>
+                          <strong>
+                            {catalog.plannedArchitecture.charts.kataDeploy.chartName}{' '}
+                            {catalog.plannedArchitecture.charts.kataDeploy.version}
+                          </strong>
+                          <span>Installs Kata runtimes and RuntimeClasses</span>
+                        </div>
+                        {selectedVendor.id === 'nvidia' && (
+                          <>
+                            <div className="architecture-node vendor-specific">
+                              <small>NVIDIA dependency</small>
+                              <strong>
+                                {catalog.plannedArchitecture.charts.devicePlugin.chartName}{' '}
+                                {catalog.plannedArchitecture.charts.devicePlugin.version}
+                              </strong>
+                              <span>Advertises VFIO devices to kubelet</span>
+                            </div>
+                            <div className="architecture-node planned vendor-specific">
+                              <small>Planned NVIDIA dependency</small>
+                              <strong>
+                                {catalog.plannedArchitecture.charts.provisioner.chartName}{' '}
+                                {catalog.plannedArchitecture.charts.provisioner.version}
+                              </strong>
+                              <span>
+                                Provisions multiple hardware profiles in one release
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </details>
+
+                  <aside className="code-column">
                   <div className="code-heading">
                     <div>
                       <span><FileCode2 size={15} /> Generated values.yaml</span>
@@ -1922,7 +1927,8 @@ function App() {
                       </p>
                     </div>
                   )}
-                </aside>
+                  </aside>
+                </div>
               </div>
             </div>
           )}

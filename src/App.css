@@ -925,6 +925,29 @@ button.vendor-card {
   display: contents;
 }
 
+.artifact-workspace {
+  order: 6;
+  display: grid;
+  grid-template-columns: minmax(320px, 0.72fr) minmax(0, 1.28fr);
+  align-items: start;
+  gap: 20px;
+  padding: 4px 0 28px;
+}
+
+.artifact-workspace .architecture-details {
+  order: initial;
+  margin: 0;
+}
+
+.artifact-workspace .architecture-chain {
+  grid-template-columns: 1fr;
+}
+
+.artifact-workspace .architecture-chain > svg {
+  margin: -7px auto;
+  transform: rotate(90deg);
+}
+
 .profile-list {
   order: 4;
   display: flex;
@@ -1227,12 +1250,12 @@ button.vendor-card {
   font-size: 10px;
 }
 
-.advanced-group > header .drop-in-warning {
+.advanced-config .drop-in-warning {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin-top: 4px;
   color: var(--kata-orange-bright);
+  font-size: 9px;
   font-weight: 700;
 }
 
@@ -1376,16 +1399,6 @@ button.vendor-card {
   font-weight: 700;
 }
 
-.advanced-group > .drop-in-warning {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 8px;
-  color: var(--kata-orange-bright);
-  font-size: 10px;
-  font-weight: 700;
-}
-
 .custom-runtime-list {
   display: flex;
   flex-direction: column;
@@ -1461,16 +1474,6 @@ button.vendor-card {
 
 .custom-runtime-editors > label > span {
   color: #a0aaa5;
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.custom-runtime-editors .drop-in-warning {
-  min-height: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--kata-orange-bright);
   font-size: 9px;
   font-weight: 700;
 }
@@ -2165,6 +2168,11 @@ button.vendor-card {
   padding: 4px 0 28px;
 }
 
+.artifact-workspace .code-column {
+  order: initial;
+  padding: 0;
+}
+
 .runtime-install-summary {
   order: 5;
   padding: 24px;
@@ -2533,6 +2541,10 @@ button.vendor-card {
   }
 
   .builder-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .artifact-workspace {
     grid-template-columns: 1fr;
   }
 
