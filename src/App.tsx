@@ -631,7 +631,8 @@ function App() {
                   <span>
                     <strong>Advanced deployment configuration</strong>
                     <small>
-                      Kata runtime settings and supporting cluster components
+                      Most deployments can use the generated defaults. Change
+                      these only for environment-specific requirements.
                     </small>
                   </span>
                   <ChevronDown size={17} />
