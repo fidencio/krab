@@ -17,9 +17,37 @@ const loadJson = async <T>(path: string) =>
 
 test('generated catalog carries accurate upstream chart data', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
-  const vendor = catalog.vendors[0]
+  const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
+  const local = catalog.vendors.find(({ id }) => id === 'local')!
 
+  assert.deepEqual(
+    catalog.vendors.map(({ id }) => id),
+    ['nvidia', 'local'],
+  )
   assert.equal(vendor.displayName, 'NVIDIA')
+  assert.equal(local.displayName, 'Local')
+  assert.equal(local.hardwareFamilies.length, 0)
+  assert.deepEqual(
+    local.runtime.shims.map(({ id }) => id),
+    [
+      'clh-runtime-rs',
+      'clh-azure-runtime-rs',
+      'dragonball',
+      'qemu-runtime-rs',
+      'qemu-nvidia-cpu-runtime-rs',
+      'openvmm-azure-runtime-rs',
+    ],
+  )
+  const nvidiaCpuRuntime = local.runtime.shims.find(
+    ({ id }) => id === 'qemu-nvidia-cpu-runtime-rs',
+  )!
+  assert.equal(nvidiaCpuRuntime.snapshotter, 'erofs')
+  assert.deepEqual(nvidiaCpuRuntime.snapshotterConfiguration, {
+    erofsSnapshotterMode: 'memory',
+    erofsDmverity: true,
+    containerdUserDropIn:
+      "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n",
+  })
   assert.equal(
     vendor.sourceUrl,
     'https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/latest/',
@@ -69,9 +97,55 @@ test('generated catalog carries accurate upstream chart data', async () => {
   assert.deepEqual(hopper?.modelsNotInNvidiaMatrix, ['H800', 'H20'])
 })
 
+test('local artifacts install only the selected upstream RuntimeClasses', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const local = catalog.vendors.find(({ id }) => id === 'local')!
+  const generatedValues = parse(
+    buildValuesBundle(
+      catalog,
+      local,
+      {},
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: ['qemu-runtime-rs', 'qemu-nvidia-cpu-runtime-rs'],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: true,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+  const shims = generatedValues['kata-deploy'].shims
+
+  assert.equal(generatedValues.nvidia.enabled, false)
+  assert.equal(generatedValues['kata-device-plugin'], undefined)
+  assert.equal(generatedValues['kata-device-provisioner'], undefined)
+  assert.deepEqual(Object.keys(shims), [
+    'disableAll',
+    'qemu-runtime-rs',
+    'qemu-nvidia-cpu-runtime-rs',
+  ])
+  assert.equal(shims['qemu-runtime-rs'].enabled, true)
+  assert.equal(shims['qemu-runtime-rs'].nvrc, undefined)
+  assert.equal(shims['qemu-nvidia-cpu-runtime-rs'].enabled, true)
+  assert.equal(
+    shims['qemu-nvidia-cpu-runtime-rs'].containerd.snapshotter,
+    'erofs',
+  )
+  assert.deepEqual(generatedValues['kata-deploy'].snapshotter, {
+    setup: ['erofs'],
+    erofsSnapshotterMode: 'memory',
+    erofsDmverity: true,
+  })
+  assert.equal(
+    generatedValues['kata-deploy'].containerd.userDropIn,
+    "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n",
+  )
+})
+
 test('artifacts wrap upstream profiles in the planned KRAB parent chart', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
-  const vendor = catalog.vendors[0]
+  const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
   const selections = {
     hopper: { modeId: 'ppcie', cpuTeeIds: ['snp', 'tdx'] },
     blackwell: { modeId: 'on', cpuTeeIds: ['tdx'] },
@@ -80,6 +154,7 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
     distributionId: 'rke2',
     selinuxEnabled: true,
   }, {
+    selectedShimIds: [],
     runtimeHttpsProxy: ' https://proxy.example.com:8443 ',
     runtimeNoProxy: ' registry.internal,.svc ',
     nvidiaDcgmEnabled: true,
@@ -296,6 +371,7 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
         selinuxEnabled: false,
       },
       {
+        selectedShimIds: [],
         runtimeHttpsProxy: '',
         runtimeNoProxy: '',
         nvidiaDcgmEnabled: false,
@@ -347,6 +423,7 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
         selinuxEnabled: false,
       },
       {
+        selectedShimIds: [],
         runtimeHttpsProxy: '',
         runtimeNoProxy: '',
         nvidiaDcgmEnabled: false,
@@ -368,6 +445,7 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
         selinuxEnabled: false,
       },
       {
+        selectedShimIds: [],
         runtimeHttpsProxy: '',
         runtimeNoProxy: '',
         nvidiaDcgmEnabled: false,

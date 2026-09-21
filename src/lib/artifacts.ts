@@ -52,6 +52,12 @@ export type VendorCatalog = {
       id: string
       runtimeClass: string
       snapshotter: string
+      snapshotterConfiguration?: {
+        erofsSnapshotterMode: 'memory' | 'disk'
+        erofsDmverity: boolean
+        containerdUserDropIn: string
+      }
+      supportedArches: string[]
       nodeSelector: Record<string, string>
       sourceUrl: string
     }>
@@ -198,6 +204,7 @@ export type ClusterConfiguration = {
 }
 
 export type RuntimeConfiguration = {
+  selectedShimIds: string[]
   runtimeHttpsProxy: string
   runtimeNoProxy: string
   nvidiaDcgmEnabled: boolean
@@ -303,10 +310,11 @@ export function buildValuesBundle(
     'node-feature-discovery'?: { enabled?: boolean }
     snapshotter?: {
       setup?: string[]
+      erofsMergeMode?: string
       erofsSnapshotterMode?: string
       erofsDmverity?: boolean
     }
-    containerd?: unknown
+    containerd?: Record<string, unknown>
     deploymentMode?: string
     debug?: boolean
     nodeSelector?: Record<string, string>
@@ -339,6 +347,11 @@ export function buildValuesBundle(
     enabled: cluster.selinuxEnabled,
   }
   const enabledShims = new Set<string>()
+  for (const shimId of runtime.selectedShimIds) {
+    if (vendor.runtime.shims.some(({ id }) => id === shimId)) {
+      enabledShims.add(shimId)
+    }
+  }
   const baseRuntimeShim = vendor.runtime.shims.find(
     ({ id }) => !id.includes('-snp-') && !id.includes('-tdx-'),
   )
@@ -415,6 +428,13 @@ export function buildValuesBundle(
           Boolean(snapshotter) && snapshotter !== 'default',
       ),
   )
+  const snapshotterConfiguration = [...enabledShims]
+    .map(
+      (shimId) =>
+        vendor.runtime.shims.find(({ id }) => id === shimId)
+          ?.snapshotterConfiguration,
+    )
+    .find(Boolean)
   if (advanced.installErofsUtils && requiredSnapshotters.has('erofs')) {
     runtimeValues.nodeBinaries = {
       ...(runtimeValues.nodeBinaries ?? {}),
@@ -431,10 +451,18 @@ export function buildValuesBundle(
     delete runtimeValues.snapshotter
     delete runtimeValues.containerd
   } else if (runtimeValues.snapshotter) {
-    runtimeValues.snapshotter.setup = (
-      runtimeValues.snapshotter.setup ?? []
-    ).filter((snapshotter) => requiredSnapshotters.has(snapshotter))
-    if (!requiredSnapshotters.has('erofs')) {
+    runtimeValues.snapshotter.setup = [...requiredSnapshotters]
+    if (snapshotterConfiguration) {
+      delete runtimeValues.snapshotter.erofsMergeMode
+      runtimeValues.snapshotter.erofsSnapshotterMode =
+        snapshotterConfiguration.erofsSnapshotterMode
+      runtimeValues.snapshotter.erofsDmverity =
+        snapshotterConfiguration.erofsDmverity
+      runtimeValues.containerd = {
+        ...(runtimeValues.containerd ?? {}),
+        userDropIn: snapshotterConfiguration.containerdUserDropIn,
+      }
+    } else if (!requiredSnapshotters.has('erofs')) {
       delete runtimeValues.snapshotter.erofsSnapshotterMode
       delete runtimeValues.snapshotter.erofsDmverity
       delete runtimeValues.containerd

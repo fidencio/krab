@@ -51,6 +51,46 @@ const humanize = (value: string) =>
     .replaceAll('-', ' ')
     .replace(/\b\w/g, (character) => character.toUpperCase())
 
+const runtimeTokenNames: Record<string, string> = {
+  qemu: 'QEMU',
+  clh: 'Cloud Hypervisor',
+  openvmm: 'OpenVMM',
+  nvidia: 'NVIDIA',
+  cpu: 'CPU',
+  snp: 'SNP',
+  tdx: 'TDX',
+  se: 'Secure Execution',
+}
+
+const runtimeName = (id: string) =>
+  id
+    .replace(/-runtime-rs$/, '')
+    .split('-')
+    .map(
+      (token) =>
+        runtimeTokenNames[token] ??
+        token.replace(/^\w/, (character) => character.toUpperCase()),
+    )
+    .join(' · ')
+
+const runtimeHint = (id: string) => {
+  const traits = new Set(id.replace(/-runtime-rs$/, '').split('-'))
+
+  if (traits.has('snp')) return 'Choose for confidential workloads protected by AMD SEV-SNP.'
+  if (traits.has('tdx')) return 'Choose for confidential workloads protected by Intel TDX.'
+  if (traits.has('se')) return 'Choose for IBM Z Secure Execution workloads.'
+  if (traits.has('openvmm')) return 'Choose for Azure environments built around OpenVMM.'
+  if (traits.has('dragonball')) {
+    return 'Choose the all-in-one shim and VMM for a smaller stack and fast container startup.'
+  }
+  if (traits.has('nvidia') && traits.has('cpu')) {
+    return 'Choose a minimal, hardened QEMU and runtime stack.'
+  }
+  if (traits.has('azure')) return 'Choose the Azure-tuned Cloud Hypervisor runtime.'
+  if (traits.has('clh')) return 'Choose a lightweight, modern alternative to QEMU.'
+  return 'Choose the broadly compatible default for general Kata workloads.'
+}
+
 const profileSummary = (
   vendor: VendorCatalog,
   selection: FamilySelections[string] | undefined,
@@ -94,6 +134,7 @@ function App() {
     selinuxEnabled: false,
   })
   const [runtime, setRuntime] = useState<RuntimeConfiguration>({
+    selectedShimIds: [],
     runtimeHttpsProxy: '',
     runtimeNoProxy: '',
     nvidiaDcgmEnabled: false,
@@ -120,16 +161,24 @@ function App() {
       ({ id }) => id === cluster.distributionId,
     )
   const valuesReady =
-    cluster.distributionId !== null && incompleteFamilies.length === 0
-  const requiresErofs = selectedVendor.hardwareFamilies.some(
-    (family) => selections[family.id]?.modeId === 'off',
-  )
+    cluster.distributionId !== null &&
+    incompleteFamilies.length === 0 &&
+    (selectedVendor.id !== 'local' || runtime.selectedShimIds.length > 0)
+  const requiresErofs =
+    selectedVendor.hardwareFamilies.some(
+      (family) => selections[family.id]?.modeId === 'off',
+    ) ||
+    selectedVendor.runtime.shims.some(
+      ({ id, snapshotter }) =>
+        runtime.selectedShimIds.includes(id) && snapshotter === 'erofs',
+    )
 
   const selectVendor = (vendor: VendorCatalog) => {
     setSelectedVendorId(vendor.id)
     setSelections(initialSelections(vendor))
     setCluster({ distributionId: null, selinuxEnabled: false })
     setRuntime({
+      selectedShimIds: [],
       runtimeHttpsProxy: '',
       runtimeNoProxy: '',
       nvidiaDcgmEnabled: false,
@@ -161,6 +210,15 @@ function App() {
           ? current[familyId].cpuTeeIds.filter((id) => id !== cpuTeeId)
           : [...(current[familyId]?.cpuTeeIds ?? []), cpuTeeId],
       },
+    }))
+  }
+
+  const toggleRuntimeShim = (shimId: string) => {
+    setRuntime((current) => ({
+      ...current,
+      selectedShimIds: current.selectedShimIds.includes(shimId)
+        ? current.selectedShimIds.filter((id) => id !== shimId)
+        : [...current.selectedShimIds, shimId],
     }))
   }
 
@@ -288,12 +346,25 @@ function App() {
                         <Check size={16} strokeWidth={3} />
                       </span>
                     </div>
-                    <div className="vendor-logo-wrap">
+                    <div
+                      className={`vendor-logo-wrap ${
+                        vendor.id === 'local' ? 'local-brand' : ''
+                      }`}
+                    >
                       <img src={logoFor(vendor)} alt={vendor.displayName} />
+                      {vendor.id === 'local' && (
+                        <span>
+                          <strong>Local</strong>
+                          <small>Standard Kata deployment</small>
+                        </span>
+                      )}
                     </div>
                     <p>
-                      {vendor.hardwareFamilies.length} hardware families and{' '}
-                      {vendor.runtime.shims.length} runtime classes discovered.
+                      {vendor.id === 'local'
+                        ? `${vendor.runtime.shims.length} upstream RuntimeClasses ` +
+                          'available for a standard Kata deployment.'
+                        : `${vendor.hardwareFamilies.length} hardware families and ` +
+                          `${vendor.runtime.shims.length} RuntimeClasses discovered.`}
                     </p>
                     <div className="capabilities">
                       {vendor.capabilities.map((capability) => (
@@ -314,11 +385,23 @@ function App() {
             <div className="install-builder">
               <div className="builder-toolbar">
                 <button className="back-link" onClick={restart}>← Back to vendors</button>
-                <a href={selectedVendor.sourceUrl} target="_blank" rel="noreferrer">
-                  <span>Building for</span>
-                  <img src={logoFor(selectedVendor)} alt={selectedVendor.displayName} />
-                  <ExternalLink size={11} />
-                </a>
+                {selectedVendor.id === 'local' ? (
+                  <span className="builder-vendor-context">
+                    <span>Building for</span>
+                    <span className="builder-vendor-mark local">
+                      <img src={logoFor(selectedVendor)} alt="" />
+                      <strong>Local</strong>
+                    </span>
+                  </span>
+                ) : (
+                  <a href={selectedVendor.sourceUrl} target="_blank" rel="noreferrer">
+                    <span>Building for</span>
+                    <span className="builder-vendor-mark">
+                      <img src={logoFor(selectedVendor)} alt={selectedVendor.displayName} />
+                    </span>
+                    <ExternalLink size={11} />
+                  </a>
+                )}
               </div>
 
               <div className="source-strip">
@@ -329,13 +412,15 @@ function App() {
                 >
                   {selectedVendor.runtime.chart.name} {selectedVendor.runtime.chart.version}
                 </a>
-                <a
-                  href={selectedVendor.provisioner.chart.sourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Experimental provisioner · PR #{selectedVendor.provisioner.chart.pullRequest}
-                </a>
+                {selectedVendor.id === 'nvidia' && (
+                  <a
+                    href={selectedVendor.provisioner.chart.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Experimental provisioner · PR #{selectedVendor.provisioner.chart.pullRequest}
+                  </a>
+                )}
                 <span>{provenanceData.generatedFrom.length} pinned source files</span>
               </div>
 
@@ -371,22 +456,26 @@ function App() {
                       </strong>
                       <span>Installs Kata runtimes and RuntimeClasses</span>
                     </div>
-                    <div className="architecture-node vendor-specific">
-                      <small>NVIDIA dependency</small>
-                      <strong>
-                        {catalog.plannedArchitecture.charts.devicePlugin.chartName}{' '}
-                        {catalog.plannedArchitecture.charts.devicePlugin.version}
-                      </strong>
-                      <span>Advertises VFIO devices to kubelet</span>
-                    </div>
-                    <div className="architecture-node planned vendor-specific">
-                      <small>Planned NVIDIA dependency</small>
-                      <strong>
-                        {catalog.plannedArchitecture.charts.provisioner.chartName}{' '}
-                        {catalog.plannedArchitecture.charts.provisioner.version}
-                      </strong>
-                      <span>Provisions multiple hardware profiles in one release</span>
-                    </div>
+                    {selectedVendor.id === 'nvidia' && (
+                      <>
+                        <div className="architecture-node vendor-specific">
+                          <small>NVIDIA dependency</small>
+                          <strong>
+                            {catalog.plannedArchitecture.charts.devicePlugin.chartName}{' '}
+                            {catalog.plannedArchitecture.charts.devicePlugin.version}
+                          </strong>
+                          <span>Advertises VFIO devices to kubelet</span>
+                        </div>
+                        <div className="architecture-node planned vendor-specific">
+                          <small>Planned NVIDIA dependency</small>
+                          <strong>
+                            {catalog.plannedArchitecture.charts.provisioner.chartName}{' '}
+                            {catalog.plannedArchitecture.charts.provisioner.version}
+                          </strong>
+                          <span>Provisions multiple hardware profiles in one release</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </details>
@@ -541,7 +630,8 @@ function App() {
                       </label>
                     </div>
                   </section>
-                  <section className="advanced-group component-toggle-group">
+                  {selectedVendor.id === 'nvidia' && (
+                    <section className="advanced-group component-toggle-group">
                     <div>
                       <span>Kata runtime · NVIDIA RuntimeClasses</span>
                       <strong>DCGM metrics</strong>
@@ -570,7 +660,8 @@ function App() {
                         <span />
                       </span>
                     </label>
-                  </section>
+                    </section>
+                  )}
                   <section className="advanced-group component-toggle-group">
                     <div>
                       <span>Kata runtime installer</span>
@@ -942,7 +1033,14 @@ function App() {
                       </small>
                     </header>
                     <div className="chart-image-list">
-                      {imageChartOptions.map((chart) => {
+                      {imageChartOptions
+                        .filter(
+                          ({ id }) =>
+                            selectedVendor.id === 'nvidia' ||
+                            id === 'kataDeploy' ||
+                            id === 'nfd',
+                        )
+                        .map((chart) => {
                         const configuration = advanced.images[chart.id]
                         return (
                           <div className="chart-image-card" key={chart.id}>
@@ -1057,7 +1155,7 @@ function App() {
                             )}
                           </div>
                         )
-                      })}
+                        })}
                     </div>
                   </section>
 
@@ -1094,6 +1192,50 @@ function App() {
 
               <div className="builder-grid">
                 <div className="profile-list">
+                  {selectedVendor.id === 'local' && (
+                    <section
+                      className={`local-runtime-selection ${
+                        runtime.selectedShimIds.length === 0 ? 'incomplete' : ''
+                      }`}
+                    >
+                      <header>
+                        <div>
+                          <span>Local deployment</span>
+                          <h2>Select RuntimeClasses</h2>
+                          <p>
+                            Choose every Kata runtime that should be installed on
+                            this cluster. QEMU runtime-rs is the broadly supported
+                            default.
+                          </p>
+                        </div>
+                        <em>
+                          {runtime.selectedShimIds.length > 0
+                            ? `${runtime.selectedShimIds.length} selected`
+                            : 'Required'}
+                        </em>
+                      </header>
+                      <div className="local-runtime-grid">
+                        {selectedVendor.runtime.shims.map((shim) => (
+                          <label key={shim.id}>
+                            <input
+                              type="checkbox"
+                              checked={runtime.selectedShimIds.includes(shim.id)}
+                              onChange={() => toggleRuntimeShim(shim.id)}
+                            />
+                            <span>
+                              <strong>{runtimeName(shim.id)}</strong>
+                              <small>{runtimeHint(shim.id)}</small>
+                              <em>
+                                {shim.supportedArches.length === 1
+                                  ? `Architecture: ${shim.supportedArches[0]}`
+                                  : `Architectures: ${shim.supportedArches.join(' · ')}`}
+                              </em>
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </section>
+                  )}
                   {selectedVendor.hardwareFamilies.map((family) => (
                     <details className="profile-card" key={family.id}>
                       <summary>
@@ -1237,6 +1379,10 @@ function App() {
                         {!cluster.distributionId && (
                           <li>Kubernetes distribution</li>
                         )}
+                        {selectedVendor.id === 'local' &&
+                          runtime.selectedShimIds.length === 0 && (
+                            <li>At least one Kata RuntimeClass</li>
+                          )}
                         {incompleteFamilies.map((family) => (
                           <li key={family.id}>
                             CPU / TEE for {family.displayName}

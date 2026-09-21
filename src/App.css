@@ -203,8 +203,10 @@ nav a:hover {
 
 .vendor-grid {
   display: grid;
-  grid-template-columns: minmax(0, 760px);
-  justify-content: center;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
   gap: 18px;
   padding: 22px;
 }
@@ -269,6 +271,39 @@ button.vendor-card {
   display: block;
   object-fit: contain;
   object-position: left center;
+}
+
+.vendor-logo-wrap.local-brand {
+  gap: 12px;
+  padding-block: 9px;
+}
+
+.vendor-logo-wrap.local-brand img {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  max-height: 42px;
+}
+
+.vendor-logo-wrap.local-brand > span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.vendor-logo-wrap.local-brand strong {
+  color: #111916;
+  font: 800 21px 'Manrope', sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.vendor-logo-wrap.local-brand small {
+  color: #53615b;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .vendor-card > p {
@@ -508,7 +543,8 @@ button.vendor-card {
   margin: 0;
 }
 
-.builder-toolbar > a {
+.builder-toolbar > a,
+.builder-vendor-context {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -517,11 +553,35 @@ button.vendor-card {
   text-decoration: none;
 }
 
-.builder-toolbar img {
+.builder-vendor-mark {
   width: 84px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  object-fit: contain;
   padding: 5px 6px;
   border-radius: 4px;
   background: #f1f4f0;
+}
+
+.builder-vendor-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.builder-vendor-mark.local img {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+
+.builder-vendor-mark.local strong {
+  color: #111916;
+  font: 800 12px 'Manrope', sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .builder-heading {
@@ -843,6 +903,129 @@ button.vendor-card {
   padding: 28px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
+}
+
+.local-runtime-selection {
+  padding: 20px;
+  border: 1px solid rgba(118, 185, 0, 0.44);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(118, 185, 0, 0.07), transparent 42%),
+    #151e22;
+}
+
+.local-runtime-selection.incomplete {
+  border-color: rgba(232, 104, 16, 0.5);
+}
+
+.local-runtime-selection > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.local-runtime-selection > header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.local-runtime-selection > header span {
+  color: var(--green-bright);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.local-runtime-selection.incomplete > header span {
+  color: var(--kata-orange-bright);
+}
+
+.local-runtime-selection h2 {
+  margin: 0;
+  color: #edf1ef;
+  font: 700 18px 'Manrope', sans-serif;
+}
+
+.local-runtime-selection header p {
+  max-width: 660px;
+  margin: 0;
+  color: #96a29c;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.local-runtime-selection > header > em {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid rgba(118, 185, 0, 0.4);
+  border-radius: 4px;
+  color: var(--green-bright);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.local-runtime-selection.incomplete > header > em {
+  border-color: rgba(232, 104, 16, 0.4);
+  color: var(--kata-orange-bright);
+}
+
+.local-runtime-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.local-runtime-grid label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #33413c;
+  border-radius: 7px;
+  background: #101916;
+  cursor: pointer;
+}
+
+.local-runtime-grid label:has(input:checked) {
+  border-color: rgba(118, 185, 0, 0.58);
+  background: rgba(118, 185, 0, 0.075);
+}
+
+.local-runtime-grid input {
+  margin-top: 3px;
+  accent-color: var(--green);
+}
+
+.local-runtime-grid label > span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.local-runtime-grid strong {
+  color: #e4e9e6;
+  font-size: 11px;
+}
+
+.local-runtime-grid small {
+  color: #95a19b;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.local-runtime-grid em {
+  color: #718079;
+  font-size: 8px;
+  font-style: normal;
+  text-transform: uppercase;
 }
 
 .cluster-config {
@@ -1988,6 +2171,14 @@ button.vendor-card {
 
   .cpu-tee-selection > div {
     grid-template-columns: 1fr;
+  }
+
+  .local-runtime-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .local-runtime-selection > header {
+    flex-direction: column;
   }
 
   .cluster-fields {

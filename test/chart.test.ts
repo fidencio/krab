@@ -13,7 +13,8 @@ import {
 
 const root = resolve(import.meta.dirname, '..')
 const catalog = catalogData as unknown as ExplorerCatalog
-const vendor = catalog.vendors[0]
+const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
+const localVendor = catalog.vendors.find(({ id }) => id === 'local')!
 
 const readYaml = async (path: string) =>
   parse(await readFile(resolve(root, path), 'utf8'))
@@ -63,6 +64,7 @@ test('chart defaults and generated values satisfy the values schema', async () =
         selinuxEnabled: true,
       },
       {
+        selectedShimIds: [],
         runtimeHttpsProxy: '',
         runtimeNoProxy: '',
         nvidiaDcgmEnabled: false,
@@ -95,6 +97,24 @@ test('chart defaults and generated values satisfy the values schema', async () =
     generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-SNP'].profile,
     undefined,
   )
+
+  const localGenerated = parse(
+    buildValuesBundle(
+      catalog,
+      localVendor,
+      {},
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: ['qemu-runtime-rs'],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+  assert.equal(validate(localGenerated), true, JSON.stringify(validate.errors))
+  assert.equal(localGenerated.nvidia.enabled, false)
 })
 
 test('non-NVIDIA generated values omit conditional dependencies', () => {
@@ -108,6 +128,7 @@ test('non-NVIDIA generated values omit conditional dependencies', () => {
         selinuxEnabled: false,
       },
       {
+        selectedShimIds: [],
         runtimeHttpsProxy: '',
         runtimeNoProxy: '',
         nvidiaDcgmEnabled: false,

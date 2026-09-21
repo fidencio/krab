@@ -117,6 +117,7 @@ async function main() {
   const krabValues = await readYaml(krabValuesPath)
   const krabSchema = JSON.parse(await readFile(krabSchemaPath, 'utf8'))
   const kataValuesRaw = await readFile(cachePath('kata-values'), 'utf8')
+  const kataValues = parse(kataValuesRaw)
   const kataProfileRaw = await readFile(cachePath('kata-nvidia-profile'), 'utf8')
   const kataProfile = await readYaml(cachePath('kata-nvidia-profile'))
   const provisionerChart = await readYaml(cachePath('provisioner-chart'))
@@ -294,6 +295,8 @@ async function main() {
     .map(([name, config]) => ({
       id: name,
       runtimeClass: `kata-${name}`,
+      supportedArches:
+        (config as { supportedArches?: string[] }).supportedArches ?? [],
       snapshotter:
         (config as { containerd?: { snapshotter?: string } }).containerd?.snapshotter ||
         'default',
@@ -339,6 +342,74 @@ async function main() {
 
   if (runtimeRsShims.length !== 3 || cpuTees.length !== 2) {
     throw new Error('Expected base, SNP, and TDX NVIDIA runtime-rs shims')
+  }
+
+  const localShims = Object.entries(
+    requireValue(kataValues.shims, 'Kata values are missing shims'),
+  )
+    .filter(([name, config]) =>
+      name !== 'disableAll' &&
+      !name.includes('nvidia-gpu') &&
+      !name.includes('coco-dev') &&
+      !/(?:^|-)(?:snp|tdx|se)(?:-|$)/.test(name) &&
+      (name.endsWith('-runtime-rs') || name === 'dragonball') &&
+      typeof config === 'object' &&
+      config !== null &&
+      (config as { enabled?: boolean | null }).enabled !== false,
+    )
+    .map(([name, config]) => ({
+      id: name,
+      runtimeClass: `kata-${name}`,
+      supportedArches:
+        (config as { supportedArches?: string[] }).supportedArches ?? [],
+      snapshotter:
+        name === 'qemu-nvidia-cpu-runtime-rs'
+          ? 'erofs'
+          : (config as { containerd?: { snapshotter?: string } }).containerd
+              ?.snapshotter || 'default',
+      ...(name === 'qemu-nvidia-cpu-runtime-rs'
+        ? {
+            snapshotterConfiguration: {
+              erofsSnapshotterMode: 'memory',
+              erofsDmverity: true,
+              containerdUserDropIn:
+                "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n",
+            },
+          }
+        : {}),
+      nodeSelector:
+        (config as { runtimeClass?: { nodeSelector?: Record<string, string> } })
+          .runtimeClass?.nodeSelector ?? {},
+      sourceUrl: sourceLink('kata-values'),
+    }))
+
+  if (localShims.length === 0) {
+    throw new Error('No local Kata runtime shims found')
+  }
+
+  const localShimValues = Object.fromEntries(
+    localShims.map(({ id, snapshotter }) => {
+      const config = structuredClone(kataValues.shims[id])
+      if (snapshotter !== 'default') {
+        config.containerd = {
+          ...(config.containerd ?? {}),
+          snapshotter,
+        }
+      }
+      return [id, config]
+    }),
+  )
+  const localRuntimeValues = {
+    debug: kataValues.debug,
+    deploymentMode: kataValues.deploymentMode,
+    snapshotter: kataValues.snapshotter,
+    shims: {
+      disableAll: true,
+      ...localShimValues,
+    },
+    defaultShim: kataValues.defaultShim,
+    runtimeClasses: kataValues.runtimeClasses,
+    'node-feature-discovery': kataValues['node-feature-discovery'],
   }
 
   const gpuResource = requireValue(
@@ -474,6 +545,69 @@ async function main() {
     plannedArchitecture,
     vendors: [
       {
+        id: 'local',
+        displayName: 'Local',
+        logo: 'local.svg',
+        capabilities: [
+          { id: 'runtime-classes' },
+          { id: 'local-hypervisors' },
+        ],
+        sourceUrl: sourceLink('kata-chart'),
+        hardwareFamilies: [],
+        runtime: {
+          chart: {
+            name: kataChart.name,
+            version: String(kataChart.version),
+            appVersion: String(kataChart.appVersion),
+            ociReference: kataChartReference,
+            namespace: plannedArchitecture.namespace,
+            valuesFileName: 'kata-local.values.yaml',
+            values: localRuntimeValues,
+            sourceUrl: sourceLink('kata-chart'),
+          },
+          shims: localShims,
+          cpuTees: [],
+        },
+        provisioner: {
+          chart: {
+            name: provisionerChart.name,
+            version: String(provisionerChart.version),
+            appVersion: String(provisionerChart.appVersion),
+            namespace: plannedArchitecture.namespace,
+            repository: source('provisioner-chart').repository,
+            ref: source('provisioner-chart').ref,
+            pullRequest: source('provisioner-chart').pullRequest,
+            chartPath: dirname(source('provisioner-chart').path),
+            sourceUrl: sourceLink('provisioner-chart'),
+            experimental: true,
+          },
+        },
+        devicePlugin: {
+          chart: plannedArchitecture.charts.devicePlugin,
+          values: {},
+          sourceUrl: sourceLink('device-plugin-chart'),
+        },
+        workload: {
+          resourceName: '',
+          nvSwitchResourceName: '',
+          resourceNaming: '',
+          sourceUrl: sourceLink('kata-values'),
+        },
+        integration: {
+          sandboxWorkloads: {},
+          defaultCcMode: '',
+          sourceUrl: sourceLink('kata-values'),
+          officialSupport: {
+            documentationVersion: String(kataChart.version),
+            supportedGpuModels: [],
+            supportedPlatformsUrl: sourceLink('kata-values'),
+            ccModesUrl: sourceLink('kata-values'),
+            workloadsUrl: sourceLink('kata-values'),
+            runtimeRsStatus: 'RuntimeClasses are derived from pinned kata-deploy values.',
+          },
+        },
+      },
+      {
         id: 'nvidia',
         displayName: source('nvidia-operator-values').repository.split('/')[0],
         logo: 'nvidia.svg',
@@ -541,6 +675,11 @@ async function main() {
       },
     ],
   }
+  const vendorOrder = ['nvidia', 'local']
+  catalog.vendors.sort(
+    (left, right) =>
+      vendorOrder.indexOf(left.id) - vendorOrder.indexOf(right.id),
+  )
 
   const provenance = {
     schemaVersion: 1,
@@ -572,9 +711,13 @@ async function main() {
     `${JSON.stringify(provenance, null, 2)}\n`,
   )
 
-  console.log(
-    `Generated ${families.length} hardware families, ${runtimeRsShims.length} runtime-rs classes, and ${provenance.generatedFrom.length} provenance records.`,
-  )
+  const generationSummary = [
+    `${families.length} hardware families`,
+    `${runtimeRsShims.length} NVIDIA runtime-rs classes`,
+    `${localShims.length} local RuntimeClasses`,
+    `${provenance.generatedFrom.length} provenance records`,
+  ].join(', ')
+  console.log(`Generated ${generationSummary}.`)
 }
 
 main().catch((error) => {
