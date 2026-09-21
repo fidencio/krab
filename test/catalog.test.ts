@@ -117,6 +117,12 @@ test('generated catalog carries accurate upstream chart data', async () => {
     vendor.hardwareFamilies.map(({ modes }) => modes.map(({ id }) => id)),
     [['off'], ['off', 'on'], ['off', 'ppcie'], ['off', 'on']],
   )
+  assert.deepEqual(
+    vendor.hardwareFamilies.map(({ modes }) =>
+      modes.map(({ supportedCpuTeeIds }) => supportedCpuTeeIds),
+    ),
+    [[[]], [[], ['snp', 'tdx']], [[], ['tdx']], [[], ['snp', 'tdx']]],
+  )
   assert.ok(vendor.runtime.shims.every(({ id }) => id.endsWith('-runtime-rs')))
   assert.deepEqual(
     vendor.runtime.cpuTees.map(({ id }) => id),
@@ -417,7 +423,7 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
   const generatedValues = parse(values)
   const shims = generatedValues['kata-deploy'].shims
 
-  assert.match(values, /qemu-nvidia-gpu-snp-runtime-rs:/)
+  assert.doesNotMatch(values, /qemu-nvidia-gpu-snp-runtime-rs:/)
   assert.doesNotMatch(values, /qemuNvidiaGpu/)
   assert.doesNotMatch(values, /gpuCount/)
   assert.match(values, /node-feature-discovery:/)
@@ -426,25 +432,16 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
   assert.match(values, /kata-device-plugin:/)
   assert.match(values, /kata-device-provisioner:/)
   assert.equal(
-    generatedValues['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-SNP']
-      .ccMode,
-    'ppcie',
-  )
-  assert.equal(
     generatedValues['kata-device-provisioner'].profiles['HGX-Bx00-CC-TDX']
       .ccMode,
     'on',
   )
-  assert.ok(
+  assert.equal(
     generatedValues['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-SNP'],
+    undefined,
   )
   assert.ok(
     generatedValues['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX'],
-  )
-  assert.equal(
-    generatedValues['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-SNP']
-      .nodeSelector['amd.feature.node.kubernetes.io/snp'],
-    'true',
   )
   assert.equal(
     generatedValues['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX']
@@ -453,20 +450,12 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
   )
   assert.equal(shims['qemu-nvidia-gpu'], undefined)
   assert.equal(shims['qemu-nvidia-gpu-runtime-rs'], undefined)
-  assert.equal(shims['qemu-nvidia-gpu-snp-runtime-rs'].enabled, true)
+  assert.equal(shims['qemu-nvidia-gpu-snp-runtime-rs'], undefined)
   assert.equal(shims['qemu-nvidia-gpu-tdx-runtime-rs'].enabled, true)
-  assert.equal(
-    shims['qemu-nvidia-gpu-snp-runtime-rs'].nvrc.enableDCGM,
-    true,
-  )
   assert.equal(
     shims['qemu-nvidia-gpu-tdx-runtime-rs'].nvrc.enableDCGM,
     true,
   )
-  assert.deepEqual(shims['qemu-nvidia-gpu-snp-runtime-rs'].agent, {
-    httpsProxy: 'https://proxy.example.com:8443',
-    noProxy: 'registry.internal,.svc',
-  })
   assert.deepEqual(shims['qemu-nvidia-gpu-tdx-runtime-rs'].agent, {
     httpsProxy: 'https://proxy.example.com:8443',
     noProxy: 'registry.internal,.svc',

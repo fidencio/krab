@@ -148,6 +148,7 @@
           "modes": [
             {
               "id": "off",
+              "supportedCpuTeeIds": [],
               "displayName": "Passthrough",
               "badge": null,
               "label": "`off`",
@@ -192,6 +193,7 @@
           "modes": [
             {
               "id": "off",
+              "supportedCpuTeeIds": [],
               "displayName": "Passthrough",
               "badge": null,
               "label": "`off`",
@@ -216,6 +218,10 @@
             },
             {
               "id": "on",
+              "supportedCpuTeeIds": [
+                "snp",
+                "tdx"
+              ],
               "displayName": "Confidential computing",
               "badge": "ON",
               "label": "`on` — single-GPU and multi-GPU",
@@ -265,6 +271,7 @@
           "modes": [
             {
               "id": "off",
+              "supportedCpuTeeIds": [],
               "displayName": "Passthrough",
               "badge": null,
               "label": "`off`",
@@ -289,6 +296,9 @@
             },
             {
               "id": "ppcie",
+              "supportedCpuTeeIds": [
+                "tdx"
+              ],
               "displayName": "Confidential computing · Protected PCIe",
               "badge": "PPCIE",
               "label": "`ppcie`, whole board",
@@ -327,6 +337,7 @@
           "modes": [
             {
               "id": "off",
+              "supportedCpuTeeIds": [],
               "displayName": "Passthrough",
               "badge": null,
               "label": "`off`",
@@ -353,6 +364,10 @@
             },
             {
               "id": "on",
+              "supportedCpuTeeIds": [
+                "snp",
+                "tdx"
+              ],
               "displayName": "Confidential computing",
               "badge": "ON",
               "label": "`on`, per GPU",

@@ -81,22 +81,23 @@ test('chart defaults and generated values satisfy the values schema', async () =
     generated['kata-device-provisioner']['node-feature-discovery'].enabled,
     false,
   )
-  assert.ok(
+  assert.equal(
     generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-SNP'],
+    undefined,
   )
   assert.ok(
     generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX'],
   )
   assert.equal(
-    generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-SNP'].ccMode,
+    generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX'].ccMode,
     'ppcie',
   )
   assert.equal(
-    generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-SNP'].values,
+    generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX'].values,
     undefined,
   )
   assert.equal(
-    generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-SNP'].profile,
+    generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX'].profile,
     undefined,
   )
 

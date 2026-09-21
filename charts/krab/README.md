@@ -26,13 +26,13 @@ nvidia:
 
 kata-device-provisioner:
   profiles:
-    HGX-Hx00-PPCIE-SNP:
+    HGX-Hx00-PPCIE-TDX:
       enabled: true
       ccMode: ppcie
       nodeSelector:
         kata.feature.node.kubernetes.io/nvidia-hopper: "true"
         kata.feature.node.kubernetes.io/nvidia-nvswitch: "true"
-        amd.feature.node.kubernetes.io/snp: "true"
+        intel.feature.node.kubernetes.io/tdx: "true"
 ```
 
 ## Installation

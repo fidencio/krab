@@ -266,13 +266,21 @@ function App() {
   }
 
   const selectMode = (familyId: string, modeId: string | null) => {
+    const mode = selectedVendor.hardwareFamilies
+      .find(({ id }) => id === familyId)
+      ?.modes.find(({ id }) => id === modeId)
+    const supportedCpuTeeIds = mode?.supportedCpuTeeIds ?? []
     setSelections((current) => ({
       ...current,
       [familyId]: {
         modeId,
         cpuTeeIds:
           modeId && modeId !== 'off'
-            ? current[familyId]?.cpuTeeIds ?? []
+            ? supportedCpuTeeIds.length === 1
+              ? supportedCpuTeeIds
+              : (current[familyId]?.cpuTeeIds ?? []).filter((cpuTeeId) =>
+                  supportedCpuTeeIds.includes(cpuTeeId),
+                )
             : [],
       },
     }))
@@ -1813,7 +1821,16 @@ function App() {
                                 </strong>
                               )}
                               <div>
-                                {selectedVendor.runtime.cpuTees.map((tee) => (
+                                {selectedVendor.runtime.cpuTees
+                                  .filter((tee) =>
+                                    family.modes
+                                      .find(
+                                        ({ id }) =>
+                                          id === selections[family.id]?.modeId,
+                                      )
+                                      ?.supportedCpuTeeIds.includes(tee.id),
+                                  )
+                                  .map((tee) => (
                                   <label key={tee.id}>
                                     <input
                                       type="checkbox"
@@ -1830,7 +1847,7 @@ function App() {
                                       <strong>{tee.displayName}</strong>
                                     </span>
                                   </label>
-                                ))}
+                                  ))}
                               </div>
                             </fieldset>
                           )}

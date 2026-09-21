@@ -2,6 +2,7 @@ import { parse, stringify } from 'yaml'
 
 export type ModeCatalog = {
   id: string
+  supportedCpuTeeIds: string[]
   displayName: string
   badge: string | null
   label: string
@@ -427,6 +428,7 @@ export function resolveRuntimeShimIds(
       continue
     }
     for (const cpuTeeId of selection.cpuTeeIds) {
+      if (!mode.supportedCpuTeeIds.includes(cpuTeeId)) continue
       const tee = vendor.runtime.cpuTees.find(({ id }) => id === cpuTeeId)
       if (tee) enabledShims.add(tee.shimId)
     }
@@ -517,6 +519,7 @@ export function buildValuesBundle(
         }
       } else {
         for (const cpuTeeId of selection.cpuTeeIds) {
+          if (!mode.supportedCpuTeeIds.includes(cpuTeeId)) continue
           const tee = vendor.runtime.cpuTees.find(({ id }) => id === cpuTeeId)
           if (!tee) continue
           const cpuNodeSelector = Object.fromEntries(

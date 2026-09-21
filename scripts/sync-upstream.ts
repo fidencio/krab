@@ -636,6 +636,12 @@ async function main() {
       defaultModeId: 'off',
       modes: profiles.map((profile) => ({
         id: String(profile.ccMode),
+        supportedCpuTeeIds:
+          profile.ccMode === 'off'
+            ? []
+            : profile.ccMode === 'ppcie'
+              ? ['tdx']
+              : cpuTees.map(({ id }) => id),
         displayName:
           profile.ccMode === 'off'
             ? 'Passthrough'
