@@ -615,22 +615,30 @@ function App() {
                 <span>{provenanceData.generatedFrom.length} pinned source files</span>
               </div>
 
-              <section className="install-command-callout">
-                <div className="artifact-heading">
-                  <div>
-                    <span className="section-kicker">Install with KRAB</span>
-                    <h2>One command for every architecture</h2>
-                    <p>The command stays constant. Only the generated values.yaml changes.</p>
+              {valuesReady && (
+                <section className="install-command-callout">
+                  <div className="artifact-heading">
+                    <div>
+                      <span className="section-kicker">Install with KRAB</span>
+                      <h2>One command for every architecture</h2>
+                      <p>
+                        The command stays constant. Only the generated values.yaml
+                        changes.
+                      </p>
+                    </div>
+                    <button
+                      className="copy-artifact-button"
+                      onClick={() => copyCode('install')}
+                    >
+                      {copied === 'install' ? <Check size={15} /> : <Copy size={15} />}
+                      {copied === 'install' ? 'Copied' : 'Copy command'}
+                    </button>
                   </div>
-                  <button className="copy-artifact-button" onClick={() => copyCode('install')}>
-                    {copied === 'install' ? <Check size={15} /> : <Copy size={15} />}
-                    {copied === 'install' ? 'Copied' : 'Copy command'}
-                  </button>
-                </div>
-                <div className="install-command">
-                  <code>{artifacts.install}</code>
-                </div>
-              </section>
+                  <div className="install-command">
+                    <code>{artifacts.install}</code>
+                  </div>
+                </section>
+              )}
 
               <section
                 className={`cluster-config cluster-config-wide ${

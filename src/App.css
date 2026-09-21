@@ -939,7 +939,7 @@ button.vendor-card {
 }
 
 .install-command-callout {
-  order: 2;
+  order: 7;
   margin-bottom: 24px;
   padding: 21px 22px;
   border: 1px solid rgba(118, 185, 0, 0.52);
@@ -1055,12 +1055,12 @@ button.vendor-card {
   grid-template-columns: minmax(320px, 0.72fr) minmax(0, 1.28fr);
   align-items: start;
   gap: 20px;
-  padding: 4px 0 28px;
+  padding: 24px 0 28px;
 }
 
 .artifact-workspace .architecture-details {
   order: initial;
-  margin: 0;
+  margin: 5px 0 0;
 }
 
 .artifact-workspace .architecture-chain {
