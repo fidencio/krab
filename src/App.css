@@ -338,8 +338,6 @@ button.vendor-card {
   margin: 2px;
   box-sizing: border-box;
   padding: 6px;
-  border-radius: 9px;
-  background: #eef5f9;
 }
 
 .card-topline {
@@ -366,8 +364,6 @@ button.vendor-card {
   justify-content: flex-start;
   margin: 30px 0 22px;
   padding: 14px 16px;
-  border-radius: 6px;
-  background: #f1f4f0;
 }
 
 .vendor-logo-wrap img {
@@ -385,7 +381,7 @@ button.vendor-card {
 
 .vendor-logo-wrap.named-brand:not(.vendor-local) {
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   margin-bottom: 15px;
   padding-block: 10px;
 }
@@ -394,7 +390,18 @@ button.vendor-card {
   width: 118px;
   height: 38px;
   flex: 0 0 auto;
-  object-position: center;
+  object-position: left center;
+}
+
+.vendor-logo-wrap.vendor-ibm img {
+  margin-left: -21px;
+  transform: scale(1.9);
+  transform-origin: left center;
+}
+
+.vendor-logo-wrap.vendor-intel img {
+  transform: scale(1.1);
+  transform-origin: left center;
 }
 
 .vendor-logo-wrap.named-brand img {
@@ -410,11 +417,6 @@ button.vendor-card {
   max-height: 42px;
 }
 
-.vendor-logo-wrap.vendor-amd img,
-.builder-vendor-mark.vendor-amd img {
-  filter: brightness(0);
-}
-
 .vendor-logo-wrap.named-brand > span {
   min-width: 0;
   display: flex;
@@ -423,13 +425,13 @@ button.vendor-card {
 }
 
 .vendor-logo-wrap.named-brand strong {
-  color: #111916;
+  color: #f1f4f2;
   font: 800 21px 'Manrope', sans-serif;
   letter-spacing: -0.03em;
 }
 
 .vendor-logo-wrap.named-brand small {
-  color: #53615b;
+  color: #aeb9b4;
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -685,40 +687,60 @@ button.vendor-card {
   text-decoration: none;
 }
 
-.builder-vendor-mark {
-  width: 84px;
-  height: 26px;
+.builder-vendor-logo {
+  width: 112px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 6px;
-  object-fit: contain;
-  padding: 5px 6px;
-  border-radius: 4px;
-  background: #f1f4f0;
+  overflow: hidden;
 }
 
-.builder-vendor-mark img {
-  width: 100%;
-  height: 100%;
+.builder-vendor-logo img {
+  display: block;
+  flex: 0 0 auto;
   object-fit: contain;
 }
 
-.builder-vendor-mark.named img {
-  width: 100%;
-  height: 100%;
+.builder-vendor-logo.vendor-nvidia img {
+  width: 110px;
 }
 
-.builder-vendor-mark.named.vendor-local img {
-  width: 20px;
-  height: 20px;
-  flex: 0 0 20px;
+.builder-vendor-logo.vendor-amd img {
+  width: 72px;
 }
 
-.builder-vendor-mark.named strong {
-  color: #111916;
+.builder-vendor-logo.vendor-ibm img {
+  width: 82px;
+  transform: translateX(-13px);
+}
+
+.builder-vendor-logo.vendor-intel img {
+  width: 60px;
+}
+
+.builder-vendor-logo.vendor-local img {
+  width: 26px;
+  height: 26px;
+}
+
+.builder-vendor-logo strong {
+  color: #f1f4f2;
   font: 800 12px 'Manrope', sans-serif;
   letter-spacing: -0.02em;
+}
+
+.builder-vendor-logo.vendor-local strong {
+  font-size: 13px;
+}
+
+.builder-vendor-context .builder-vendor-logo {
+  justify-content: flex-end;
+}
+
+.builder-vendor-context .builder-vendor-logo.vendor-ibm img {
+  transform: translateX(13px);
 }
 
 .builder-heading {

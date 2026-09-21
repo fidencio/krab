@@ -609,10 +609,7 @@ function App() {
                 <button className="back-link" onClick={restart}>← Back to vendors</button>
                 {runtimeOnlyVendor ? (
                   <span className="builder-vendor-context">
-                    <span>Building for</span>
-                    <span
-                      className={`builder-vendor-mark named vendor-${selectedVendor.id}`}
-                    >
+                    <span className={`builder-vendor-logo vendor-${selectedVendor.id}`}>
                       <img src={logoFor(selectedVendor)} alt="" />
                       {selectedVendor.id === 'local' && (
                         <strong>{selectedVendor.displayName}</strong>
@@ -620,9 +617,13 @@ function App() {
                     </span>
                   </span>
                 ) : (
-                  <a href={selectedVendor.sourceUrl} target="_blank" rel="noreferrer">
-                    <span>Building for</span>
-                    <span className="builder-vendor-mark">
+                  <a
+                    href={selectedVendor.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Open ${selectedVendor.displayName} source`}
+                  >
+                    <span className={`builder-vendor-logo vendor-${selectedVendor.id}`}>
                       <img src={logoFor(selectedVendor)} alt={selectedVendor.displayName} />
                     </span>
                     <ExternalLink size={11} />
