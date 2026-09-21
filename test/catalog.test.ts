@@ -6,6 +6,7 @@ import { parse } from 'yaml'
 import {
   buildInstallScript,
   buildValuesBundle,
+  createAdvancedConfiguration,
   type ExplorerCatalog,
 } from '../src/lib/artifacts.ts'
 
@@ -78,6 +79,63 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
   const values = buildValuesBundle(catalog, vendor, selections, {
     distributionId: 'rke2',
     selinuxEnabled: true,
+  }, {
+    runtimeHttpsProxy: ' https://proxy.example.com:8443 ',
+    runtimeNoProxy: ' registry.internal,.svc ',
+    nvidiaDcgmEnabled: true,
+  }, {
+    ...createAdvancedConfiguration(),
+    installErofsUtils: true,
+    nodeSelector: [{ key: ' workload.example.com/kata ', value: ' true ' }],
+    nodeAffinity: [
+      {
+        key: ' topology.kubernetes.io/zone ',
+        operator: 'In',
+        values: [' zone-a ', ' zone-b '],
+      },
+    ],
+    tolerations: [
+      {
+        key: ' kata.example.com/runtime ',
+        operator: 'Equal',
+        value: ' enabled ',
+        effect: 'NoSchedule',
+      },
+    ],
+    images: {
+      kataDeploy: {
+        ...createAdvancedConfiguration().images.kataDeploy,
+        pullPolicy: 'IfNotPresent',
+        pullSecrets: [' registry-secret '],
+        reference: 'registry.example.com/kata-deploy',
+        tag: '4.2.0',
+        kubectlReference: 'registry.example.com/kubectl',
+        dispatcherReference: 'registry.example.com/dispatcher',
+      },
+      nfd: {
+        ...createAdvancedConfiguration().images.nfd,
+        pullPolicy: 'IfNotPresent',
+        pullSecrets: [' nfd-secret '],
+        reference: 'registry.example.com/node-feature-discovery',
+        tag: '0.19.0',
+      },
+      devicePlugin: {
+        ...createAdvancedConfiguration().images.devicePlugin,
+        pullPolicy: 'Always',
+        pullSecrets: [' plugin-secret '],
+        reference: 'registry.example.com/kata-device-plugin',
+        tag: '0.1.0',
+      },
+      provisioner: {
+        ...createAdvancedConfiguration().images.provisioner,
+        pullPolicy: 'IfNotPresent',
+        pullSecrets: [' provisioner-secret '],
+        reference: 'registry.example.com/kata-device-provisioner',
+        tag: '0.1.0',
+        dispatcherReference: 'registry.example.com/provisioner-dispatcher',
+      },
+    },
+    debug: true,
   })
   const install = buildInstallScript(catalog)
   const generatedValues = parse(values)
@@ -86,7 +144,7 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
   assert.match(values, /qemu-nvidia-gpu-snp-runtime-rs:/)
   assert.doesNotMatch(values, /qemuNvidiaGpu/)
   assert.doesNotMatch(values, /gpuCount/)
-  assert.match(values, /node-feature-discovery: \{\}/)
+  assert.match(values, /node-feature-discovery:/)
   assert.match(values, /nvidia:\n  enabled: true/)
   assert.match(values, /kata-deploy:/)
   assert.match(values, /kata-device-plugin:/)
@@ -121,14 +179,105 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
   assert.equal(shims['qemu-nvidia-gpu-runtime-rs'], undefined)
   assert.equal(shims['qemu-nvidia-gpu-snp-runtime-rs'].enabled, true)
   assert.equal(shims['qemu-nvidia-gpu-tdx-runtime-rs'].enabled, true)
+  assert.equal(
+    shims['qemu-nvidia-gpu-snp-runtime-rs'].nvrc.enableDCGM,
+    true,
+  )
+  assert.equal(
+    shims['qemu-nvidia-gpu-tdx-runtime-rs'].nvrc.enableDCGM,
+    true,
+  )
+  assert.deepEqual(shims['qemu-nvidia-gpu-snp-runtime-rs'].agent, {
+    httpsProxy: 'https://proxy.example.com:8443',
+    noProxy: 'registry.internal,.svc',
+  })
+  assert.deepEqual(shims['qemu-nvidia-gpu-tdx-runtime-rs'].agent, {
+    httpsProxy: 'https://proxy.example.com:8443',
+    noProxy: 'registry.internal,.svc',
+  })
   assert.equal(generatedValues['kata-deploy'].k8sDistribution, 'rke2')
   assert.equal(generatedValues['kata-deploy'].selinux.enabled, true)
+  assert.equal(generatedValues['kata-deploy'].deploymentMode, 'job')
+  assert.equal(generatedValues['kata-deploy'].debug, true)
+  assert.deepEqual(generatedValues['kata-deploy'].nodeSelector, {
+    'workload.example.com/kata': 'true',
+  })
+  assert.deepEqual(
+    generatedValues['kata-deploy'].affinity.nodeAffinity
+      .requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms,
+    [
+      {
+        matchExpressions: [
+          {
+            key: 'topology.kubernetes.io/zone',
+            operator: 'In',
+            values: ['zone-a', 'zone-b'],
+          },
+        ],
+      },
+    ],
+  )
+  assert.deepEqual(generatedValues['kata-deploy'].tolerations, [
+    {
+      key: 'kata.example.com/runtime',
+      operator: 'Equal',
+      value: 'enabled',
+      effect: 'NoSchedule',
+    },
+  ])
+  assert.equal(generatedValues['kata-deploy'].imagePullPolicy, 'IfNotPresent')
+  assert.deepEqual(generatedValues['kata-deploy'].imagePullSecrets, [
+    { name: 'registry-secret' },
+  ])
+  assert.equal(
+    generatedValues['kata-deploy'].image.reference,
+    'registry.example.com/kata-deploy',
+  )
+  assert.equal(
+    generatedValues['kata-deploy'].kubectlImage.reference,
+    'registry.example.com/kubectl',
+  )
+  assert.equal(
+    generatedValues['kata-deploy'].job.dispatcherImage.reference,
+    'registry.example.com/dispatcher',
+  )
+  assert.deepEqual(generatedValues['node-feature-discovery'].imagePullSecrets, [
+    { name: 'nfd-secret' },
+  ])
+  assert.equal(
+    generatedValues['node-feature-discovery'].image.repository,
+    'registry.example.com/node-feature-discovery',
+  )
+  assert.equal(
+    generatedValues['kata-device-plugin'].image.repository,
+    'registry.example.com/kata-device-plugin',
+  )
+  assert.equal(
+    generatedValues['kata-device-plugin'].image.pullPolicy,
+    'Always',
+  )
+  assert.deepEqual(generatedValues['kata-device-plugin'].imagePullSecrets, [
+    { name: 'plugin-secret' },
+  ])
+  assert.deepEqual(
+    generatedValues['kata-device-provisioner'].imagePullSecrets,
+    [{ name: 'provisioner-secret' }],
+  )
+  assert.equal(
+    generatedValues['kata-device-provisioner'].image.reference,
+    'registry.example.com/kata-device-provisioner',
+  )
+  assert.equal(
+    generatedValues['kata-device-provisioner'].job.dispatcherImage.reference,
+    'registry.example.com/provisioner-dispatcher',
+  )
   assert.deepEqual(generatedValues['kata-deploy'].snapshotter.setup, ['nydus'])
+  assert.equal(generatedValues['kata-deploy'].nodeBinaries, undefined)
   assert.equal(
     generatedValues['kata-deploy'].snapshotter.erofsSnapshotterMode,
     undefined,
   )
-  assert.equal(generatedValues['kata-deploy'].containerd, undefined)
+  assert.equal(generatedValues['kata-deploy'].containerd?.userDropIn, undefined)
   assert.equal(
     install,
     'helm upgrade --install krab oci://ghcr.io/fidencio/krab --namespace kata-system --create-namespace --values values.yaml',
@@ -142,11 +291,47 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
         hopper: { modeId: 'off', cpuTeeIds: [] },
         blackwell: { modeId: null, cpuTeeIds: [] },
       },
-      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        distributionId: 'kubeadm',
+        selinuxEnabled: false,
+      },
+      {
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      {
+        ...createAdvancedConfiguration(),
+        containerdConfigDir: ' /opt/containerd ',
+        containerdRuntimeSocket: ' unix:///run/custom-containerd.sock ',
+        containerdConfigFileName: ' custom.toml ',
+        installErofsUtils: true,
+        erofsUtilsImage: ' registry.example.com/erofs-utils:1.9.3 ',
+      },
     ),
   )
   assert.deepEqual(passthroughValues['kata-deploy'].snapshotter.setup, ['erofs'])
   assert.ok(passthroughValues['kata-deploy'].containerd)
+  assert.equal(
+    passthroughValues['kata-deploy'].containerd.configDir,
+    '/opt/containerd',
+  )
+  assert.equal(
+    passthroughValues['kata-deploy'].containerd.runtimeSocket,
+    'unix:///run/custom-containerd.sock',
+  )
+  assert.equal(
+    passthroughValues['kata-deploy'].containerd.configFileName,
+    'custom.toml',
+  )
+  assert.deepEqual(
+    passthroughValues['kata-deploy'].nodeBinaries['erofs-utils'],
+    {
+      image: 'registry.example.com/erofs-utils:1.9.3',
+      binaries: ['mkfs.erofs'],
+      pullPolicy: 'IfNotPresent',
+    },
+  )
   assert.equal(passthroughValues['kata-deploy'].k8sDistribution, 'k8s')
 
   const emptyValues = parse(
@@ -157,7 +342,16 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
         hopper: { modeId: null, cpuTeeIds: [] },
         blackwell: { modeId: null, cpuTeeIds: [] },
       },
-      { distributionId: 'k3s', selinuxEnabled: false },
+      {
+        distributionId: 'k3s',
+        selinuxEnabled: false,
+      },
+      {
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
     ),
   )
   assert.equal(emptyValues['kata-deploy'].snapshotter, undefined)
@@ -169,7 +363,16 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
       catalog,
       { ...vendor, id: 'other-vendor' },
       {},
-      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        distributionId: 'kubeadm',
+        selinuxEnabled: false,
+      },
+      {
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
     ),
   )
   assert.ok(nonNvidiaValues['node-feature-discovery'])

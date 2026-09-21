@@ -197,6 +197,86 @@ export type ClusterConfiguration = {
   selinuxEnabled: boolean
 }
 
+export type RuntimeConfiguration = {
+  runtimeHttpsProxy: string
+  runtimeNoProxy: string
+  nvidiaDcgmEnabled: boolean
+}
+
+export type RuntimeToleration = {
+  key: string
+  operator: 'Exists' | 'Equal'
+  value: string
+  effect: '' | 'NoSchedule' | 'PreferNoSchedule' | 'NoExecute'
+}
+
+export type RuntimeNodeAffinity = {
+  key: string
+  operator: 'In' | 'NotIn' | 'Exists' | 'DoesNotExist'
+  values: string[]
+}
+
+export type ChartImageConfiguration = {
+  pullPolicy: '' | 'Always' | 'IfNotPresent' | 'Never'
+  pullSecrets: string[]
+  reference: string
+  tag: string
+  dispatcherReference: string
+  dispatcherTag: string
+}
+
+export type AdvancedConfiguration = {
+  containerdConfigDir: string
+  containerdRuntimeSocket: string
+  containerdConfigFileName: string
+  installErofsUtils: boolean
+  erofsUtilsImage: string
+  nodeSelector: Array<{ key: string; value: string }>
+  nodeAffinity: RuntimeNodeAffinity[]
+  tolerations: RuntimeToleration[]
+  images: Record<
+    'kataDeploy' | 'nfd' | 'devicePlugin' | 'provisioner',
+    ChartImageConfiguration
+  > & {
+    kataDeploy: ChartImageConfiguration & {
+      kubectlReference: string
+      kubectlTag: string
+    }
+  }
+  debug: boolean
+}
+
+const createChartImageConfiguration = (): ChartImageConfiguration => ({
+  pullPolicy: '',
+  pullSecrets: [],
+  reference: '',
+  tag: '',
+  dispatcherReference: '',
+  dispatcherTag: '',
+})
+
+export const createAdvancedConfiguration = (): AdvancedConfiguration => ({
+  containerdConfigDir: '',
+  containerdRuntimeSocket: '',
+  containerdConfigFileName: '',
+  installErofsUtils: false,
+  erofsUtilsImage: '',
+  nodeSelector: [],
+  nodeAffinity: [],
+  tolerations: [],
+  images: {
+    kataDeploy: {
+      ...createChartImageConfiguration(),
+      kubectlReference: '',
+      kubectlTag: '',
+    },
+    nfd: createChartImageConfiguration(),
+    devicePlugin: createChartImageConfiguration(),
+    provisioner: createChartImageConfiguration(),
+  },
+  debug: false,
+})
+
 const yaml = (value: unknown) =>
   stringify(value, { lineWidth: 0 }).trim()
 
@@ -205,11 +285,20 @@ export function buildValuesBundle(
   vendor: VendorCatalog,
   selections: FamilySelections,
   cluster: ClusterConfiguration,
+  runtime: RuntimeConfiguration,
+  advanced: AdvancedConfiguration,
 ) {
   const architecture = catalog.plannedArchitecture
   const profiles: Record<string, unknown> = {}
   const runtimeValues = structuredClone(vendor.runtime.chart.values) as {
-    shims?: Record<string, { enabled?: boolean } | boolean>
+    shims?: Record<
+      string,
+      {
+        enabled?: boolean
+        agent?: { httpsProxy?: string; noProxy?: string }
+        nvrc?: { enableDCGM?: boolean }
+      } | boolean
+    >
     defaultShim?: unknown
     'node-feature-discovery'?: { enabled?: boolean }
     snapshotter?: {
@@ -218,9 +307,27 @@ export function buildValuesBundle(
       erofsDmverity?: boolean
     }
     containerd?: unknown
+    deploymentMode?: string
+    debug?: boolean
+    nodeSelector?: Record<string, string>
+    affinity?: Record<string, unknown>
+    tolerations?: Array<Record<string, unknown>>
+    imagePullPolicy?: string
+    imagePullSecrets?: Array<{ name: string }>
+    image?: { reference?: string; tag?: string }
+    kubectlImage?: { reference?: string; tag?: string }
+    job?: {
+      dispatcherImage?: { reference?: string; tag?: string }
+    }
+    nodeBinaries?: Record<
+      string,
+      { image: string; binaries: string[]; pullPolicy?: string }
+    >
     k8sDistribution?: string
     selinux?: { enabled?: boolean }
   }
+  runtimeValues.deploymentMode = 'job'
+  runtimeValues.debug = advanced.debug
   const distribution = architecture.cluster.distributions.find(
     ({ id }) => id === cluster.distributionId,
   )
@@ -274,13 +381,27 @@ export function buildValuesBundle(
   }
 
   const sourceShims = runtimeValues.shims ?? {}
-  const selectedShims: Record<string, { enabled?: boolean } | boolean> = {
+  const selectedShims: NonNullable<typeof runtimeValues.shims> = {
     disableAll: true,
   }
   for (const shimId of enabledShims) {
     const shimConfig = sourceShims[shimId]
     if (shimConfig && typeof shimConfig !== 'boolean') {
-      selectedShims[shimId] = { ...shimConfig, enabled: true }
+      const selectedShim = { ...shimConfig, enabled: true }
+      if (selectedShim.agent) {
+        selectedShim.agent = {
+          ...selectedShim.agent,
+          httpsProxy: runtime.runtimeHttpsProxy.trim(),
+          noProxy: runtime.runtimeNoProxy.trim(),
+        }
+      }
+      if (vendor.id === 'nvidia') {
+        selectedShim.nvrc = {
+          ...(selectedShim.nvrc ?? {}),
+          enableDCGM: runtime.nvidiaDcgmEnabled,
+        }
+      }
+      selectedShims[shimId] = selectedShim
     }
   }
   runtimeValues.shims = selectedShims
@@ -294,6 +415,18 @@ export function buildValuesBundle(
           Boolean(snapshotter) && snapshotter !== 'default',
       ),
   )
+  if (advanced.installErofsUtils && requiredSnapshotters.has('erofs')) {
+    runtimeValues.nodeBinaries = {
+      ...(runtimeValues.nodeBinaries ?? {}),
+      'erofs-utils': {
+        image:
+          advanced.erofsUtilsImage.trim() ||
+          'quay.io/kata-containers/erofs-utils:1.9.3',
+        binaries: ['mkfs.erofs'],
+        pullPolicy: 'IfNotPresent',
+      },
+    }
+  }
   if (requiredSnapshotters.size === 0) {
     delete runtimeValues.snapshotter
     delete runtimeValues.containerd
@@ -310,6 +443,113 @@ export function buildValuesBundle(
   delete runtimeValues.defaultShim
   if (runtimeValues['node-feature-discovery']) {
     runtimeValues['node-feature-discovery'].enabled = false
+  }
+  const customContainerd =
+    cluster.distributionId === 'kubeadm'
+      ? {
+          ...(advanced.containerdConfigDir.trim()
+            ? { configDir: advanced.containerdConfigDir.trim() }
+            : {}),
+          ...(advanced.containerdRuntimeSocket.trim()
+            ? { runtimeSocket: advanced.containerdRuntimeSocket.trim() }
+            : {}),
+          ...(advanced.containerdConfigFileName.trim()
+            ? { configFileName: advanced.containerdConfigFileName.trim() }
+            : {}),
+        }
+      : {}
+  if (Object.keys(customContainerd).length > 0) {
+    runtimeValues.containerd = {
+      ...((runtimeValues.containerd as Record<string, unknown> | undefined) ?? {}),
+      ...customContainerd,
+    }
+  }
+  const nodeSelector = Object.fromEntries(
+    advanced.nodeSelector
+      .map(({ key, value }) => [key.trim(), value.trim()])
+      .filter(([key]) => key.length > 0),
+  )
+  if (Object.keys(nodeSelector).length > 0) {
+    runtimeValues.nodeSelector = nodeSelector
+  }
+  const nodeAffinity = advanced.nodeAffinity
+    .filter(({ key }) => key.trim().length > 0)
+    .map(({ key, operator, values }) => ({
+      key: key.trim(),
+      operator,
+      ...(['In', 'NotIn'].includes(operator)
+        ? {
+            values: values.map((value) => value.trim()).filter(Boolean),
+          }
+        : {}),
+    }))
+  if (nodeAffinity.length > 0) {
+    runtimeValues.affinity = {
+      nodeAffinity: {
+        requiredDuringSchedulingIgnoredDuringExecution: {
+          nodeSelectorTerms: [{ matchExpressions: nodeAffinity }],
+        },
+      },
+    }
+  }
+  const tolerations = advanced.tolerations
+    .filter(({ key }) => key.trim().length > 0)
+    .map(({ key, operator, value, effect }) => ({
+      key: key.trim(),
+      operator,
+      ...(operator === 'Equal' ? { value: value.trim() } : {}),
+      ...(effect ? { effect } : {}),
+    }))
+  if (tolerations.length > 0) {
+    runtimeValues.tolerations = tolerations
+  }
+  const kataDeployImages = advanced.images.kataDeploy
+  if (kataDeployImages.pullPolicy) {
+    runtimeValues.imagePullPolicy = kataDeployImages.pullPolicy
+  }
+  const pullSecrets = (configuration: ChartImageConfiguration) =>
+    configuration.pullSecrets
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .map((name) => ({ name }))
+  const kataDeployPullSecrets = pullSecrets(kataDeployImages)
+  if (kataDeployPullSecrets.length > 0) {
+    runtimeValues.imagePullSecrets = kataDeployPullSecrets
+  }
+  const applyImageOverride = (
+    current: { reference?: string; tag?: string } | undefined,
+    reference: string,
+    tag: string,
+  ) => {
+    const trimmedReference = reference.trim()
+    const trimmedTag = tag.trim()
+    if (!trimmedReference && !trimmedTag) return current
+    return {
+      ...(current ?? {}),
+      ...(trimmedReference ? { reference: trimmedReference } : {}),
+      ...(trimmedTag ? { tag: trimmedTag } : {}),
+    }
+  }
+  runtimeValues.image = applyImageOverride(
+    runtimeValues.image,
+    kataDeployImages.reference,
+    kataDeployImages.tag,
+  )
+  runtimeValues.kubectlImage = applyImageOverride(
+    runtimeValues.kubectlImage,
+    kataDeployImages.kubectlReference,
+    kataDeployImages.kubectlTag,
+  )
+  const dispatcherImage = applyImageOverride(
+    runtimeValues.job?.dispatcherImage,
+    kataDeployImages.dispatcherReference,
+    kataDeployImages.dispatcherTag,
+  )
+  if (dispatcherImage) {
+    runtimeValues.job = {
+      ...(runtimeValues.job ?? {}),
+      dispatcherImage,
+    }
   }
   const {
     k8sDistribution,
@@ -328,21 +568,88 @@ export function buildValuesBundle(
   const includeProvisioner =
     dependencies.provisionerRequired ||
     dependencies.provisionerRequiredBy.includes(vendor.id)
+  const nfdImages = advanced.images.nfd
+  const nfdValues = {
+    ...((nfdImages.reference.trim() || nfdImages.tag.trim() || nfdImages.pullPolicy)
+      ? {
+          image: {
+            ...(nfdImages.reference.trim()
+              ? { repository: nfdImages.reference.trim() }
+              : {}),
+            ...(nfdImages.tag.trim() ? { tag: nfdImages.tag.trim() } : {}),
+            ...(nfdImages.pullPolicy
+              ? { pullPolicy: nfdImages.pullPolicy }
+              : {}),
+          },
+        }
+      : {}),
+    ...(pullSecrets(nfdImages).length > 0
+      ? { imagePullSecrets: pullSecrets(nfdImages) }
+      : {}),
+  }
+  const devicePluginImages = advanced.images.devicePlugin
+  const devicePluginValues = structuredClone(vendor.devicePlugin.values) as {
+    image?: { repository?: string; tag?: string; pullPolicy?: string }
+    imagePullSecrets?: Array<{ name: string }>
+  }
+  if (
+    devicePluginImages.reference.trim() ||
+    devicePluginImages.tag.trim() ||
+    devicePluginImages.pullPolicy
+  ) {
+    devicePluginValues.image = {
+      ...(devicePluginValues.image ?? {}),
+      ...(devicePluginImages.reference.trim()
+        ? { repository: devicePluginImages.reference.trim() }
+        : {}),
+      ...(devicePluginImages.tag.trim()
+        ? { tag: devicePluginImages.tag.trim() }
+        : {}),
+      ...(devicePluginImages.pullPolicy
+        ? { pullPolicy: devicePluginImages.pullPolicy }
+        : {}),
+    }
+  }
+  const devicePluginPullSecrets = pullSecrets(devicePluginImages)
+  if (devicePluginPullSecrets.length > 0) {
+    devicePluginValues.imagePullSecrets = devicePluginPullSecrets
+  }
+  const provisionerImages = advanced.images.provisioner
+  const provisionerImage = applyImageOverride(
+    undefined,
+    provisionerImages.reference,
+    provisionerImages.tag,
+  )
+  const provisionerDispatcherImage = applyImageOverride(
+    undefined,
+    provisionerImages.dispatcherReference,
+    provisionerImages.dispatcherTag,
+  )
 
   return `# ${architecture.notice}\n${yaml({
     [dependencies.nvidiaValuesKey]: {
       enabled: includeDevicePlugin || includeProvisioner,
     },
-    [dependencies.nfdValuesKey]: {},
+    [dependencies.nfdValuesKey]: nfdValues,
     [dependencies.runtimeValuesKey]: orderedRuntimeValues,
     ...(includeDevicePlugin
-      ? { [dependencies.devicePluginValuesKey]: vendor.devicePlugin.values }
+      ? { [dependencies.devicePluginValuesKey]: devicePluginValues }
       : {}),
     ...(includeProvisioner
       ? {
           [dependencies.provisionerValuesKey]: {
             'node-feature-discovery': { enabled: false },
             profiles,
+            ...(provisionerImage ? { image: provisionerImage } : {}),
+            ...(provisionerImages.pullPolicy
+              ? { imagePullPolicy: provisionerImages.pullPolicy }
+              : {}),
+            ...(pullSecrets(provisionerImages).length > 0
+              ? { imagePullSecrets: pullSecrets(provisionerImages) }
+              : {}),
+            ...(provisionerDispatcherImage
+              ? { job: { dispatcherImage: provisionerDispatcherImage } }
+              : {}),
           },
         }
       : {}),
@@ -356,4 +663,3 @@ export function buildInstallScript(
   const { namespace } = catalog.plannedArchitecture
   return `helm upgrade --install ${krab.releaseName} ${krab.ociReference} --namespace ${namespace} --create-namespace --values ${krab.valuesFileName}`
 }
-

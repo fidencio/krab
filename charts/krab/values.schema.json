@@ -82,6 +82,28 @@
           "additionalProperties": {
             "$ref": "#/definitions/provisionerProfile"
           }
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "imagePullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"]
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "job": {
+          "type": "object",
+          "additionalProperties": true
         }
       }
     }

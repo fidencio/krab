@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
+  AlertTriangle,
   ArrowRight,
   Check,
   ChevronDown,
@@ -7,15 +8,21 @@ import {
   Copy,
   ExternalLink,
   FileCode2,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 import catalogData from './generated/catalog.json'
 import provenanceData from './generated/provenance.json'
 import {
   buildInstallScript,
   buildValuesBundle,
+  createAdvancedConfiguration,
+  type AdvancedConfiguration,
+  type ChartImageConfiguration,
   type ClusterConfiguration,
   type ExplorerCatalog,
   type FamilySelections,
+  type RuntimeConfiguration,
   type VendorCatalog,
 } from './lib/artifacts'
 import './App.css'
@@ -66,6 +73,13 @@ const needsCpuSelection = (
       selection.cpuTeeIds.length === 0,
   )
 
+const imageChartOptions = [
+  { id: 'kataDeploy', label: 'Kata deploy', pullSecrets: true },
+  { id: 'nfd', label: 'Node Feature Discovery', pullSecrets: true },
+  { id: 'devicePlugin', label: 'Kata device plugin', pullSecrets: false },
+  { id: 'provisioner', label: 'Kata device provisioner', pullSecrets: true },
+] as const
+
 function App() {
   const [step, setStep] = useState<1 | 2>(1)
   const [selectedVendorId, setSelectedVendorId] = useState(catalog.vendors[0]?.id ?? '')
@@ -79,10 +93,25 @@ function App() {
     distributionId: null,
     selinuxEnabled: false,
   })
+  const [runtime, setRuntime] = useState<RuntimeConfiguration>({
+    runtimeHttpsProxy: '',
+    runtimeNoProxy: '',
+    nvidiaDcgmEnabled: false,
+  })
+  const [advanced, setAdvanced] = useState<AdvancedConfiguration>(
+    createAdvancedConfiguration,
+  )
   const artifacts = useMemo(() => ({
-    values: buildValuesBundle(catalog, selectedVendor, selections, cluster),
+    values: buildValuesBundle(
+      catalog,
+      selectedVendor,
+      selections,
+      cluster,
+      runtime,
+      advanced,
+    ),
     install: buildInstallScript(catalog),
-  }), [cluster, selectedVendor, selections])
+  }), [advanced, cluster, runtime, selectedVendor, selections])
   const incompleteFamilies = selectedVendor.hardwareFamilies.filter((family) =>
     needsCpuSelection(selections[family.id]),
   )
@@ -92,11 +121,20 @@ function App() {
     )
   const valuesReady =
     cluster.distributionId !== null && incompleteFamilies.length === 0
+  const requiresErofs = selectedVendor.hardwareFamilies.some(
+    (family) => selections[family.id]?.modeId === 'off',
+  )
 
   const selectVendor = (vendor: VendorCatalog) => {
     setSelectedVendorId(vendor.id)
     setSelections(initialSelections(vendor))
     setCluster({ distributionId: null, selinuxEnabled: false })
+    setRuntime({
+      runtimeHttpsProxy: '',
+      runtimeNoProxy: '',
+      nvidiaDcgmEnabled: false,
+    })
+    setAdvanced(createAdvancedConfiguration())
     setStep(2)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -122,6 +160,60 @@ function App() {
         cpuTeeIds: current[familyId]?.cpuTeeIds.includes(cpuTeeId)
           ? current[familyId].cpuTeeIds.filter((id) => id !== cpuTeeId)
           : [...(current[familyId]?.cpuTeeIds ?? []), cpuTeeId],
+      },
+    }))
+  }
+
+  const updateNodeSelector = (
+    index: number,
+    field: 'key' | 'value',
+    value: string,
+  ) => {
+    setAdvanced((current) => ({
+      ...current,
+      nodeSelector: current.nodeSelector.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, [field]: value } : entry,
+      ),
+    }))
+  }
+
+  const updateToleration = (
+    index: number,
+    field: keyof AdvancedConfiguration['tolerations'][number],
+    value: string,
+  ) => {
+    setAdvanced((current) => ({
+      ...current,
+      tolerations: current.tolerations.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, [field]: value } : entry,
+      ),
+    }))
+  }
+
+  const updateNodeAffinity = (
+    index: number,
+    changes: Partial<AdvancedConfiguration['nodeAffinity'][number]>,
+  ) => {
+    setAdvanced((current) => ({
+      ...current,
+      nodeAffinity: current.nodeAffinity.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, ...changes } : entry,
+      ),
+    }))
+  }
+
+  const updateImageConfiguration = (
+    chart: keyof AdvancedConfiguration['images'],
+    changes: Partial<ChartImageConfiguration> & {
+      kubectlReference?: string
+      kubectlTag?: string
+    },
+  ) => {
+    setAdvanced((current) => ({
+      ...current,
+      images: {
+        ...current.images,
+        [chart]: { ...current.images[chart], ...changes },
       },
     }))
   }
@@ -328,7 +420,7 @@ function App() {
                   </div>
                   <em>{cluster.distributionId ? 'Configured' : 'Required'}</em>
                 </header>
-                <div className="cluster-fields">
+                <div className="cluster-fields single-field">
                   <div className="cluster-field">
                     <div className="field-label">
                       Distribution
@@ -363,27 +455,136 @@ function App() {
                       )}
                     </select>
                   </div>
-                  <div className="cluster-field">
-                    <div className="field-label">
-                      Installer SELinux policy
-                      <details className="info-popover">
-                        <summary aria-label="Installer SELinux policy details">i</summary>
-                        <div className="popover-panel align-right">
-                          <strong>Installer confinement only</strong>
-                          <p>
-                            Loads a Kata-owned policy for kata-deploy&apos;s
-                            installation containers on enforcing nodes. It does
-                            not enable SELinux inside Kata VMs or workloads.
-                          </p>
-                        </div>
-                      </details>
+                </div>
+                {!cluster.distributionId && (
+                  <p>Select a distribution to generate values.yaml.</p>
+                )}
+              </section>
+
+              {requiresErofs && (
+                <div
+                  className={`runtime-prerequisite ${
+                    advanced.installErofsUtils ? 'managed' : ''
+                  }`}
+                  role="note"
+                >
+                  {advanced.installErofsUtils ? (
+                    <Check size={18} />
+                  ) : (
+                    <AlertTriangle size={18} />
+                  )}
+                  <div>
+                    <strong>EROFS host prerequisite</strong>
+                    {advanced.installErofsUtils ? (
+                      <p>
+                        The generated job-mode deployment stages mkfs.erofs 1.9.3
+                        on every targeted node before validating the host.
+                      </p>
+                    ) : (
+                      <p>
+                        Install erofs-utils 1.8.2 or newer on every targeted node,
+                        or enable utility installation under Advanced deployment
+                        configuration.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <details className="advanced-config">
+                <summary>
+                  <span>
+                    <strong>Advanced deployment configuration</strong>
+                    <small>
+                      Kata runtime settings and supporting cluster components
+                    </small>
+                  </span>
+                  <ChevronDown size={17} />
+                </summary>
+                <div className="advanced-config-body">
+                  <section className="advanced-group">
+                    <header>
+                      <span>Kata runtime</span>
+                      <strong>Guest network access</strong>
+                      <small>
+                        Proxy image pulls performed inside confidential Kata guests.
+                      </small>
+                    </header>
+                    <div className="advanced-field-grid two-columns">
+                      <label>
+                        <span>HTTPS proxy</span>
+                        <input
+                          type="url"
+                          value={runtime.runtimeHttpsProxy}
+                          placeholder="https://proxy.example.com:8443"
+                          onChange={(event) =>
+                            setRuntime((current) => ({
+                              ...current,
+                              runtimeHttpsProxy: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                      <label>
+                        <span>NO_PROXY</span>
+                        <input
+                          type="text"
+                          value={runtime.runtimeNoProxy}
+                          placeholder="registry.internal,.svc,.cluster.local"
+                          onChange={(event) =>
+                            setRuntime((current) => ({
+                              ...current,
+                              runtimeNoProxy: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
+                  </section>
+                  <section className="advanced-group component-toggle-group">
+                    <div>
+                      <span>Kata runtime · NVIDIA RuntimeClasses</span>
+                      <strong>DCGM metrics</strong>
+                      <small>
+                        Starts nv-hostengine and dcgm-exporter for NVIDIA pod sandboxes.
+                      </small>
+                    </div>
+                    <label className="selinux-toggle">
+                      <span className="toggle-copy">
+                        <strong>
+                          {runtime.nvidiaDcgmEnabled ? 'Enabled' : 'Disabled'}
+                        </strong>
+                        <small>Applied to every selected NVIDIA RuntimeClass.</small>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={runtime.nvidiaDcgmEnabled}
+                        onChange={(event) =>
+                          setRuntime((current) => ({
+                            ...current,
+                            nvidiaDcgmEnabled: event.target.checked,
+                          }))
+                        }
+                      />
+                      <span className="toggle-track" aria-hidden="true">
+                        <span />
+                      </span>
+                    </label>
+                  </section>
+                  <section className="advanced-group component-toggle-group">
+                    <div>
+                      <span>Kata runtime installer</span>
+                      <strong>SELinux policy</strong>
+                      <small>
+                        Loads Kata&apos;s installer policy on SELinux-enforcing nodes.
+                      </small>
                     </div>
                     <label className="selinux-toggle">
                       <span className="toggle-copy">
                         <strong>
                           {cluster.selinuxEnabled ? 'Enabled' : 'Disabled'}
                         </strong>
-                        <small>Applies only to the installation path.</small>
+                        <small>Recommended on SELinux-enforcing worker nodes.</small>
                       </span>
                       <input
                         type="checkbox"
@@ -399,12 +600,497 @@ function App() {
                         <span />
                       </span>
                     </label>
-                  </div>
+                  </section>
+                  {requiresErofs && (
+                    <section className="advanced-group erofs-installer">
+                    <header>
+                      <span>Kata runtime installer</span>
+                      <strong>Provide EROFS utilities</strong>
+                      <small>
+                        Enable this when targeted nodes do not already provide
+                        erofs-utils 1.8.2 or newer. Kata-deploy will copy a compatible
+                        mkfs.erofs into /usr/local/bin before its host checks run.
+                      </small>
+                    </header>
+                    <label className="selinux-toggle">
+                      <span className="toggle-copy">
+                        <strong>
+                          {advanced.installErofsUtils ? 'Managed' : 'Host provided'}
+                        </strong>
+                        <small>Uses kata-deploy&apos;s enforced job installation mode.</small>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={advanced.installErofsUtils}
+                        onChange={(event) =>
+                          setAdvanced((current) => ({
+                            ...current,
+                            installErofsUtils: event.target.checked,
+                          }))
+                        }
+                      />
+                      <span className="toggle-track" aria-hidden="true">
+                        <span />
+                      </span>
+                    </label>
+                    {advanced.installErofsUtils && (
+                      <label className="erofs-image-field">
+                        <span>Utility image override</span>
+                        <input
+                          type="text"
+                          value={advanced.erofsUtilsImage}
+                          placeholder="quay.io/kata-containers/erofs-utils:1.9.3"
+                          onChange={(event) =>
+                            setAdvanced((current) => ({
+                              ...current,
+                              erofsUtilsImage: event.target.value,
+                            }))
+                          }
+                        />
+                        <small>Leave empty to use the pinned default image.</small>
+                      </label>
+                    )}
+                    </section>
+                  )}
+                  {cluster.distributionId === 'kubeadm' && (
+                    <section className="advanced-group">
+                      <header>
+                        <span>Kata runtime</span>
+                        <strong>Custom containerd paths</strong>
+                        <small>Optional overrides for non-standard kubeadm nodes.</small>
+                      </header>
+                      <div className="advanced-field-grid three-columns">
+                        <label>
+                          <span>Configuration directory</span>
+                          <input
+                            type="text"
+                            value={advanced.containerdConfigDir}
+                            placeholder="/etc/containerd"
+                            onChange={(event) =>
+                              setAdvanced((current) => ({
+                                ...current,
+                                containerdConfigDir: event.target.value,
+                              }))
+                            }
+                          />
+                        </label>
+                        <label>
+                          <span>Runtime socket</span>
+                          <input
+                            type="text"
+                            value={advanced.containerdRuntimeSocket}
+                            placeholder="unix:///run/containerd/containerd.sock"
+                            onChange={(event) =>
+                              setAdvanced((current) => ({
+                                ...current,
+                                containerdRuntimeSocket: event.target.value,
+                              }))
+                            }
+                          />
+                        </label>
+                        <label>
+                          <span>Configuration filename</span>
+                          <input
+                            type="text"
+                            value={advanced.containerdConfigFileName}
+                            placeholder="config.toml"
+                            onChange={(event) =>
+                              setAdvanced((current) => ({
+                                ...current,
+                                containerdConfigFileName: event.target.value,
+                              }))
+                            }
+                          />
+                        </label>
+                      </div>
+                    </section>
+                  )}
+
+                  <section className="advanced-group">
+                    <header>
+                      <span>Kata runtime installer</span>
+                      <strong>Node targeting</strong>
+                      <small>
+                        Restrict installation to matching nodes and admit tainted nodes.
+                      </small>
+                    </header>
+                    <div className="advanced-list-heading">
+                      <span>Node selectors</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAdvanced((current) => ({
+                            ...current,
+                            nodeSelector: [
+                              ...current.nodeSelector,
+                              { key: '', value: '' },
+                            ],
+                          }))
+                        }
+                      >
+                        <Plus size={13} /> Add selector
+                      </button>
+                    </div>
+                    {advanced.nodeSelector.length === 0 ? (
+                      <p className="advanced-empty">All otherwise eligible nodes.</p>
+                    ) : (
+                      <div className="advanced-rows selector-rows">
+                        {advanced.nodeSelector.map((entry, index) => (
+                          <div className="advanced-row" key={`selector-${index}`}>
+                            <input
+                              aria-label={`Node selector ${index + 1} key`}
+                              value={entry.key}
+                              placeholder="node-role.kubernetes.io/worker"
+                              onChange={(event) =>
+                                updateNodeSelector(index, 'key', event.target.value)
+                              }
+                            />
+                            <input
+                              aria-label={`Node selector ${index + 1} value`}
+                              value={entry.value}
+                              placeholder="true"
+                              onChange={(event) =>
+                                updateNodeSelector(index, 'value', event.target.value)
+                              }
+                            />
+                            <button
+                              type="button"
+                              aria-label={`Remove node selector ${index + 1}`}
+                              onClick={() =>
+                                setAdvanced((current) => ({
+                                  ...current,
+                                  nodeSelector: current.nodeSelector.filter(
+                                    (_, entryIndex) => entryIndex !== index,
+                                  ),
+                                }))
+                              }
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="advanced-list-heading toleration-heading">
+                      <span>Required node affinity</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAdvanced((current) => ({
+                            ...current,
+                            nodeAffinity: [
+                              ...current.nodeAffinity,
+                              { key: '', operator: 'In', values: [] },
+                            ],
+                          }))
+                        }
+                      >
+                        <Plus size={13} /> Add expression
+                      </button>
+                    </div>
+                    {advanced.nodeAffinity.length === 0 ? (
+                      <p className="advanced-empty">No additional affinity rules.</p>
+                    ) : (
+                      <div className="advanced-rows affinity-rows">
+                        {advanced.nodeAffinity.map((entry, index) => (
+                          <div className="advanced-row" key={`affinity-${index}`}>
+                            <input
+                              aria-label={`Node affinity ${index + 1} key`}
+                              value={entry.key}
+                              placeholder="feature.node.kubernetes.io/example"
+                              onChange={(event) =>
+                                updateNodeAffinity(index, { key: event.target.value })
+                              }
+                            />
+                            <select
+                              aria-label={`Node affinity ${index + 1} operator`}
+                              value={entry.operator}
+                              onChange={(event) =>
+                                updateNodeAffinity(index, {
+                                  operator: event.target.value as AdvancedConfiguration['nodeAffinity'][number]['operator'],
+                                })
+                              }
+                            >
+                              <option value="In">In</option>
+                              <option value="NotIn">NotIn</option>
+                              <option value="Exists">Exists</option>
+                              <option value="DoesNotExist">DoesNotExist</option>
+                            </select>
+                            <input
+                              aria-label={`Node affinity ${index + 1} values`}
+                              value={entry.values.join(', ')}
+                              placeholder="value-a, value-b"
+                              disabled={
+                                entry.operator === 'Exists' ||
+                                entry.operator === 'DoesNotExist'
+                              }
+                              onChange={(event) =>
+                                updateNodeAffinity(index, {
+                                  values: event.target.value.split(','),
+                                })
+                              }
+                            />
+                            <button
+                              type="button"
+                              aria-label={`Remove node affinity ${index + 1}`}
+                              onClick={() =>
+                                setAdvanced((current) => ({
+                                  ...current,
+                                  nodeAffinity: current.nodeAffinity.filter(
+                                    (_, entryIndex) => entryIndex !== index,
+                                  ),
+                                }))
+                              }
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="advanced-list-heading toleration-heading">
+                      <span>Tolerations</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAdvanced((current) => ({
+                            ...current,
+                            tolerations: [
+                              ...current.tolerations,
+                              { key: '', operator: 'Exists', value: '', effect: '' },
+                            ],
+                          }))
+                        }
+                      >
+                        <Plus size={13} /> Add toleration
+                      </button>
+                    </div>
+                    {advanced.tolerations.length === 0 ? (
+                      <p className="advanced-empty">No additional tolerations.</p>
+                    ) : (
+                      <div className="advanced-rows toleration-rows">
+                        {advanced.tolerations.map((entry, index) => (
+                          <div className="advanced-row" key={`toleration-${index}`}>
+                            <input
+                              aria-label={`Toleration ${index + 1} key`}
+                              value={entry.key}
+                              placeholder="Taint key"
+                              onChange={(event) =>
+                                updateToleration(index, 'key', event.target.value)
+                              }
+                            />
+                            <select
+                              aria-label={`Toleration ${index + 1} operator`}
+                              value={entry.operator}
+                              onChange={(event) =>
+                                updateToleration(index, 'operator', event.target.value)
+                              }
+                            >
+                              <option value="Exists">Exists</option>
+                              <option value="Equal">Equal</option>
+                            </select>
+                            <input
+                              aria-label={`Toleration ${index + 1} value`}
+                              value={entry.value}
+                              placeholder="Value"
+                              disabled={entry.operator === 'Exists'}
+                              onChange={(event) =>
+                                updateToleration(index, 'value', event.target.value)
+                              }
+                            />
+                            <select
+                              aria-label={`Toleration ${index + 1} effect`}
+                              value={entry.effect}
+                              onChange={(event) =>
+                                updateToleration(index, 'effect', event.target.value)
+                              }
+                            >
+                              <option value="">Any effect</option>
+                              <option value="NoSchedule">NoSchedule</option>
+                              <option value="PreferNoSchedule">PreferNoSchedule</option>
+                              <option value="NoExecute">NoExecute</option>
+                            </select>
+                            <button
+                              type="button"
+                              aria-label={`Remove toleration ${index + 1}`}
+                              onClick={() =>
+                                setAdvanced((current) => ({
+                                  ...current,
+                                  tolerations: current.tolerations.filter(
+                                    (_, entryIndex) => entryIndex !== index,
+                                  ),
+                                }))
+                              }
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="advanced-group">
+                    <header>
+                      <span>All deployed components</span>
+                      <strong>Image pulls</strong>
+                      <small>
+                        Configure each dependency&apos;s registry credentials, policy,
+                        and optional mirror.
+                      </small>
+                    </header>
+                    <div className="chart-image-list">
+                      {imageChartOptions.map((chart) => {
+                        const configuration = advanced.images[chart.id]
+                        return (
+                          <div className="chart-image-card" key={chart.id}>
+                            <strong>{chart.label}</strong>
+                            <div className="advanced-field-grid two-columns">
+                              <label>
+                                <span>Pull policy</span>
+                                <select
+                                  value={configuration.pullPolicy}
+                                  onChange={(event) =>
+                                    updateImageConfiguration(chart.id, {
+                                      pullPolicy: event.target.value as ChartImageConfiguration['pullPolicy'],
+                                    })
+                                  }
+                                >
+                                  <option value="">Chart default</option>
+                                  <option value="Always">Always</option>
+                                  <option value="IfNotPresent">IfNotPresent</option>
+                                  <option value="Never">Never</option>
+                                </select>
+                              </label>
+                              <label>
+                                <span>
+                                  Image pull secrets
+                                  {!chart.pullSecrets && <em>Not implemented yet</em>}
+                                </span>
+                                <input
+                                  type="text"
+                                  value={configuration.pullSecrets.join(', ')}
+                                  placeholder="registry-secret, mirror-secret"
+                                  onChange={(event) =>
+                                    updateImageConfiguration(chart.id, {
+                                      pullSecrets: event.target.value.split(','),
+                                    })
+                                  }
+                                />
+                              </label>
+                            </div>
+                            <div className="image-override-row primary-image-row">
+                              <strong>Primary image</strong>
+                              <input
+                                aria-label={`${chart.label} image reference`}
+                                value={configuration.reference}
+                                placeholder="Registry/repository"
+                                onChange={(event) =>
+                                  updateImageConfiguration(chart.id, {
+                                    reference: event.target.value,
+                                  })
+                                }
+                              />
+                              <input
+                                aria-label={`${chart.label} image tag`}
+                                value={configuration.tag}
+                                placeholder="Tag"
+                                onChange={(event) =>
+                                  updateImageConfiguration(chart.id, {
+                                    tag: event.target.value,
+                                  })
+                                }
+                              />
+                            </div>
+                            {chart.id === 'kataDeploy' && (
+                              <div className="image-override-row">
+                                <strong>Kubectl image</strong>
+                                <input
+                                  aria-label="Kubectl image reference"
+                                  value={advanced.images.kataDeploy.kubectlReference}
+                                  placeholder="Registry/repository"
+                                  onChange={(event) =>
+                                    updateImageConfiguration('kataDeploy', {
+                                      kubectlReference: event.target.value,
+                                    })
+                                  }
+                                />
+                                <input
+                                  aria-label="Kubectl image tag"
+                                  value={advanced.images.kataDeploy.kubectlTag}
+                                  placeholder="Tag"
+                                  onChange={(event) =>
+                                    updateImageConfiguration('kataDeploy', {
+                                      kubectlTag: event.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+                            )}
+                            {(chart.id === 'kataDeploy' ||
+                              chart.id === 'provisioner') && (
+                              <div className="image-override-row">
+                                <strong>Job dispatcher</strong>
+                                <input
+                                  aria-label={`${chart.label} dispatcher image reference`}
+                                  value={configuration.dispatcherReference}
+                                  placeholder="Registry/repository"
+                                  onChange={(event) =>
+                                    updateImageConfiguration(chart.id, {
+                                      dispatcherReference: event.target.value,
+                                    })
+                                  }
+                                />
+                                <input
+                                  aria-label={`${chart.label} dispatcher image tag`}
+                                  value={configuration.dispatcherTag}
+                                  placeholder="Tag"
+                                  onChange={(event) =>
+                                    updateImageConfiguration(chart.id, {
+                                      dispatcherTag: event.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </section>
+
+                  <section className="advanced-group debug-group">
+                    <div>
+                      <span>Kata runtime</span>
+                      <strong>Runtime debugging</strong>
+                      <small>
+                        Adds debug RuntimeClasses and enables host-side diagnostics.
+                      </small>
+                    </div>
+                    <label className="selinux-toggle">
+                      <span className="toggle-copy">
+                        <strong>{advanced.debug ? 'Enabled' : 'Disabled'}</strong>
+                        <small>Leave disabled for production workloads.</small>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={advanced.debug}
+                        onChange={(event) =>
+                          setAdvanced((current) => ({
+                            ...current,
+                            debug: event.target.checked,
+                          }))
+                        }
+                      />
+                      <span className="toggle-track" aria-hidden="true">
+                        <span />
+                      </span>
+                    </label>
+                  </section>
                 </div>
-                {!cluster.distributionId && (
-                  <p>Select a distribution to generate values.yaml.</p>
-                )}
-              </section>
+              </details>
 
               <div className="builder-grid">
                 <div className="profile-list">

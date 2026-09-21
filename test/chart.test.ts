@@ -7,6 +7,7 @@ import { parse } from 'yaml'
 import catalogData from '../src/generated/catalog.json' with { type: 'json' }
 import {
   buildValuesBundle,
+  createAdvancedConfiguration,
   type ExplorerCatalog,
 } from '../src/lib/artifacts.ts'
 
@@ -57,7 +58,16 @@ test('chart defaults and generated values satisfy the values schema', async () =
         hopper: { modeId: 'ppcie', cpuTeeIds: ['snp', 'tdx'] },
         blackwell: { modeId: 'on', cpuTeeIds: ['tdx'] },
       },
-      { distributionId: 'rke2', selinuxEnabled: true },
+      {
+        distributionId: 'rke2',
+        selinuxEnabled: true,
+      },
+      {
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
     ),
   )
 
@@ -93,7 +103,16 @@ test('non-NVIDIA generated values omit conditional dependencies', () => {
       catalog,
       { ...vendor, id: 'other-vendor' },
       {},
-      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        distributionId: 'kubeadm',
+        selinuxEnabled: false,
+      },
+      {
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
     ),
   )
 
