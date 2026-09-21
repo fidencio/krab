@@ -212,7 +212,9 @@ nav a:hover {
 }
 
 .vendor-card {
-  min-height: 300px;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
   border-radius: 13px;
 }
 
@@ -238,8 +240,6 @@ button.vendor-card {
 }
 
 .external-platform-card {
-  display: flex;
-  flex-direction: column;
   padding: 24px 26px;
   border: 1px solid rgba(231, 237, 234, 0.32);
   background:
@@ -328,7 +328,6 @@ button.vendor-card {
 }
 
 .external-platform-card .card-link {
-  margin-top: auto;
   padding-top: 15px;
   color: #e3e9e6;
 }
@@ -446,7 +445,9 @@ button.vendor-card {
 
 .capabilities {
   display: flex;
+  flex-grow: 1;
   flex-wrap: wrap;
+  align-content: flex-start;
   gap: 7px;
   margin-top: 17px;
 }
