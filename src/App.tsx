@@ -60,6 +60,7 @@ const runtimeTokenNames: Record<string, string> = {
   clh: 'Cloud Hypervisor',
   openvmm: 'OpenVMM',
   nvidia: 'NVIDIA',
+  gpu: 'GPU',
   cpu: 'CPU',
   coco: 'CoCo',
   dev: 'Dev',
