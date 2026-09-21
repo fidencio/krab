@@ -466,7 +466,10 @@ function App() {
               <div className="panel-heading">
                 <div>
                   <h2>Who powers your architecture?</h2>
-                  <p>Choose the infrastructure KRAB should build around.</p>
+                  <p>
+                    Choose the infrastructure KRAB should build around, or follow
+                    the supported OpenShift path.
+                  </p>
                 </div>
               </div>
 
@@ -513,6 +516,40 @@ function App() {
                     </div>
                   </button>
                 ))}
+                <a
+                  className="vendor-card openshift-card"
+                  href="https://docs.redhat.com/en/documentation/openshift_sandboxed_containers"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <div className="card-topline">
+                    <span className="openshift-status">Running OpenShift?</span>
+                    <span className="openshift-external">
+                      <ExternalLink size={15} />
+                    </span>
+                  </div>
+                  <div className="openshift-brand">
+                    <img
+                      src={brandLogos['./assets/brands/openshift.svg']}
+                      alt=""
+                    />
+                    <span>
+                      <small>Red Hat OpenShift</small>
+                      <strong>OpenShift Sandboxed Containers</strong>
+                    </span>
+                  </div>
+                  <p>
+                    KRAB does not generate OpenShift deployment artifacts.
+                  </p>
+                  <div className="capabilities">
+                    <span>Operator-managed</span>
+                    <span>Kata Containers</span>
+                  </div>
+                  <div className="card-link">
+                    Open latest Red Hat documentation
+                    <ArrowRight size={18} />
+                  </div>
+                </a>
               </div>
             </div>
           ) : (

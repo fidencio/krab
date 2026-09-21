@@ -237,6 +237,102 @@ button.vendor-card {
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
 }
 
+.openshift-card {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 26px;
+  border: 1px solid rgba(231, 237, 234, 0.32);
+  background:
+    radial-gradient(circle at 95% 5%, rgba(255, 255, 255, 0.07), transparent 45%),
+    #131e1b;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.openshift-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(241, 246, 243, 0.7);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
+}
+
+.openshift-status {
+  color: #c9d2ce;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.openshift-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  display: inline-block;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #e7edea;
+  box-shadow: 0 0 10px rgba(231, 237, 234, 0.28);
+  vertical-align: 1px;
+}
+
+.openshift-external {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e7edea;
+  color: #17201d;
+}
+
+.openshift-brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin: 30px 0 22px;
+}
+
+.openshift-brand img {
+  width: 52px;
+  height: 52px;
+}
+
+.openshift-brand span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.openshift-brand small {
+  color: #aeb9b4;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.openshift-brand strong {
+  color: #f1f4f2;
+  font: 700 21px 'Manrope', sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.openshift-card > p {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.openshift-card .card-link {
+  margin-top: auto;
+  padding-top: 15px;
+  color: #e3e9e6;
+}
+
 .card-topline {
   display: flex;
   align-items: center;
