@@ -1227,6 +1227,15 @@ button.vendor-card {
   font-size: 10px;
 }
 
+.advanced-group > header .drop-in-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  color: var(--kata-orange-bright);
+  font-weight: 700;
+}
+
 .advanced-field-grid {
   display: grid;
   gap: 11px;
@@ -1266,9 +1275,9 @@ button.vendor-card {
 }
 
 .advanced-config input,
-.advanced-config select {
+.advanced-config select,
+.advanced-config textarea {
   min-width: 0;
-  height: 38px;
   padding: 0 10px;
   border: 1px solid #3a4742;
   border-radius: 6px;
@@ -1276,6 +1285,19 @@ button.vendor-card {
   background: #101916;
   color: #e6ebe8;
   font: 10px 'DM Sans', sans-serif;
+}
+
+.advanced-config input,
+.advanced-config select {
+  height: 38px;
+}
+
+.advanced-config textarea {
+  min-height: 104px;
+  padding: 10px;
+  resize: vertical;
+  font-family: 'IBM Plex Mono', monospace;
+  line-height: 1.5;
 }
 
 .advanced-config select {
@@ -1288,7 +1310,8 @@ button.vendor-card {
 }
 
 .advanced-config input:focus,
-.advanced-config select:focus {
+.advanced-config select:focus,
+.advanced-config textarea:focus {
   border-color: var(--green);
 }
 
@@ -1296,8 +1319,43 @@ button.vendor-card {
   opacity: 0.48;
 }
 
-.advanced-config input::placeholder {
+.advanced-config input::placeholder,
+.advanced-config textarea::placeholder {
   color: #617069;
+}
+
+.shim-drop-in-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.shim-drop-in {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.shim-drop-in > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.shim-drop-in > span strong {
+  overflow: hidden;
+  color: #dfe5e2;
+  font: 600 9px 'IBM Plex Mono', monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shim-drop-in > span small {
+  color: #77847e;
+  font-size: 8px;
+  text-align: right;
 }
 
 .advanced-list-heading {
@@ -2385,6 +2443,10 @@ button.vendor-card {
   .values-blocked {
     min-height: 360px;
     padding: 28px;
+  }
+
+  .shim-drop-in-list {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -691,6 +691,47 @@ function App() {
                       </label>
                     </div>
                   </section>
+                  {installedRuntimeClasses.length > 0 && (
+                    <section className="advanced-group">
+                      <header>
+                        <span>Kata runtime · Selected RuntimeClasses</span>
+                        <strong>Kata configuration drop-ins</strong>
+                        <small>
+                          Optional TOML appended to each selected runtime&apos;s
+                          Kata configuration as config.d/50-user-overrides.toml.
+                        </small>
+                        <small className="drop-in-warning" role="note">
+                          <AlertTriangle size={12} />
+                          KRAB does not validate these drop-ins.
+                        </small>
+                      </header>
+                      <div className="shim-drop-in-list">
+                        {installedRuntimeClasses.map((shim) => (
+                          <label className="shim-drop-in" key={shim.id}>
+                            <span>
+                              <strong>{shim.runtimeClass}</strong>
+                              <small>{runtimeName(shim.id)}</small>
+                            </span>
+                            <textarea
+                              aria-label={`${shim.runtimeClass} Kata configuration drop-in`}
+                              value={advanced.shimDropIns[shim.id] ?? ''}
+                              placeholder={'[agent.kata]\ndial_timeout = 999'}
+                              spellCheck={false}
+                              onChange={(event) =>
+                                setAdvanced((current) => ({
+                                  ...current,
+                                  shimDropIns: {
+                                    ...current.shimDropIns,
+                                    [shim.id]: event.target.value,
+                                  },
+                                }))
+                              }
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </section>
+                  )}
                   {selectedVendor.id === 'nvidia' && (
                     <section className="advanced-group component-toggle-group">
                     <div>

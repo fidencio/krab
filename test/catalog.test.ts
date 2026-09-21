@@ -188,6 +188,12 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
       },
       {
         ...createAdvancedConfiguration(),
+        shimDropIns: {
+          'qemu-runtime-rs': '',
+          'qemu-nvidia-cpu-runtime-rs':
+            '[agent.kata]\ndial_timeout = 999\n',
+          'unselected-runtime': '[agent.kata]\ndebug_console = true\n',
+        },
         erofsSnapshotterMode: 'disk',
         erofsDiskSize: '24G',
         erofsDmverity: false,
@@ -204,6 +210,14 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
     configuredValues['kata-deploy'].containerd.userDropIn,
     "[plugins.'io.containerd.snapshotter.v1.erofs']\n" +
       '  enable_fsverity = true\n  default_size = "24G"\n',
+  )
+  assert.equal(
+    configuredValues['kata-deploy'].shims['qemu-nvidia-cpu-runtime-rs'].dropIn,
+    '[agent.kata]\ndial_timeout = 999\n',
+  )
+  assert.equal(
+    configuredValues['kata-deploy'].shims['unselected-runtime'],
+    undefined,
   )
 
   const cocoDevValues = parse(

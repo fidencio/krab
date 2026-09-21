@@ -238,6 +238,7 @@ export type AdvancedConfiguration = {
   containerdConfigDir: string
   containerdRuntimeSocket: string
   containerdConfigFileName: string
+  shimDropIns: Record<string, string>
   erofsSnapshotterMode: 'memory' | 'disk'
   erofsDiskSize: string
   erofsDmverity: boolean
@@ -272,6 +273,7 @@ export const createAdvancedConfiguration = (): AdvancedConfiguration => ({
   containerdConfigDir: '',
   containerdRuntimeSocket: '',
   containerdConfigFileName: '',
+  shimDropIns: {},
   erofsSnapshotterMode: 'memory',
   erofsDiskSize: '256M',
   erofsDmverity: true,
@@ -346,6 +348,7 @@ export function buildValuesBundle(
       string,
       {
         enabled?: boolean
+        dropIn?: string
         agent?: { httpsProxy?: string; noProxy?: string }
         nvrc?: { enableDCGM?: boolean }
       } | boolean
@@ -435,6 +438,10 @@ export function buildValuesBundle(
     const shimConfig = sourceShims[shimId]
     if (shimConfig && typeof shimConfig !== 'boolean') {
       const selectedShim = { ...shimConfig, enabled: true }
+      const dropIn = advanced.shimDropIns[shimId]
+      if (dropIn?.trim()) {
+        selectedShim.dropIn = dropIn
+      }
       if (selectedShim.agent) {
         selectedShim.agent = {
           ...selectedShim.agent,
