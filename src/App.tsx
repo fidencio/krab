@@ -161,10 +161,6 @@ function App() {
     catalog.plannedArchitecture.cluster.distributions.find(
       ({ id }) => id === cluster.distributionId,
     )
-  const valuesReady =
-    cluster.distributionId !== null &&
-    incompleteFamilies.length === 0 &&
-    (selectedVendor.id !== 'local' || runtime.selectedShimIds.length > 0)
   const installedRuntimeClasses = useMemo(() => {
     const shimIds = resolveRuntimeShimIds(
       selectedVendor,
@@ -213,6 +209,15 @@ function App() {
       ({ id, snapshotter }) =>
         runtime.selectedShimIds.includes(id) && snapshotter === 'erofs',
     )
+  const erofsDiskSizeMissing =
+    requiresErofs &&
+    advanced.erofsSnapshotterMode === 'disk' &&
+    advanced.erofsDiskSize.trim().length === 0
+  const valuesReady =
+    cluster.distributionId !== null &&
+    incompleteFamilies.length === 0 &&
+    !erofsDiskSizeMissing &&
+    (selectedVendor.id !== 'local' || runtime.selectedShimIds.length > 0)
 
   const selectVendor = (vendor: VendorCatalog) => {
     setSelectedVendorId(vendor.id)
@@ -735,53 +740,150 @@ function App() {
                   </section>
                   {requiresErofs && (
                     <section className="advanced-group erofs-installer">
-                    <header>
-                      <span>Kata runtime installer</span>
-                      <strong>Provide EROFS utilities</strong>
-                      <small>
-                        Enable this when targeted nodes do not already provide
-                        erofs-utils 1.8.2 or newer. Kata-deploy will copy a compatible
-                        mkfs.erofs into /usr/local/bin before its host checks run.
-                      </small>
-                    </header>
-                    <label className="selinux-toggle">
-                      <span className="toggle-copy">
-                        <strong>
-                          {advanced.installErofsUtils ? 'Managed' : 'Host provided'}
-                        </strong>
-                        <small>Uses kata-deploy&apos;s enforced job installation mode.</small>
-                      </span>
-                      <input
-                        type="checkbox"
-                        checked={advanced.installErofsUtils}
-                        onChange={(event) =>
-                          setAdvanced((current) => ({
-                            ...current,
-                            installErofsUtils: event.target.checked,
-                          }))
-                        }
-                      />
-                      <span className="toggle-track" aria-hidden="true">
-                        <span />
-                      </span>
-                    </label>
-                    {advanced.installErofsUtils && (
-                      <label className="erofs-image-field">
-                        <span>Utility image override</span>
-                        <input
-                          type="text"
-                          value={advanced.erofsUtilsImage}
-                          placeholder="quay.io/kata-containers/erofs-utils:1.9.3"
-                          onChange={(event) =>
-                            setAdvanced((current) => ({
-                              ...current,
-                              erofsUtilsImage: event.target.value,
-                            }))
-                          }
-                        />
-                        <small>Leave empty to use the pinned default image.</small>
-                      </label>
-                    )}
+                      <header>
+                        <span>Kata runtime · EROFS snapshotter</span>
+                        <strong>EROFS configuration</strong>
+                        <small>
+                          Configure writable-layer storage and integrity checks
+                          for every selected RuntimeClass that uses EROFS.
+                        </small>
+                      </header>
+                      <div
+                        className={`advanced-field-grid erofs-mode-field ${
+                          advanced.erofsSnapshotterMode === 'disk'
+                            ? 'with-size'
+                            : ''
+                        }`}
+                      >
+                        <label>
+                          <span>Writable-layer backing</span>
+                          <select
+                            value={advanced.erofsSnapshotterMode}
+                            onChange={(event) =>
+                              setAdvanced((current) => ({
+                                ...current,
+                                erofsSnapshotterMode: event.target.value as
+                                  AdvancedConfiguration['erofsSnapshotterMode'],
+                              }))
+                            }
+                          >
+                            <option value="memory">Memory</option>
+                            <option value="disk">Disk</option>
+                          </select>
+                          <small>
+                            {advanced.erofsSnapshotterMode === 'memory'
+                              ? 'Keeps writable layers in memory.'
+                              : 'Uses disk-backed writable layers.'}
+                          </small>
+                        </label>
+                        {advanced.erofsSnapshotterMode === 'disk' && (
+                          <label>
+                            <span>Writable-layer size</span>
+                            <input
+                              type="text"
+                              required
+                              value={advanced.erofsDiskSize}
+                              placeholder="256M"
+                              onChange={(event) =>
+                                setAdvanced((current) => ({
+                                  ...current,
+                                  erofsDiskSize: event.target.value,
+                                }))
+                              }
+                            />
+                          </label>
+                        )}
+                      </div>
+                      <div className="erofs-integrity-options">
+                        <label className="selinux-toggle">
+                          <span className="toggle-copy">
+                            <strong>dm-verity</strong>
+                            <small>Verify EROFS lower-layer block integrity.</small>
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={advanced.erofsDmverity}
+                            onChange={(event) =>
+                              setAdvanced((current) => ({
+                                ...current,
+                                erofsDmverity: event.target.checked,
+                              }))
+                            }
+                          />
+                          <span className="toggle-track" aria-hidden="true">
+                            <span />
+                          </span>
+                        </label>
+                        <label className="selinux-toggle">
+                          <span className="toggle-copy">
+                            <strong>fs-verity</strong>
+                            <small>Enable host snapshotter filesystem verification.</small>
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={advanced.erofsEnableFsverity}
+                            onChange={(event) =>
+                              setAdvanced((current) => ({
+                                ...current,
+                                erofsEnableFsverity: event.target.checked,
+                              }))
+                            }
+                          />
+                          <span className="toggle-track" aria-hidden="true">
+                            <span />
+                          </span>
+                        </label>
+                      </div>
+                      <div className="erofs-utilities">
+                        <header>
+                          <strong>Provide EROFS utilities</strong>
+                          <small>
+                            Enable when nodes do not provide erofs-utils 1.8.2
+                            or newer. Kata-deploy installs mkfs.erofs before its
+                            host checks run.
+                          </small>
+                        </header>
+                        <label className="selinux-toggle">
+                          <span className="toggle-copy">
+                            <strong>
+                              {advanced.installErofsUtils
+                                ? 'Managed'
+                                : 'Host provided'}
+                            </strong>
+                            <small>Uses the enforced job installation mode.</small>
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={advanced.installErofsUtils}
+                            onChange={(event) =>
+                              setAdvanced((current) => ({
+                                ...current,
+                                installErofsUtils: event.target.checked,
+                              }))
+                            }
+                          />
+                          <span className="toggle-track" aria-hidden="true">
+                            <span />
+                          </span>
+                        </label>
+                        {advanced.installErofsUtils && (
+                          <label className="erofs-image-field">
+                            <span>Utility image override</span>
+                            <input
+                              type="text"
+                              value={advanced.erofsUtilsImage}
+                              placeholder="quay.io/kata-containers/erofs-utils:1.9.3"
+                              onChange={(event) =>
+                                setAdvanced((current) => ({
+                                  ...current,
+                                  erofsUtilsImage: event.target.value,
+                                }))
+                              }
+                            />
+                            <small>Leave empty to use the pinned image.</small>
+                          </label>
+                        )}
+                      </div>
                     </section>
                   )}
                   {cluster.distributionId === 'kubeadm' && (
@@ -1480,6 +1582,9 @@ function App() {
                           runtime.selectedShimIds.length === 0 && (
                             <li>At least one Kata RuntimeClass</li>
                           )}
+                        {erofsDiskSizeMissing && (
+                          <li>EROFS disk-backed writable-layer size</li>
+                        )}
                         {incompleteFamilies.map((family) => (
                           <li key={family.id}>
                             CPU / TEE for {family.displayName}

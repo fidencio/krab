@@ -100,6 +100,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
 test('local artifacts install only the selected upstream RuntimeClasses', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
   const local = catalog.vendors.find(({ id }) => id === 'local')!
+  assert.equal(createAdvancedConfiguration().erofsDiskSize, '256M')
   const generatedValues = parse(
     buildValuesBundle(
       catalog,
@@ -140,6 +141,38 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
   assert.equal(
     generatedValues['kata-deploy'].containerd.userDropIn,
     "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n",
+  )
+
+  const configuredValues = parse(
+    buildValuesBundle(
+      catalog,
+      local,
+      {},
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: ['qemu-nvidia-cpu-runtime-rs'],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      {
+        ...createAdvancedConfiguration(),
+        erofsSnapshotterMode: 'disk',
+        erofsDiskSize: '24G',
+        erofsDmverity: false,
+        erofsEnableFsverity: true,
+      },
+    ),
+  )
+  assert.deepEqual(configuredValues['kata-deploy'].snapshotter, {
+    setup: ['erofs'],
+    erofsSnapshotterMode: 'disk',
+    erofsDmverity: false,
+  })
+  assert.equal(
+    configuredValues['kata-deploy'].containerd.userDropIn,
+    "[plugins.'io.containerd.snapshotter.v1.erofs']\n" +
+      '  enable_fsverity = true\n  default_size = "24G"\n',
   )
 })
 

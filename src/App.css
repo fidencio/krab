@@ -1438,6 +1438,49 @@ button.vendor-card {
   width: 100%;
 }
 
+.erofs-mode-field {
+  max-width: 360px;
+}
+
+.erofs-mode-field.with-size {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 730px;
+}
+
+.erofs-mode-field small,
+.erofs-utilities header small {
+  color: #78847f;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.erofs-mode-field input:invalid {
+  border-color: rgba(232, 104, 16, 0.65);
+}
+
+.erofs-integrity-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.erofs-utilities {
+  padding-top: 16px;
+  border-top: 1px solid #303d39;
+}
+
+.erofs-utilities > header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.erofs-utilities > header strong {
+  color: #dce3df;
+  font-size: 11px;
+}
+
 .erofs-image-field {
   display: flex;
   flex-direction: column;
@@ -2366,6 +2409,14 @@ button.vendor-card {
 
   .advanced-field-grid.three-columns,
   .advanced-field-grid.two-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .erofs-integrity-options {
+    grid-template-columns: 1fr;
+  }
+
+  .erofs-mode-field.with-size {
     grid-template-columns: 1fr;
   }
 

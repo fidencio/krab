@@ -236,6 +236,10 @@ export type AdvancedConfiguration = {
   containerdConfigDir: string
   containerdRuntimeSocket: string
   containerdConfigFileName: string
+  erofsSnapshotterMode: 'memory' | 'disk'
+  erofsDiskSize: string
+  erofsDmverity: boolean
+  erofsEnableFsverity: boolean
   installErofsUtils: boolean
   erofsUtilsImage: string
   nodeSelector: Array<{ key: string; value: string }>
@@ -266,6 +270,10 @@ export const createAdvancedConfiguration = (): AdvancedConfiguration => ({
   containerdConfigDir: '',
   containerdRuntimeSocket: '',
   containerdConfigFileName: '',
+  erofsSnapshotterMode: 'memory',
+  erofsDiskSize: '256M',
+  erofsDmverity: true,
+  erofsEnableFsverity: false,
   installErofsUtils: false,
   erofsUtilsImage: '',
   nodeSelector: [],
@@ -479,12 +487,17 @@ export function buildValuesBundle(
     if (snapshotterConfiguration) {
       delete runtimeValues.snapshotter.erofsMergeMode
       runtimeValues.snapshotter.erofsSnapshotterMode =
-        snapshotterConfiguration.erofsSnapshotterMode
+        advanced.erofsSnapshotterMode
       runtimeValues.snapshotter.erofsDmverity =
-        snapshotterConfiguration.erofsDmverity
+        advanced.erofsDmverity
       runtimeValues.containerd = {
         ...(runtimeValues.containerd ?? {}),
-        userDropIn: snapshotterConfiguration.containerdUserDropIn,
+        userDropIn:
+          "[plugins.'io.containerd.snapshotter.v1.erofs']\n" +
+          `  enable_fsverity = ${advanced.erofsEnableFsverity}\n` +
+          (advanced.erofsSnapshotterMode === 'disk'
+            ? `  default_size = "${advanced.erofsDiskSize.trim() || '256M'}"\n`
+            : ''),
       }
     } else if (!requiredSnapshotters.has('erofs')) {
       delete runtimeValues.snapshotter.erofsSnapshotterMode
