@@ -905,6 +905,29 @@ button.vendor-card {
   border-bottom: 1px solid var(--line);
 }
 
+.profile-list.nvidia-profiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.nvidia-profiles .profile-card {
+  min-width: 0;
+}
+
+.nvidia-profiles .profile-card > summary {
+  min-height: 92px;
+  gap: 16px;
+}
+
+.nvidia-profiles .profile-card > summary > div:first-child {
+  min-width: 0;
+}
+
+.nvidia-profiles .profile-card summary strong {
+  overflow-wrap: anywhere;
+}
+
 .local-runtime-selection {
   padding: 20px;
   border: 1px solid rgba(118, 185, 0, 0.44);
@@ -2268,6 +2291,10 @@ button.vendor-card {
 
   .profile-list {
     padding: 22px 0;
+  }
+
+  .profile-list.nvidia-profiles {
+    grid-template-columns: 1fr;
   }
 
   .code-column {

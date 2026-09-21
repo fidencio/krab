@@ -1232,7 +1232,11 @@ function App() {
               </details>
 
               <div className="builder-grid">
-                <div className="profile-list">
+                <div
+                  className={`profile-list ${
+                    selectedVendor.id === 'nvidia' ? 'nvidia-profiles' : ''
+                  }`}
+                >
                   {selectedVendor.id === 'local' && (
                     <section
                       className={`local-runtime-selection ${
