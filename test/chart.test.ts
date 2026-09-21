@@ -122,6 +122,10 @@ test('chart defaults and generated values satisfy the values schema', async () =
       JSON.stringify(validate.errors),
     )
     assert.equal(runtimeGenerated.nvidia.enabled, false)
+    assert.equal(
+      runtimeGenerated['kata-deploy'].snapshotter?.erofsMergeMode,
+      undefined,
+    )
   }
 })
 

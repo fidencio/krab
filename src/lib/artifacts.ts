@@ -502,6 +502,7 @@ export function buildValuesBundle(
             : ''),
       }
     } else if (!requiredSnapshotters.has('erofs')) {
+      delete runtimeValues.snapshotter.erofsMergeMode
       delete runtimeValues.snapshotter.erofsSnapshotterMode
       delete runtimeValues.snapshotter.erofsDmverity
       delete runtimeValues.containerd
