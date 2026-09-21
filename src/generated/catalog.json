@@ -702,7 +702,7 @@
       "id": "local",
       "displayName": "Local",
       "tagline": "Standard Kata deployment",
-      "description": "6 upstream RuntimeClasses for a standard Kata deployment.",
+      "description": "7 upstream RuntimeClasses for a standard Kata deployment.",
       "logo": "local.svg",
       "capabilities": [
         {
@@ -787,6 +787,26 @@
                 "allowedHypervisorAnnotations": [],
                 "containerd": {
                   "snapshotter": "erofs"
+                }
+              },
+              "qemu-coco-dev-runtime-rs": {
+                "enabled": null,
+                "supportedArches": [
+                  "amd64",
+                  "arm64",
+                  "s390x"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
                 }
               },
               "openvmm-azure-runtime-rs": {
@@ -875,6 +895,18 @@
               "erofsDmverity": true,
               "containerdUserDropIn": "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n"
             },
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+          },
+          {
+            "id": "qemu-coco-dev-runtime-rs",
+            "runtimeClass": "kata-qemu-coco-dev-runtime-rs",
+            "supportedArches": [
+              "amd64",
+              "arm64",
+              "s390x"
+            ],
+            "snapshotter": "nydus",
             "nodeSelector": {},
             "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
           },

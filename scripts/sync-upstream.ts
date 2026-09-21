@@ -350,7 +350,6 @@ async function main() {
     .filter(([name, config]) =>
       name !== 'disableAll' &&
       !name.includes('nvidia-gpu') &&
-      !name.includes('coco-dev') &&
       !/(?:^|-)(?:snp|tdx|se)(?:-|$)/.test(name) &&
       (name.endsWith('-runtime-rs') || name === 'dragonball') &&
       typeof config === 'object' &&

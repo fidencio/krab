@@ -61,6 +61,8 @@ const runtimeTokenNames: Record<string, string> = {
   openvmm: 'OpenVMM',
   nvidia: 'NVIDIA',
   cpu: 'CPU',
+  coco: 'CoCo',
+  dev: 'Dev',
   snp: 'SNP',
   tdx: 'TDX',
   se: 'Secure Execution',
@@ -80,6 +82,9 @@ const runtimeName = (id: string) =>
 const runtimeUse = (id: string) => {
   const traits = new Set(id.replace(/-runtime-rs$/, '').split('-'))
 
+  if (traits.has('coco') && traits.has('dev')) {
+    return 'Development-only CoCo testing without a hardware TEE.'
+  }
   if (traits.has('snp')) return 'Confidential workloads protected by AMD SEV-SNP.'
   if (traits.has('tdx')) return 'Confidential workloads protected by Intel TDX.'
   if (traits.has('se')) return 'IBM Z Secure Execution workloads.'

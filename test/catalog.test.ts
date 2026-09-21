@@ -35,6 +35,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
       'dragonball',
       'qemu-runtime-rs',
       'qemu-nvidia-cpu-runtime-rs',
+      'qemu-coco-dev-runtime-rs',
       'openvmm-azure-runtime-rs',
     ],
   )
@@ -204,6 +205,30 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
     "[plugins.'io.containerd.snapshotter.v1.erofs']\n" +
       '  enable_fsverity = true\n  default_size = "24G"\n',
   )
+
+  const cocoDevValues = parse(
+    buildValuesBundle(
+      catalog,
+      local,
+      {},
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: ['qemu-coco-dev-runtime-rs'],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+  assert.deepEqual(Object.keys(cocoDevValues['kata-deploy'].shims), [
+    'disableAll',
+    'qemu-coco-dev-runtime-rs',
+  ])
+  assert.deepEqual(cocoDevValues['kata-deploy'].snapshotter, {
+    setup: ['nydus'],
+  })
+  assert.equal(cocoDevValues['kata-deploy'].containerd, undefined)
 })
 
 test('artifacts wrap upstream profiles in the planned KRAB parent chart', async () => {
