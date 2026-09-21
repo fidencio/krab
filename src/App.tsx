@@ -13,7 +13,6 @@ import {
   Trash2,
 } from 'lucide-react'
 import catalogData from './generated/catalog.json'
-import provenanceData from './generated/provenance.json'
 import {
   buildCustomRuntimeClass,
   buildInstallScript,
@@ -629,26 +628,6 @@ function App() {
                     <ExternalLink size={11} />
                   </a>
                 )}
-              </div>
-
-              <div className="source-strip">
-                <a
-                  href={selectedVendor.runtime.chart.sourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {selectedVendor.runtime.chart.name} {selectedVendor.runtime.chart.version}
-                </a>
-                {selectedVendor.id === 'nvidia' && (
-                  <a
-                    href={selectedVendor.provisioner.chart.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Experimental provisioner · PR #{selectedVendor.provisioner.chart.pullRequest}
-                  </a>
-                )}
-                <span>{provenanceData.generatedFrom.length} pinned source files</span>
               </div>
 
               {valuesReady && (

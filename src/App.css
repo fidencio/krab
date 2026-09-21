@@ -822,33 +822,6 @@ button.vendor-card {
   text-decoration: none;
 }
 
-.source-strip {
-  order: 5;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 18px;
-  padding: 12px 0;
-  border-top: 1px solid var(--line);
-  color: #72817b;
-  font-size: 10px;
-}
-
-.source-strip a,
-.source-strip span {
-  padding: 5px 8px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  color: #9ba8a3;
-  background: rgba(255, 255, 255, 0.02);
-  text-decoration: none;
-}
-
-.source-strip a:nth-child(2) {
-  border-color: rgba(232, 104, 16, 0.32);
-  color: var(--kata-orange-bright);
-}
-
 .architecture-details {
   order: 6;
   margin: 0 0 24px;
@@ -2786,10 +2759,6 @@ button.vendor-card {
 
   .artifact-workspace {
     grid-template-columns: 1fr;
-  }
-
-  .source-strip {
-    flex-wrap: wrap;
   }
 
   .architecture-chain {
