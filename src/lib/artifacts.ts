@@ -263,6 +263,8 @@ export type AdvancedConfiguration = {
   nodeSelector: Array<{ key: string; value: string }>
   nodeAffinity: RuntimeNodeAffinity[]
   tolerations: RuntimeToleration[]
+  scheduledReconcileEnabled: boolean
+  scheduledReconcileSchedule: string
   images: Record<
     'kataDeploy' | 'nfd' | 'devicePlugin' | 'provisioner',
     ChartImageConfiguration
@@ -300,6 +302,8 @@ export const createAdvancedConfiguration = (): AdvancedConfiguration => ({
   nodeSelector: [],
   nodeAffinity: [],
   tolerations: [],
+  scheduledReconcileEnabled: false,
+  scheduledReconcileSchedule: '*/15 * * * *',
   images: {
     kataDeploy: {
       ...createChartImageConfiguration(),
@@ -475,6 +479,7 @@ export function buildValuesBundle(
     kubectlImage?: { reference?: string; tag?: string }
     job?: {
       dispatcherImage?: { reference?: string; tag?: string }
+      reconcile?: { enabled: boolean; schedule: string }
     }
     nodeBinaries?: Record<
       string,
@@ -709,6 +714,15 @@ export function buildValuesBundle(
     }))
   if (tolerations.length > 0) {
     runtimeValues.tolerations = tolerations
+  }
+  if (advanced.scheduledReconcileEnabled) {
+    runtimeValues.job = {
+      ...(runtimeValues.job ?? {}),
+      reconcile: {
+        enabled: true,
+        schedule: advanced.scheduledReconcileSchedule.trim() || '*/15 * * * *',
+      },
+    }
   }
   const kataDeployImages = advanced.images.kataDeploy
   if (kataDeployImages.pullPolicy) {

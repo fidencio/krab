@@ -1443,6 +1443,72 @@ function App() {
                     )}
                   </section>
 
+                  <section className="advanced-group scheduled-reconcile">
+                    <header>
+                      <span>Kata runtime installer · New nodes</span>
+                      <strong>Scheduled reconcile CronJob</strong>
+                      <small>
+                        Installs Kata on matching nodes that join after the Helm
+                        release is applied.
+                      </small>
+                    </header>
+                    <div className="scheduled-reconcile-controls">
+                      <label className="selinux-toggle scheduled-reconcile-toggle">
+                        <strong>
+                          {advanced.scheduledReconcileEnabled
+                            ? 'Enabled'
+                            : 'Disabled'}
+                        </strong>
+                        <input
+                          type="checkbox"
+                          checked={advanced.scheduledReconcileEnabled}
+                          onChange={(event) =>
+                            setAdvanced((current) => ({
+                              ...current,
+                              scheduledReconcileEnabled: event.target.checked,
+                            }))
+                          }
+                        />
+                        <span className="toggle-track" aria-hidden="true">
+                          <span />
+                        </span>
+                      </label>
+                      {advanced.scheduledReconcileEnabled && (
+                        <label className="scheduled-reconcile-schedule">
+                          <span>Cron schedule</span>
+                          <input
+                            type="text"
+                            value={advanced.scheduledReconcileSchedule}
+                            placeholder="*/15 * * * *"
+                            onChange={(event) =>
+                              setAdvanced((current) => ({
+                                ...current,
+                                scheduledReconcileSchedule: event.target.value,
+                              }))
+                            }
+                          />
+                        </label>
+                      )}
+                    </div>
+                    <p className="scheduled-reconcile-note" role="note">
+                      <AlertTriangle size={14} />
+                      <span>
+                        <strong>This is a workaround.</strong>
+                        <span>
+                          Prefer Flux, Argo CD, or another cluster lifecycle layer
+                          to re-apply the KRAB release when nodes change.
+                        </span>
+                        <span>
+                          KRAB&apos;s installation steps are idempotent, so rerunning
+                          them is expected and safe.
+                        </span>
+                        <span>
+                          This CronJob only adds matching nodes that joined later.
+                        </span>
+                      </span>
+                    </p>
+                  </section>
+
                   <section className="advanced-group">
                     <header>
                       <span>All deployed components</span>

@@ -1398,6 +1398,68 @@ button.vendor-card {
   text-transform: uppercase;
 }
 
+.scheduled-reconcile-controls {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.scheduled-reconcile-toggle {
+  width: 142px;
+  height: 38px;
+  flex: 0 0 142px;
+}
+
+.scheduled-reconcile-schedule {
+  width: 260px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.scheduled-reconcile-schedule > span {
+  flex: 0 0 auto;
+  color: #a0aaa5;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.scheduled-reconcile-schedule input {
+  min-width: 0;
+  flex: 1;
+  height: 38px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.scheduled-reconcile-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 760px;
+  margin: 12px 0 0;
+  padding: 3px 0 3px 10px;
+  border-left: 2px solid rgba(232, 104, 16, 0.68);
+  color: #b9a399;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.scheduled-reconcile-note svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--kata-orange-bright);
+}
+
+.scheduled-reconcile-note > span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.scheduled-reconcile-note strong {
+  color: #e9cbb8;
+}
+
 .advanced-config input,
 .advanced-config select,
 .advanced-config textarea {
@@ -2744,6 +2806,17 @@ button.vendor-card {
   .advanced-field-grid.three-columns,
   .advanced-field-grid.two-columns {
     grid-template-columns: 1fr;
+  }
+
+  .scheduled-reconcile-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .scheduled-reconcile-toggle,
+  .scheduled-reconcile-schedule {
+    width: 100%;
+    flex-basis: auto;
   }
 
   .erofs-integrity-options {

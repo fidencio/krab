@@ -134,7 +134,10 @@ test('generated catalog carries accurate upstream chart data', async () => {
 test('local artifacts install only the selected upstream RuntimeClasses', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
   const local = catalog.vendors.find(({ id }) => id === 'local')!
-  assert.equal(createAdvancedConfiguration().erofsDiskSize, '256M')
+  const defaultAdvanced = createAdvancedConfiguration()
+  assert.equal(defaultAdvanced.erofsDiskSize, '256M')
+  assert.equal(defaultAdvanced.scheduledReconcileEnabled, false)
+  assert.equal(defaultAdvanced.scheduledReconcileSchedule, '*/15 * * * *')
   const generatedValues = parse(
     buildValuesBundle(
       catalog,
@@ -163,6 +166,7 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
   assert.equal(shims['qemu-runtime-rs'].enabled, true)
   assert.equal(shims['qemu-runtime-rs'].nvrc, undefined)
   assert.equal(shims['qemu-nvidia-cpu-runtime-rs'].enabled, true)
+  assert.equal(generatedValues['kata-deploy'].job, undefined)
   assert.equal(
     shims['qemu-nvidia-cpu-runtime-rs'].containerd.snapshotter,
     'erofs',
@@ -372,6 +376,8 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
         effect: 'NoSchedule',
       },
     ],
+    scheduledReconcileEnabled: true,
+    scheduledReconcileSchedule: ' 0 */2 * * * ',
     images: {
       kataDeploy: {
         ...createAdvancedConfiguration().images.kataDeploy,
@@ -511,6 +517,10 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
     generatedValues['kata-deploy'].job.dispatcherImage.reference,
     'registry.example.com/dispatcher',
   )
+  assert.deepEqual(generatedValues['kata-deploy'].job.reconcile, {
+    enabled: true,
+    schedule: '0 */2 * * *',
+  })
   assert.deepEqual(generatedValues['node-feature-discovery'].imagePullSecrets, [
     { name: 'nfd-secret' },
   ])
