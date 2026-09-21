@@ -287,6 +287,40 @@ export const createAdvancedConfiguration = (): AdvancedConfiguration => ({
 const yaml = (value: unknown) =>
   stringify(value, { lineWidth: 0 }).trim()
 
+export function resolveRuntimeShimIds(
+  vendor: VendorCatalog,
+  selections: FamilySelections,
+  runtime: RuntimeConfiguration,
+) {
+  const enabledShims = new Set(
+    runtime.selectedShimIds.filter((shimId) =>
+      vendor.runtime.shims.some(({ id }) => id === shimId),
+    ),
+  )
+  const baseRuntimeShim = vendor.runtime.shims.find(
+    ({ id }) => !id.includes('-snp-') && !id.includes('-tdx-'),
+  )
+
+  for (const family of vendor.hardwareFamilies) {
+    const selection = selections[family.id]
+    const mode = family.modes.find(
+      (candidate) => candidate.id === selection?.modeId,
+    )
+    if (!mode) continue
+
+    if (mode.id === 'off' && baseRuntimeShim) {
+      enabledShims.add(baseRuntimeShim.id)
+      continue
+    }
+    for (const cpuTeeId of selection.cpuTeeIds) {
+      const tee = vendor.runtime.cpuTees.find(({ id }) => id === cpuTeeId)
+      if (tee) enabledShims.add(tee.shimId)
+    }
+  }
+
+  return [...enabledShims]
+}
+
 export function buildValuesBundle(
   catalog: ExplorerCatalog,
   vendor: VendorCatalog,
@@ -346,14 +380,8 @@ export function buildValuesBundle(
     ...(runtimeValues.selinux ?? {}),
     enabled: cluster.selinuxEnabled,
   }
-  const enabledShims = new Set<string>()
-  for (const shimId of runtime.selectedShimIds) {
-    if (vendor.runtime.shims.some(({ id }) => id === shimId)) {
-      enabledShims.add(shimId)
-    }
-  }
-  const baseRuntimeShim = vendor.runtime.shims.find(
-    ({ id }) => !id.includes('-snp-') && !id.includes('-tdx-'),
+  const enabledShims = new Set(
+    resolveRuntimeShimIds(vendor, selections, runtime),
   )
 
   for (const family of vendor.hardwareFamilies) {
@@ -384,11 +412,7 @@ export function buildValuesBundle(
               ...cpuNodeSelector,
             },
           }
-          enabledShims.add(tee.shimId)
         }
-      }
-      if (mode.id === 'off' && baseRuntimeShim) {
-        enabledShims.add(baseRuntimeShim.id)
       }
     }
   }

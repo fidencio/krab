@@ -17,6 +17,7 @@ import {
   buildInstallScript,
   buildValuesBundle,
   createAdvancedConfiguration,
+  resolveRuntimeShimIds,
   type AdvancedConfiguration,
   type ChartImageConfiguration,
   type ClusterConfiguration,
@@ -73,22 +74,22 @@ const runtimeName = (id: string) =>
     )
     .join(' · ')
 
-const runtimeHint = (id: string) => {
+const runtimeUse = (id: string) => {
   const traits = new Set(id.replace(/-runtime-rs$/, '').split('-'))
 
-  if (traits.has('snp')) return 'Choose for confidential workloads protected by AMD SEV-SNP.'
-  if (traits.has('tdx')) return 'Choose for confidential workloads protected by Intel TDX.'
-  if (traits.has('se')) return 'Choose for IBM Z Secure Execution workloads.'
-  if (traits.has('openvmm')) return 'Choose for Azure environments built around OpenVMM.'
+  if (traits.has('snp')) return 'Confidential workloads protected by AMD SEV-SNP.'
+  if (traits.has('tdx')) return 'Confidential workloads protected by Intel TDX.'
+  if (traits.has('se')) return 'IBM Z Secure Execution workloads.'
+  if (traits.has('openvmm')) return 'Azure environments built around OpenVMM.'
   if (traits.has('dragonball')) {
-    return 'Choose the all-in-one shim and VMM for a smaller stack and fast container startup.'
+    return 'An all-in-one shim and VMM for a smaller stack and fast startup.'
   }
   if (traits.has('nvidia') && traits.has('cpu')) {
-    return 'Choose a minimal, hardened QEMU and runtime stack.'
+    return 'A minimal, hardened QEMU and runtime stack.'
   }
-  if (traits.has('azure')) return 'Choose the Azure-tuned Cloud Hypervisor runtime.'
-  if (traits.has('clh')) return 'Choose a lightweight, modern alternative to QEMU.'
-  return 'Choose the broadly compatible default for general Kata workloads.'
+  if (traits.has('azure')) return 'The Azure-tuned Cloud Hypervisor runtime.'
+  if (traits.has('clh')) return 'A lightweight, modern alternative to QEMU.'
+  return 'The broadly compatible default for general Kata workloads.'
 }
 
 const profileSummary = (
@@ -164,6 +165,46 @@ function App() {
     cluster.distributionId !== null &&
     incompleteFamilies.length === 0 &&
     (selectedVendor.id !== 'local' || runtime.selectedShimIds.length > 0)
+  const installedRuntimeClasses = useMemo(() => {
+    const shimIds = resolveRuntimeShimIds(
+      selectedVendor,
+      selections,
+      runtime,
+    )
+    const baseShim = selectedVendor.runtime.shims.find(
+      ({ id }) => !id.includes('-snp-') && !id.includes('-tdx-'),
+    )
+
+    return shimIds.flatMap((shimId) => {
+      const shim = selectedVendor.runtime.shims.find(({ id }) => id === shimId)
+      if (!shim) return []
+      const tee = selectedVendor.runtime.cpuTees.find(
+        ({ shimId: teeShimId }) => teeShimId === shimId,
+      )
+      const contexts = selectedVendor.hardwareFamilies.flatMap((family) => {
+        const selection = selections[family.id]
+        const mode = family.modes.find(({ id }) => id === selection?.modeId)
+        if (!mode) return []
+        if (mode.id === 'off' && shim.id === baseShim?.id) {
+          return [`${family.displayName} · ${mode.displayName}`]
+        }
+        if (tee && selection.cpuTeeIds.includes(tee.id)) {
+          return [
+            `${family.displayName} · ${mode.displayName} · ${tee.displayName}`,
+          ]
+        }
+        return []
+      })
+      const purpose =
+        selectedVendor.id === 'nvidia'
+          ? tee
+            ? `NVIDIA pod sandboxes using confidential GPUs on ${tee.displayName} hosts.`
+            : 'NVIDIA pod sandboxes using direct GPU passthrough.'
+          : runtimeUse(shim.id)
+
+      return [{ ...shim, purpose, contexts }]
+    })
+  }, [runtime, selectedVendor, selections])
   const requiresErofs =
     selectedVendor.hardwareFamilies.some(
       (family) => selections[family.id]?.modeId === 'off',
@@ -1224,7 +1265,7 @@ function App() {
                             />
                             <span>
                               <strong>{runtimeName(shim.id)}</strong>
-                              <small>{runtimeHint(shim.id)}</small>
+                              <small>{runtimeUse(shim.id)}</small>
                               <em>
                                 {shim.supportedArches.length === 1
                                   ? `Architecture: ${shim.supportedArches[0]}`
@@ -1345,6 +1386,58 @@ function App() {
                     </details>
                   ))}
                 </div>
+
+                <section className="runtime-install-summary">
+                  <header>
+                    <div>
+                      <span>Installation summary</span>
+                      <h2>RuntimeClasses installed on the cluster</h2>
+                      <p>
+                        These are the Kubernetes RuntimeClass names workloads
+                        will reference through <code>runtimeClassName</code>.
+                      </p>
+                    </div>
+                    <strong>
+                      {installedRuntimeClasses.length}{' '}
+                      {installedRuntimeClasses.length === 1
+                        ? 'RuntimeClass'
+                        : 'RuntimeClasses'}
+                    </strong>
+                  </header>
+                  {installedRuntimeClasses.length > 0 ? (
+                    <div className="runtime-summary-grid">
+                      {installedRuntimeClasses.map((shim) => (
+                        <article key={shim.id}>
+                          <div className="runtime-summary-title">
+                            <Check size={14} />
+                            <div>
+                              <span>{runtimeName(shim.id)}</span>
+                              <code>{shim.runtimeClass}</code>
+                            </div>
+                          </div>
+                          <p>{shim.purpose}</p>
+                          {shim.contexts.length > 0 && (
+                            <ul>
+                              {shim.contexts.map((context) => (
+                                <li key={context}>{context}</li>
+                              ))}
+                            </ul>
+                          )}
+                          <small>
+                            {shim.supportedArches.length === 1
+                              ? `Architecture: ${shim.supportedArches[0]}`
+                              : `Architectures: ${shim.supportedArches.join(' · ')}`}
+                          </small>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="runtime-summary-empty">
+                      Select a runtime or NVIDIA hardware profile to see what
+                      workloads will be able to request.
+                    </p>
+                  )}
+                </section>
 
                 <aside className="code-column">
                   <div className="code-heading">
