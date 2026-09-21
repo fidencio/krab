@@ -2570,7 +2570,7 @@ button.vendor-card {
 
 .code-preview {
   position: relative;
-  min-height: 620px;
+  height: 520px;
   overflow: hidden;
   border: 1px solid #34413e;
   border-radius: 12px;
@@ -2578,7 +2578,7 @@ button.vendor-card {
 }
 
 .code-preview pre {
-  height: 620px;
+  height: 100%;
   margin: 0;
   padding: 25px 21px;
   overflow: auto;
@@ -2786,8 +2786,7 @@ button.vendor-card {
 
   .code-preview,
   .code-preview pre {
-    height: 520px;
-    min-height: 520px;
+    height: 420px;
   }
 
   .values-blocked {
