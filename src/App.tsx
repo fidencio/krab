@@ -542,75 +542,56 @@ function App() {
                     </div>
                   </button>
                 ))}
-                <a
-                  className="vendor-card external-platform-card openshift-card"
-                  href="https://docs.redhat.com/en/documentation/openshift_sandboxed_containers"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <div className="card-topline">
-                    <span className="external-platform-status">Running OpenShift?</span>
-                    <span className="external-platform-link">
-                      <ExternalLink size={15} />
-                    </span>
-                  </div>
-                  <div className="external-platform-brand">
-                    <img
-                      src={brandLogos['./assets/brands/openshift.svg']}
-                      alt=""
-                    />
-                    <span>
-                      <small>Red Hat OpenShift</small>
-                      <strong>OpenShift Sandboxed Containers</strong>
-                    </span>
-                  </div>
-                  <p>
-                    KRAB does not generate OpenShift deployment artifacts.
-                  </p>
-                  <div className="capabilities">
-                    <span>Operator-managed</span>
-                    <span>Kata Containers</span>
-                  </div>
-                  <div className="card-link">
-                    Open latest Red Hat documentation
-                    <ArrowRight size={18} />
-                  </div>
-                </a>
-                <a
-                  className="vendor-card external-platform-card azure-card"
-                  href="https://learn.microsoft.com/en-us/azure/aks/use-pod-sandboxing"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <div className="card-topline">
-                    <span className="external-platform-status">Running Azure AKS?</span>
-                    <span className="external-platform-link">
-                      <ExternalLink size={15} />
-                    </span>
-                  </div>
-                  <div className="external-platform-brand">
-                    <img
-                      src={brandLogos['./assets/brands/azure-aks.svg']}
-                      alt=""
-                    />
-                    <span>
-                      <small>Microsoft Azure</small>
-                      <strong>AKS Pod Sandboxing</strong>
-                    </span>
-                  </div>
-                  <p>
-                    Although KRAB works on Azure, the preferred path is AKS Pod
-                    Sandboxing.
-                  </p>
-                  <div className="capabilities">
-                    <span>AKS-managed</span>
-                    <span>Kata Containers</span>
-                  </div>
-                  <div className="card-link">
-                    Open Microsoft documentation
-                    <ArrowRight size={18} />
-                  </div>
-                </a>
+                  <article
+                    className="vendor-card external-platform-card openshift-card"
+                  >
+                    <div className="card-topline">
+                      <span className="external-platform-status">Running OpenShift?</span>
+                    </div>
+                    <div className="external-platform-brand">
+                      <img
+                        src={brandLogos['./assets/brands/openshift.svg']}
+                        alt=""
+                      />
+                      <span>
+                        <small>Red Hat OpenShift</small>
+                        <strong>OpenShift Sandboxed Containers</strong>
+                      </span>
+                    </div>
+                    <p>
+                      KRAB does not work with OpenShift. Use OpenShift Sandboxed
+                      Containers instead.
+                    </p>
+                    <div className="capabilities">
+                      <span>Operator-managed</span>
+                      <span>Kata Containers</span>
+                    </div>
+                  </article>
+                  <article
+                    className="vendor-card external-platform-card azure-card"
+                  >
+                    <div className="card-topline">
+                      <span className="external-platform-status">Running Azure AKS?</span>
+                    </div>
+                    <div className="external-platform-brand">
+                      <img
+                        src={brandLogos['./assets/brands/azure-aks.svg']}
+                        alt=""
+                      />
+                      <span>
+                        <small>Microsoft Azure</small>
+                        <strong>AKS Pod Sandboxing</strong>
+                      </span>
+                    </div>
+                    <p>
+                      Although KRAB works on Azure, the preferred path is AKS Pod
+                      Sandboxing.
+                    </p>
+                    <div className="capabilities">
+                      <span>AKS-managed</span>
+                      <span>Kata Containers</span>
+                    </div>
+                  </article>
               </div>
             </div>
           ) : (

@@ -246,14 +246,6 @@ button.vendor-card {
     radial-gradient(circle at 95% 5%, rgba(255, 255, 255, 0.07), transparent 45%),
     #131e1b;
   color: inherit;
-  text-decoration: none;
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.external-platform-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(241, 246, 243, 0.7);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
 }
 
 .external-platform-status {
@@ -272,16 +264,6 @@ button.vendor-card {
   background: #e7edea;
   box-shadow: 0 0 10px rgba(231, 237, 234, 0.28);
   vertical-align: 1px;
-}
-
-.external-platform-link {
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #e7edea;
-  color: #17201d;
 }
 
 .external-platform-brand {
@@ -325,11 +307,6 @@ button.vendor-card {
   line-height: 1.55;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-}
-
-.external-platform-card .card-link {
-  padding-top: 15px;
-  color: #e3e9e6;
 }
 
 .azure-card .external-platform-brand img {
