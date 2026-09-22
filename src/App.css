@@ -211,6 +211,35 @@ nav a:hover {
   padding: 22px;
 }
 
+.managed-platform-guidance {
+  width: calc(100% - 44px);
+  max-width: 1136px;
+  margin: 10px auto 22px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.managed-platform-guidance > header {
+  margin-bottom: 16px;
+}
+
+.managed-platform-guidance h3 {
+  margin: 0;
+  color: #e5e9e7;
+  font: 700 17px 'Manrope', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.managed-platform-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.managed-platform-grid .vendor-card {
+  min-height: 300px;
+}
+
 .vendor-card {
   min-height: 360px;
   display: flex;
@@ -2702,6 +2731,19 @@ button.vendor-card {
   .hardware-grid {
     grid-template-columns: 1fr;
     padding: 16px;
+  }
+
+  .managed-platform-guidance {
+    width: calc(100% - 32px);
+    margin-top: 8px;
+  }
+
+  .managed-platform-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .managed-platform-grid .vendor-card {
+    min-height: 280px;
   }
 
   .vendor-card {

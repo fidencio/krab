@@ -493,8 +493,7 @@ function App() {
                 <div>
                   <h2>Who powers your architecture?</h2>
                   <p>
-                    Choose the infrastructure KRAB should build around, or follow
-                    a managed platform path.
+                    Choose the infrastructure KRAB should build around.
                   </p>
                 </div>
               </div>
@@ -542,6 +541,13 @@ function App() {
                     </div>
                   </button>
                 ))}
+              </div>
+
+              <section className="managed-platform-guidance">
+                <header>
+                  <h3>Platform guidance</h3>
+                </header>
+                <div className="managed-platform-grid">
                   <article
                     className="vendor-card external-platform-card openshift-card"
                   >
@@ -592,7 +598,8 @@ function App() {
                       <span>Kata Containers</span>
                     </div>
                   </article>
-              </div>
+                </div>
+              </section>
             </div>
           ) : (
             <div className="install-builder">
