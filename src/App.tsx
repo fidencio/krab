@@ -222,6 +222,9 @@ function App() {
   )
   const hasRuntimeSelection =
     installedRuntimeClasses.length > 0 || advanced.customRuntimes.length > 0
+  const hasHardwareSelection = selectedVendor.hardwareFamilies.some(
+    (family) => Boolean(selections[family.id]?.modeId),
+  )
   const installedRuntimeClassCount =
     installedRuntimeClasses.length + advanced.customRuntimes.length
   const requiresErofs =
@@ -245,7 +248,7 @@ function App() {
     incompleteFamilies.length === 0 &&
     !erofsDiskSizeMissing &&
     customRuntimeErrors.length === 0 &&
-    (!runtimeOnlyVendor || hasRuntimeSelection)
+    (runtimeOnlyVendor ? hasRuntimeSelection : hasHardwareSelection)
 
   const selectVendor = (vendor: VendorCatalog) => {
     setSelectedVendorId(vendor.id)
@@ -2081,6 +2084,9 @@ function App() {
                           !hasRuntimeSelection && (
                             <li>At least one Kata RuntimeClass</li>
                           )}
+                        {!runtimeOnlyVendor && !hasHardwareSelection && (
+                          <li>At least one NVIDIA platform</li>
+                        )}
                         {customRuntimeErrors.map((error, index) => (
                           <li key={`custom-runtime-error-${index}`}>
                             Custom runtime {error.index + 1}: {error.message}
