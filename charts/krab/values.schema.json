@@ -64,7 +64,7 @@
     },
     "kata-device-provisioner": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "node-feature-discovery": {
           "type": "object",
