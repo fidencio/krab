@@ -19,6 +19,21 @@
   --muted: #6b6b6b;
 }
 
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  color: #e8edf4;
+  background: #0b1220;
+  --kata-primary: #f15b3e;
+  --kata-primary-bright: #ff765c;
+  --kata-orange: #f15b3e;
+  --kata-orange-bright: #ff8a70;
+  --ink: #e8edf4;
+  --surface: #0b1220;
+  --surface-raised: #121c2c;
+  --line: #2c3a4d;
+  --muted: #a8b3c2;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -31,7 +46,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #fff;
+  background: var(--surface);
 }
 
 button,

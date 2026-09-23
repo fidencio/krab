@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
@@ -9,7 +9,9 @@ import {
   Download,
   ExternalLink,
   FileCode2,
+  Moon,
   Plus,
+  Sun,
   Trash2,
   Upload,
 } from 'lucide-react'
@@ -45,8 +47,13 @@ const brandLogos = import.meta.glob('./assets/brands/*.{svg,png}', {
   query: '?url',
 }) as Record<string, string>
 
-const logoFor = (vendor: { logo: string }) =>
-  brandLogos[`./assets/brands/${vendor.logo}`]
+const logoFor = (vendor: { logo: string }, theme: 'light' | 'dark') => {
+  const logo =
+    theme === 'dark' && vendor.logo === 'nvidia.svg'
+      ? 'nvidia-dark.svg'
+      : vendor.logo
+  return brandLogos[`./assets/brands/${logo}`]
+}
 
 type DistributionOption =
   ExplorerCatalog['plannedArchitecture']['cluster']['distributions'][number]
@@ -247,6 +254,12 @@ const imageChartOptions = [
 ] as const
 
 function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const savedTheme = window.localStorage.getItem('krab-theme')
+    const initialTheme = savedTheme === 'dark' ? 'dark' : 'light'
+    document.documentElement.dataset.theme = initialTheme
+    return initialTheme
+  })
   const [step, setStep] = useState<1 | 2>(1)
   const [selectedVendorId, setSelectedVendorId] = useState(catalog.vendors[0]?.id ?? '')
   const selectedVendor = catalog.vendors.find(({ id }) => id === selectedVendorId) ??
@@ -274,6 +287,10 @@ function App() {
   const [advanced, setAdvanced] = useState<AdvancedConfiguration>(
     createAdvancedConfiguration,
   )
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    window.localStorage.setItem('krab-theme', theme)
+  }, [theme])
   const artifacts = useMemo(() => ({
     values: buildValuesBundle(
       catalog,
@@ -638,6 +655,22 @@ function App() {
         </button>
 
         <nav aria-label="Main navigation">
+          <button
+            type="button"
+            className="theme-toggle"
+            aria-label={`Use ${theme === 'light' ? 'dark' : 'light'} theme`}
+            title={`Use ${theme === 'light' ? 'dark' : 'light'} theme`}
+            aria-pressed={theme === 'dark'}
+            onClick={() =>
+              setTheme((current) => (current === 'light' ? 'dark' : 'light'))
+            }
+          >
+            {theme === 'light' ? (
+              <Moon size={15} aria-hidden="true" />
+            ) : (
+              <Sun size={15} aria-hidden="true" />
+            )}
+          </button>
           <a href="https://github.com/fidencio/krab" target="_blank" rel="noreferrer">
             View on GitHub
             <ExternalLink size={13} />
@@ -708,7 +741,7 @@ function App() {
                         onClick={() => selectVendor(vendor)}
                       >
                         <span className={`platform-row-brand vendor-${vendor.id}`}>
-                          <img src={logoFor(vendor)} alt={vendor.displayName} />
+                          <img src={logoFor(vendor, theme)} alt={vendor.displayName} />
                           <strong>{vendor.displayName}</strong>
                         </span>
                         <span className="platform-row-description">{vendor.description}</span>
@@ -736,7 +769,7 @@ function App() {
                     onClick={() => selectVendor(vendor)}
                   >
                     <span className={`platform-row-brand vendor-${vendor.id}`}>
-                      <img src={logoFor(vendor)} alt={vendor.displayName} />
+                      <img src={logoFor(vendor, theme)} alt={vendor.displayName} />
                     </span>
                     <span className="platform-row-description">{vendor.description}</span>
                     <span className="platform-row-capabilities">
@@ -811,7 +844,7 @@ function App() {
                 <button className="back-link" onClick={restart}>← Back to vendors</button>
                 <span className="builder-vendor-context">
                   <span className={`builder-vendor-logo vendor-${selectedVendor.id}`}>
-                    <img src={logoFor(selectedVendor)} alt="" />
+                    <img src={logoFor(selectedVendor, theme)} alt="" />
                     {selectedVendor.id === 'local' && (
                       <strong>{selectedVendor.displayName}</strong>
                     )}

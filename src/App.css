@@ -103,6 +103,27 @@ nav a:hover {
   color: #fff;
 }
 
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  border-color: var(--kata-primary);
+  color: var(--kata-primary);
+}
+
 .intro {
   position: relative;
   padding: 62px 0 60px;
@@ -3691,6 +3712,349 @@ nav a:hover,
   color: #f15b3e;
   font-weight: 700;
   text-underline-offset: 3px;
+}
+
+/* Kata dark theme: navy infrastructure surfaces with Kata orange actions. */
+:root[data-theme='dark'] body::before {
+  background-image: url('./assets/brands/krab-kata-hybrid.png');
+  opacity: 0.055;
+}
+
+:root[data-theme='dark'] .app-shell {
+  color: #e8edf4;
+}
+
+:root[data-theme='dark'] .site-header {
+  border-color: #2c3a4d;
+  background: #0b1220;
+}
+
+:root[data-theme='dark'] nav,
+:root[data-theme='dark'] nav a,
+:root[data-theme='dark'] .back-link {
+  color: #c1cad7;
+}
+
+:root[data-theme='dark'] nav a:hover,
+:root[data-theme='dark'] .back-link:hover {
+  color: #ff765c;
+}
+
+:root[data-theme='dark'] .theme-toggle {
+  border-color: #3b4a5f;
+  background: #111b2b;
+  color: #dce3ec;
+}
+
+:root[data-theme='dark'] .theme-toggle:hover {
+  border-color: #f15b3e;
+  color: #ff765c;
+}
+
+:root[data-theme='dark'] .intro h1,
+:root[data-theme='dark'] .panel h2,
+:root[data-theme='dark'] .managed-platform-guidance h3,
+:root[data-theme='dark'] .external-platform-brand strong,
+:root[data-theme='dark'] .vendor-logo-wrap.named-brand strong,
+:root[data-theme='dark'] .builder-vendor-logo strong,
+:root[data-theme='dark'] .hardware-copy strong,
+:root[data-theme='dark'] .builder-heading h1,
+:root[data-theme='dark'] .architecture-details summary strong,
+:root[data-theme='dark'] .architecture-chain strong,
+:root[data-theme='dark'] .install-command-callout h2,
+:root[data-theme='dark'] .local-runtime-selection h2,
+:root[data-theme='dark'] .nvidia-workload-heading h2,
+:root[data-theme='dark'] .advanced-config > summary strong,
+:root[data-theme='dark'] .advanced-group > header strong,
+:root[data-theme='dark'] .component-toggle-group > div > strong,
+:root[data-theme='dark'] .custom-runtime-card > header strong,
+:root[data-theme='dark'] .chart-image-card > strong,
+:root[data-theme='dark'] .cluster-config > header strong,
+:root[data-theme='dark'] .selinux-toggle strong,
+:root[data-theme='dark'] .profile-card h2,
+:root[data-theme='dark'] .profile-card summary strong,
+:root[data-theme='dark'] .profile-unavailable strong,
+:root[data-theme='dark'] .mode-option strong,
+:root[data-theme='dark'] .cpu-tee-selection strong,
+:root[data-theme='dark'] .runtime-install-summary h2,
+:root[data-theme='dark'] .runtime-summary-title span,
+:root[data-theme='dark'] .builder-section-title,
+:root[data-theme='dark'] .code-heading > div > span,
+:root[data-theme='dark'] .values-blocked strong,
+:root[data-theme='dark'] .platform-row-brand strong,
+:root[data-theme='dark'] .managed-platform-brand strong,
+:root[data-theme='dark'] .shim-drop-in > span strong,
+:root[data-theme='dark'] .local-runtime-grid strong,
+:root[data-theme='dark'] .debug-group > div > strong,
+:root[data-theme='dark'] .component-toggle-group > div > strong,
+:root[data-theme='dark'] .scheduled-reconcile-toggle strong {
+  color: #eef2f7;
+}
+
+:root[data-theme='dark'] .intro > p,
+:root[data-theme='dark'] .panel-heading p,
+:root[data-theme='dark'] .vendor-card > p,
+:root[data-theme='dark'] .external-platform-card > p,
+:root[data-theme='dark'] .hardware-copy small,
+:root[data-theme='dark'] .builder-heading p,
+:root[data-theme='dark'] .architecture-details summary small,
+:root[data-theme='dark'] .architecture-chain span,
+:root[data-theme='dark'] .install-command-callout p,
+:root[data-theme='dark'] .local-runtime-selection header p,
+:root[data-theme='dark'] .nvidia-workload-heading p,
+:root[data-theme='dark'] .advanced-config > summary small,
+:root[data-theme='dark'] .advanced-group > header small,
+:root[data-theme='dark'] .component-toggle-group > div > small,
+:root[data-theme='dark'] .custom-runtime-card > header small,
+:root[data-theme='dark'] .cluster-config > p,
+:root[data-theme='dark'] .selinux-toggle small,
+:root[data-theme='dark'] .profile-unavailable p,
+:root[data-theme='dark'] .mode-option small,
+:root[data-theme='dark'] .cpu-tee-selection > p,
+:root[data-theme='dark'] .runtime-install-summary header p,
+:root[data-theme='dark'] .runtime-summary-grid article > p,
+:root[data-theme='dark'] .code-heading small,
+:root[data-theme='dark'] .values-blocked p,
+:root[data-theme='dark'] .platform-group > header > p,
+:root[data-theme='dark'] .platform-row-description,
+:root[data-theme='dark'] .managed-platform-row > p,
+:root[data-theme='dark'] .local-runtime-grid small,
+:root[data-theme='dark'] .local-runtime-grid em,
+:root[data-theme='dark'] .runtime-summary-grid article > small,
+:root[data-theme='dark'] .debug-group > div > small,
+:root[data-theme='dark'] .component-toggle-group > div > small,
+:root[data-theme='dark'] .scheduled-reconcile-toggle small {
+  color: #a8b3c2;
+}
+
+:root[data-theme='dark'] .panel,
+:root[data-theme='dark'] .vendor-card.selected,
+:root[data-theme='dark'] .external-platform-card,
+:root[data-theme='dark'] .hardware-card,
+:root[data-theme='dark'] .architecture-details,
+:root[data-theme='dark'] .architecture-node,
+:root[data-theme='dark'] .install-command-callout,
+:root[data-theme='dark'] .local-runtime-selection,
+:root[data-theme='dark'] .cluster-config,
+:root[data-theme='dark'] .advanced-config,
+:root[data-theme='dark'] .profile-card,
+:root[data-theme='dark'] .runtime-install-summary,
+:root[data-theme='dark'] .values-blocked {
+  border-color: #334155;
+  background: #111b2b;
+  box-shadow: none;
+}
+
+:root[data-theme='dark'] .nvidia-profiles .profile-card,
+:root[data-theme='dark'] .nvidia-profiles .profile-card[open],
+:root[data-theme='dark'] .nvidia-profiles .profile-card.pending,
+:root[data-theme='dark'] .nvidia-profiles .profile-card.pending[open] {
+  border-color: #334155;
+  background: transparent;
+}
+
+:root[data-theme='dark'] .profile-card.pending,
+:root[data-theme='dark'] .profile-card.pending[open] {
+  border-color: #334155;
+  background: #0f1827;
+}
+
+:root[data-theme='dark'] .profile-card.pending h2,
+:root[data-theme='dark'] .profile-card.pending summary strong,
+:root[data-theme='dark'] .profile-summary-status span.pending {
+  color: #aab5c3;
+}
+
+:root[data-theme='dark'] .profile-summary-status span.pending {
+  background: transparent;
+}
+
+:root[data-theme='dark'] .managed-platform-guidance,
+:root[data-theme='dark'] .profile-list,
+:root[data-theme='dark'] .advanced-group,
+:root[data-theme='dark'] .architecture-details summary,
+:root[data-theme='dark'] .profile-card > summary,
+:root[data-theme='dark'] .platform-group + .platform-group,
+:root[data-theme='dark'] .platform-list,
+:root[data-theme='dark'] .platform-row,
+:root[data-theme='dark'] .managed-platform-list,
+:root[data-theme='dark'] .managed-platform-row {
+  border-color: #2c3a4d;
+}
+
+:root[data-theme='dark'] .import-values-button,
+:root[data-theme='dark'] .download-artifact-button,
+:root[data-theme='dark'] .artifact-actions .copy-artifact-button,
+:root[data-theme='dark'] .local-runtime-grid label,
+:root[data-theme='dark'] .hardware-icon,
+:root[data-theme='dark'] .capabilities span,
+:root[data-theme='dark'] .coming-soon,
+:root[data-theme='dark'] .advanced-config textarea,
+:root[data-theme='dark'] .advanced-config select,
+:root[data-theme='dark'] .advanced-list-heading button,
+:root[data-theme='dark'] .advanced-row > button,
+:root[data-theme='dark'] .custom-runtime-card,
+:root[data-theme='dark'] .custom-runtime-card > header button,
+:root[data-theme='dark'] .chart-image-card,
+:root[data-theme='dark'] .cluster-fields input,
+:root[data-theme='dark'] .info-popover summary,
+:root[data-theme='dark'] .popover-panel,
+:root[data-theme='dark'] .selinux-toggle,
+:root[data-theme='dark'] .profile-unavailable,
+:root[data-theme='dark'] .runtime-summary-grid article,
+:root[data-theme='dark'] .runtime-summary-empty,
+:root[data-theme='dark'] .code-tabs button {
+  border-color: #3a485b;
+  background: #162235;
+  color: #dce3ec;
+}
+
+:root[data-theme='dark'] .advanced-config input,
+:root[data-theme='dark'] .advanced-config select,
+:root[data-theme='dark'] .advanced-config textarea,
+:root[data-theme='dark'] .cluster-fields input,
+:root[data-theme='dark'] .distribution-select-trigger {
+  border-color: #46556a;
+  background: #0d1625;
+  color: #edf1f6;
+}
+
+:root[data-theme='dark'] .distribution-select-trigger .placeholder,
+:root[data-theme='dark'] .field-label small,
+:root[data-theme='dark'] .shim-drop-in > span small,
+:root[data-theme='dark'] .platform-row-capabilities,
+:root[data-theme='dark'] .managed-platform-meta,
+:root[data-theme='dark'] .managed-platform-brand small {
+  color: #8f9bad;
+}
+
+:root[data-theme='dark'] .distribution-select-options {
+  border-color: #46556a;
+  background: #111b2b;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.42);
+}
+
+:root[data-theme='dark'] .distribution-select-options button {
+  color: #e5eaf1;
+}
+
+:root[data-theme='dark'] .distribution-select-options button:hover,
+:root[data-theme='dark'] .distribution-select-options button:focus-visible {
+  background: #1d2a3d;
+}
+
+:root[data-theme='dark'] .distribution-select-options button.selected,
+:root[data-theme='dark'] .vendor-card.selected:hover,
+:root[data-theme='dark'] .hardware-card.selected,
+:root[data-theme='dark'] .local-runtime-grid label:has(input:checked),
+:root[data-theme='dark'] .mode-option:has(input:checked),
+:root[data-theme='dark'] .cpu-tee-selection label:has(input:checked),
+:root[data-theme='dark'] .platform-row:hover {
+  color: #ff8a70;
+  background: #251b22;
+}
+
+:root[data-theme='dark'] .platform-row {
+  color: #e8edf4;
+}
+
+:root[data-theme='dark'] .cluster-field,
+:root[data-theme='dark'] .field-label,
+:root[data-theme='dark'] .advanced-field-grid label > span,
+:root[data-theme='dark'] .image-overrides > span,
+:root[data-theme='dark'] .scheduled-reconcile-schedule > span {
+  color: #c3ccd8;
+}
+
+:root[data-theme='dark'] .download-artifact-button,
+:root[data-theme='dark'] .artifact-actions .copy-artifact-button {
+  border-color: #69778a;
+  background: transparent;
+  color: #e1e7ef;
+}
+
+:root[data-theme='dark'] .import-values-button:hover,
+:root[data-theme='dark'] .code-tabs button.active {
+  border-color: #f15b3e;
+  background: #251b22;
+  color: #ff8a70;
+}
+
+:root[data-theme='dark'] .import-values-message,
+:root[data-theme='dark'] .runtime-prerequisite,
+:root[data-theme='dark'] .runtime-prerequisite.managed {
+  border-color: #9b4a3b;
+  background: #251b22;
+  color: #f1b2a5;
+}
+
+:root[data-theme='dark'] .import-values-message.error {
+  color: #ffb4a6;
+}
+
+:root[data-theme='dark'] .install-command,
+:root[data-theme='dark'] .code-preview {
+  border-color: #344154;
+  background: #080e18;
+}
+
+:root[data-theme='dark'] .toggle-track {
+  border-color: #5a687b;
+  background: #273448;
+}
+
+:root[data-theme='dark'] .toggle-track > span {
+  background: #9aa6b5;
+}
+
+:root[data-theme='dark'] .attestation-guidance {
+  border-color: #317a9d;
+  background: #102432;
+}
+
+:root[data-theme='dark'] .attestation-guidance h2,
+:root[data-theme='dark'] .attestation-references strong {
+  color: #edf4f8;
+}
+
+:root[data-theme='dark'] .attestation-guidance-copy > p,
+:root[data-theme='dark'] .attestation-references span,
+:root[data-theme='dark'] .attestation-references code {
+  color: #adbdc8;
+}
+
+:root[data-theme='dark'] .attestation-references a,
+:root[data-theme='dark'] .attestation-references a:hover {
+  background: #142b3a;
+}
+
+:root[data-theme='dark'] .runtime-summary-grid li {
+  border-color: #6b3c34;
+  background: #251b22;
+  color: #d6c2be;
+}
+
+:root[data-theme='dark'] .runtime-install-summary header p code {
+  color: #dce3ec;
+}
+
+:root[data-theme='dark'] .scheduled-reconcile-note {
+  color: #cfaaa2;
+}
+
+:root[data-theme='dark'] .runtime-prerequisite strong,
+:root[data-theme='dark'] .runtime-prerequisite.managed strong {
+  color: #f0ddd9;
+}
+
+:root[data-theme='dark'] .runtime-prerequisite p,
+:root[data-theme='dark'] .runtime-prerequisite.managed p {
+  color: #cfaaa2;
+}
+
+:root[data-theme='dark'] .platform-row-brand.vendor-amd img,
+:root[data-theme='dark'] .builder-vendor-logo.vendor-amd img {
+  filter: brightness(0) invert(1);
 }
 
 @media (max-width: 800px) {
