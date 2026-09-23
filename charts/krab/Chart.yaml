@@ -2,8 +2,8 @@ apiVersion: v2
 name: krab
 description: Kata Reference Architecture Builder umbrella chart
 type: application
-version: 0.1.0-alpha.1
-appVersion: "0.1.0-alpha.1"
+version: 0.1.0-alpha.2
+appVersion: "0.1.0-alpha.2"
 home: https://github.com/fidencio/krab
 icon: https://fidencio.github.io/krab/favicon.png
 sources:
@@ -20,8 +20,8 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/prerelease: "true"
   artifacthub.io/changes: |
-    - kind: added
-      description: Initial KRAB alpha chart and generated reference-architecture workflow.
+    - kind: fixed
+      description: Dispatch releases from main with safe handling for workflow reruns.
 dependencies:
   - name: node-feature-discovery
     version: "0.19.0"
