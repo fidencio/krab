@@ -14,7 +14,7 @@ body::before {
   aspect-ratio: 1;
   pointer-events: none;
   background: url('./assets/brands/krab-kata-hybrid-light.png') center / contain no-repeat;
-  opacity: 0.04;
+  opacity: 0;
   transform: translate(-50%, -50%);
 }
 
@@ -3717,7 +3717,7 @@ nav a:hover,
 /* Kata dark theme: navy infrastructure surfaces with Kata orange actions. */
 :root[data-theme='dark'] body::before {
   background-image: url('./assets/brands/krab-kata-hybrid.png');
-  opacity: 0.055;
+  opacity: 0;
 }
 
 :root[data-theme='dark'] .app-shell {
