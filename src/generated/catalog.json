@@ -80,8 +80,8 @@
           "nfdValuesKey": "node-feature-discovery",
           "nfdRequired": true
         },
-        "version": "0.1.0",
-        "appVersion": "0.1.0"
+        "version": "0.1.0-alpha.0",
+        "appVersion": "0.1.0-alpha.0"
       },
       "nfd": {
         "chartName": "node-feature-discovery",

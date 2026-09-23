@@ -893,5 +893,5 @@ export function buildInstallScript(
 ) {
   const { krab } = catalog.plannedArchitecture.charts
   const { namespace } = catalog.plannedArchitecture
-  return `helm upgrade --install ${krab.releaseName} ${krab.ociReference} --namespace ${namespace} --create-namespace --values ${krab.valuesFileName}`
+  return `helm upgrade --install ${krab.releaseName} ${krab.ociReference} --version ${krab.version} --namespace ${namespace} --create-namespace --values ${krab.valuesFileName}`
 }
