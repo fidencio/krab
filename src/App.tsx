@@ -11,6 +11,7 @@ import {
   FileCode2,
   Plus,
   Trash2,
+  Upload,
 } from 'lucide-react'
 import catalogData from './generated/catalog.json'
 import {
@@ -21,6 +22,7 @@ import {
   createAdvancedConfiguration,
   customRuntimeClassName,
   customRuntimeSnapshotter,
+  importValuesBundle,
   normalizeDeploymentName,
   resolveRuntimeShimIds,
   usesConfidentialComputing,
@@ -148,6 +150,10 @@ function App() {
     catalog.vendors[0]
   const runtimeOnlyVendor = isRuntimeOnlyVendor(selectedVendor)
   const [copied, setCopied] = useState<'install' | 'values' | null>(null)
+  const [importMessage, setImportMessage] = useState<{
+    type: 'success' | 'error'
+    text: string
+  } | null>(null)
   const [selections, setSelections] = useState<FamilySelections>(() =>
     initialSelections(selectedVendor),
   )
@@ -281,6 +287,7 @@ function App() {
     (runtimeOnlyVendor ? hasRuntimeSelection : hasHardwareSelection)
 
   const selectVendor = (vendor: VendorCatalog) => {
+    setImportMessage(null)
     setSelectedVendorId(vendor.id)
     setSelections(initialSelections(vendor))
     setCluster({ distributionId: null, selinuxEnabled: false })
@@ -296,6 +303,30 @@ function App() {
     setAdvanced(createAdvancedConfiguration())
     setStep(2)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const loadValuesFile = async (file: File | undefined) => {
+    if (!file) return
+    try {
+      const imported = importValuesBundle(catalog, await file.text(), file.name)
+      setSelectedVendorId(imported.vendorId)
+      setSelections(imported.selections)
+      setCluster(imported.cluster)
+      setRuntime(imported.runtime)
+      setAdvanced(imported.advanced)
+      setDeploymentName(imported.deploymentName)
+      setImportMessage({
+        type: 'success',
+        text: `${file.name} loaded. Review the imported configuration before deploying.`,
+      })
+      setStep(2)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (error) {
+      setImportMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Unable to load values.yaml.',
+      })
+    }
   }
 
   const selectMode = (familyId: string, modeId: string | null) => {
@@ -477,6 +508,7 @@ function App() {
   }
 
   const restart = () => {
+    setImportMessage(null)
     setStep(1)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -526,7 +558,25 @@ function App() {
                     Choose the infrastructure KRAB should build around.
                   </p>
                 </div>
+                <label className="import-values-button">
+                  <Upload size={16} />
+                  Load values.yaml
+                  <input
+                    type="file"
+                    accept=".yaml,.yml,application/yaml,text/yaml,text/x-yaml"
+                    onChange={(event) => {
+                      void loadValuesFile(event.target.files?.[0])
+                      event.target.value = ''
+                    }}
+                  />
+                </label>
               </div>
+
+              {importMessage?.type === 'error' && (
+                <p className="import-values-message error" role="alert">
+                  <AlertTriangle size={15} /> {importMessage.text}
+                </p>
+              )}
 
               <div className="vendor-grid">
                 {catalog.vendors.map((vendor) => (
@@ -629,6 +679,18 @@ function App() {
             <div className="install-builder">
               <div className="builder-toolbar">
                 <button className="back-link" onClick={restart}>← Back to vendors</button>
+                <label className="import-values-button compact">
+                  <Upload size={14} />
+                  Load values.yaml
+                  <input
+                    type="file"
+                    accept=".yaml,.yml,application/yaml,text/yaml,text/x-yaml"
+                    onChange={(event) => {
+                      void loadValuesFile(event.target.files?.[0])
+                      event.target.value = ''
+                    }}
+                  />
+                </label>
                 <span className="builder-vendor-context">
                   <span className={`builder-vendor-logo vendor-${selectedVendor.id}`}>
                     <img src={logoFor(selectedVendor)} alt="" />
@@ -638,6 +700,20 @@ function App() {
                   </span>
                 </span>
               </div>
+
+              {importMessage && (
+                <p
+                  className={`import-values-message ${importMessage.type}`}
+                  role={importMessage.type === 'error' ? 'alert' : 'status'}
+                >
+                  {importMessage.type === 'error' ? (
+                    <AlertTriangle size={15} />
+                  ) : (
+                    <Check size={15} />
+                  )}
+                  {importMessage.text}
+                </p>
+              )}
 
               <section
                 className={`cluster-config cluster-config-wide ${

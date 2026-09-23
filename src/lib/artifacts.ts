@@ -291,6 +291,15 @@ export type AdvancedConfiguration = {
   debug: boolean
 }
 
+export type ImportedValuesConfiguration = {
+  vendorId: string
+  selections: FamilySelections
+  cluster: ClusterConfiguration
+  runtime: RuntimeConfiguration
+  advanced: AdvancedConfiguration
+  deploymentName: string
+}
+
 const createChartImageConfiguration = (): ChartImageConfiguration => ({
   pullPolicy: '',
   pullSecrets: [],
@@ -330,6 +339,276 @@ export const createAdvancedConfiguration = (): AdvancedConfiguration => ({
   },
   debug: false,
 })
+
+const asRecord = (value: unknown): Record<string, any> =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, any>
+    : {}
+
+const imageConfiguration = (
+  image: unknown,
+  pullPolicy: unknown,
+  pullSecrets: unknown,
+  dispatcherImage?: unknown,
+): ChartImageConfiguration => {
+  const configuredImage = asRecord(image)
+  const configuredDispatcher = asRecord(dispatcherImage)
+  return {
+    reference: String(
+      configuredImage.reference ?? configuredImage.repository ?? '',
+    ),
+    tag: String(configuredImage.tag ?? ''),
+    pullPolicy: ['Always', 'IfNotPresent', 'Never'].includes(String(pullPolicy))
+      ? pullPolicy as ChartImageConfiguration['pullPolicy']
+      : ['Always', 'IfNotPresent', 'Never'].includes(
+            String(configuredImage.pullPolicy),
+          )
+        ? configuredImage.pullPolicy
+        : '',
+    pullSecrets: Array.isArray(pullSecrets)
+      ? pullSecrets.flatMap((entry) => {
+          const name = asRecord(entry).name
+          return typeof name === 'string' ? [name] : []
+        })
+      : [],
+    dispatcherReference: String(configuredDispatcher.reference ?? ''),
+    dispatcherTag: String(configuredDispatcher.tag ?? ''),
+  }
+}
+
+const deploymentNameFromFile = (
+  catalog: ExplorerCatalog,
+  fileName: string,
+) => {
+  const suffix = `-${catalog.plannedArchitecture.charts.krab.version}-${catalog.plannedArchitecture.charts.krab.valuesFileName}`
+  return fileName.endsWith(suffix) ? fileName.slice(0, -suffix.length) : ''
+}
+
+export function importValuesBundle(
+  catalog: ExplorerCatalog,
+  source: string,
+  fileName = '',
+): ImportedValuesConfiguration {
+  const parsed = parse(source)
+  const root = asRecord(parsed)
+  if (Object.keys(root).length === 0) {
+    throw new Error('The selected file does not contain Helm values.')
+  }
+
+  const dependencies = catalog.plannedArchitecture.charts.krab.dependencies
+  const runtimeValues = asRecord(root[dependencies.runtimeValuesKey])
+  const configuredShims = asRecord(runtimeValues.shims)
+  const enabledShimIds = Object.entries(configuredShims).flatMap(
+    ([id, configuration]) =>
+      id !== 'disableAll' && asRecord(configuration).enabled === true ? [id] : [],
+  )
+  const provisionerValues = asRecord(root[dependencies.provisionerValuesKey])
+  const configuredProfiles = asRecord(provisionerValues.profiles)
+  const nvidiaEnabled = asRecord(root[dependencies.nvidiaValuesKey]).enabled === true
+  const detectedVendor = catalog.vendors
+        .filter(({ id }) => id !== 'nvidia')
+        .map((candidate) => ({
+          candidate,
+          score: candidate.runtime.shims.filter(({ id }) =>
+            enabledShimIds.includes(id),
+          ).length,
+        }))
+        .sort((left, right) => right.score - left.score)[0]
+  const vendor = nvidiaEnabled
+    ? catalog.vendors.find(({ id }) => id === 'nvidia')
+    : detectedVendor?.score
+      ? detectedVendor.candidate
+      : undefined
+
+  if (!vendor || enabledShimIds.length === 0) {
+    throw new Error('KRAB could not identify a supported vendor or RuntimeClass.')
+  }
+
+  const selections = initialFamilySelections(vendor)
+  if (vendor.id === 'nvidia') {
+    for (const family of vendor.hardwareFamilies) {
+      for (const mode of family.modes) {
+        if (mode.id === 'off' && asRecord(configuredProfiles[mode.profileName]).enabled) {
+          selections[family.id] = { modeId: mode.id, cpuTeeIds: [] }
+          break
+        }
+        const cpuTeeIds = mode.supportedCpuTeeIds.filter((cpuTeeId) =>
+          asRecord(
+            configuredProfiles[`${mode.profileName}-${cpuTeeId.toUpperCase()}`],
+          ).enabled === true,
+        )
+        if (cpuTeeIds.length > 0) {
+          selections[family.id] = { modeId: mode.id, cpuTeeIds }
+          break
+        }
+      }
+    }
+  }
+
+  const distribution = catalog.plannedArchitecture.cluster.distributions.find(
+    ({ kataDeployValue }) => kataDeployValue === runtimeValues.k8sDistribution,
+  )
+  const selectedShimConfigs = enabledShimIds.map((id) =>
+    asRecord(configuredShims[id]),
+  )
+  const firstAgent = selectedShimConfigs
+    .map(({ agent }) => asRecord(agent))
+    .find((agent) => Object.keys(agent).length > 0) ?? {}
+  const runtime: RuntimeConfiguration = {
+    selectedShimIds:
+      vendor.hardwareFamilies.length === 0
+        ? enabledShimIds.filter((id) =>
+            vendor.runtime.shims.some((shim) => shim.id === id),
+          )
+        : enabledShimIds.filter((id) =>
+            vendor.runtime.shims.some(
+              (shim) => shim.id === id && shim.userSelectable,
+            ),
+          ),
+    runtimeHttpsProxy: String(firstAgent.httpsProxy ?? ''),
+    runtimeNoProxy: String(firstAgent.noProxy ?? ''),
+    nvidiaDcgmEnabled: selectedShimConfigs.some(
+      ({ nvrc }) => asRecord(nvrc).enableDCGM === true,
+    ),
+  }
+
+  const advanced = createAdvancedConfiguration()
+  advanced.debug = runtimeValues.debug === true
+  advanced.shimDropIns = Object.fromEntries(
+    enabledShimIds.flatMap((id) => {
+      const dropIn = asRecord(configuredShims[id]).dropIn
+      return typeof dropIn === 'string' ? [[id, dropIn]] : []
+    }),
+  )
+  const customRuntimes = asRecord(runtimeValues.customRuntimes)
+  advanced.customRuntimes = Object.entries(
+    asRecord(customRuntimes.runtimes),
+  ).map(([name, configuration]) => {
+    const runtimeConfiguration = asRecord(configuration)
+    return {
+      name,
+      baseConfig: String(runtimeConfiguration.baseConfig ?? ''),
+      dropIn: String(runtimeConfiguration.dropIn ?? ''),
+      runtimeClass:
+        typeof runtimeConfiguration.runtimeClass === 'string'
+          ? runtimeConfiguration.runtimeClass
+          : stringify(runtimeConfiguration.runtimeClass ?? {}).trim(),
+    }
+  })
+
+  const snapshotter = asRecord(runtimeValues.snapshotter)
+  advanced.erofsSnapshotterMode =
+    snapshotter.erofsSnapshotterMode === 'disk' ? 'disk' : 'memory'
+  advanced.erofsDmverity = snapshotter.erofsDmverity !== false
+  const containerd = asRecord(runtimeValues.containerd)
+  advanced.containerdConfigDir = String(containerd.configDir ?? '')
+  advanced.containerdRuntimeSocket = String(containerd.runtimeSocket ?? '')
+  advanced.containerdConfigFileName = String(containerd.configFileName ?? '')
+  const containerdDropIn = String(containerd.userDropIn ?? '')
+  const erofsBlock = containerdDropIn.match(
+    /^\[plugins\.'io\.containerd\.snapshotter\.v1\.erofs'\]\n(?:  (?:enable_fsverity|default_size) = .+\n?){1,2}/,
+  )?.[0] ?? ''
+  advanced.erofsEnableFsverity = /enable_fsverity = true/.test(erofsBlock)
+  advanced.erofsDiskSize =
+    erofsBlock.match(/default_size = "([^"]+)"/)?.[1] ?? '256M'
+  advanced.containerdUserDropIn = erofsBlock
+    ? containerdDropIn.slice(erofsBlock.length).trimStart()
+    : containerdDropIn
+  const erofsUtils = asRecord(asRecord(runtimeValues.nodeBinaries)['erofs-utils'])
+  advanced.installErofsUtils = Object.keys(erofsUtils).length > 0
+  advanced.erofsUtilsImage = String(erofsUtils.image ?? '')
+  advanced.nodeSelector = Object.entries(asRecord(runtimeValues.nodeSelector)).map(
+    ([key, value]) => ({ key, value: String(value) }),
+  )
+  const affinityTerms = asRecord(
+    asRecord(asRecord(runtimeValues.affinity).nodeAffinity)
+      .requiredDuringSchedulingIgnoredDuringExecution,
+  ).nodeSelectorTerms
+  const expressions = Array.isArray(affinityTerms)
+    ? asRecord(affinityTerms[0]).matchExpressions
+    : []
+  advanced.nodeAffinity = Array.isArray(expressions)
+    ? expressions.flatMap((expression) => {
+        const value = asRecord(expression)
+        const operator = String(value.operator)
+        if (!['In', 'NotIn', 'Exists', 'DoesNotExist'].includes(operator)) return []
+        return [{
+          key: String(value.key ?? ''),
+          operator: operator as RuntimeNodeAffinity['operator'],
+          values: Array.isArray(value.values) ? value.values.map(String) : [],
+        }]
+      })
+    : []
+  advanced.tolerations = Array.isArray(runtimeValues.tolerations)
+    ? runtimeValues.tolerations.flatMap((entry: unknown) => {
+        const value = asRecord(entry)
+        const operator = value.operator === 'Equal' ? 'Equal' : 'Exists'
+        const effect = ['', 'NoSchedule', 'PreferNoSchedule', 'NoExecute'].includes(
+          String(value.effect ?? ''),
+        ) ? String(value.effect ?? '') : ''
+        return [{
+          key: String(value.key ?? ''),
+          operator,
+          value: String(value.value ?? ''),
+          effect: effect as RuntimeToleration['effect'],
+        }]
+      })
+    : []
+  const reconcile = asRecord(asRecord(runtimeValues.job).reconcile)
+  advanced.scheduledReconcileEnabled = reconcile.enabled === true
+  advanced.scheduledReconcileSchedule = String(
+    reconcile.schedule ?? advanced.scheduledReconcileSchedule,
+  )
+
+  const kataDeployImages = imageConfiguration(
+    runtimeValues.image,
+    runtimeValues.imagePullPolicy,
+    runtimeValues.imagePullSecrets,
+    asRecord(runtimeValues.job).dispatcherImage,
+  ) as AdvancedConfiguration['images']['kataDeploy']
+  const kubectlImage = asRecord(runtimeValues.kubectlImage)
+  kataDeployImages.kubectlReference = String(kubectlImage.reference ?? '')
+  kataDeployImages.kubectlTag = String(kubectlImage.tag ?? '')
+  advanced.images.kataDeploy = kataDeployImages
+  const nfdValues = asRecord(root[dependencies.nfdValuesKey])
+  advanced.images.nfd = imageConfiguration(
+    nfdValues.image,
+    asRecord(nfdValues.image).pullPolicy,
+    nfdValues.imagePullSecrets,
+  )
+  const devicePluginValues = asRecord(root[dependencies.devicePluginValuesKey])
+  advanced.images.devicePlugin = imageConfiguration(
+    devicePluginValues.image,
+    asRecord(devicePluginValues.image).pullPolicy,
+    devicePluginValues.imagePullSecrets,
+  )
+  advanced.images.provisioner = imageConfiguration(
+    provisionerValues.image,
+    provisionerValues.imagePullPolicy,
+    provisionerValues.imagePullSecrets,
+    asRecord(provisionerValues.job).dispatcherImage,
+  )
+
+  return {
+    vendorId: vendor.id,
+    selections,
+    cluster: {
+      distributionId: distribution?.id ?? null,
+      selinuxEnabled: asRecord(runtimeValues.selinux).enabled === true,
+    },
+    runtime,
+    advanced,
+    deploymentName: deploymentNameFromFile(catalog, fileName),
+  }
+}
+
+const initialFamilySelections = (vendor: VendorCatalog): FamilySelections =>
+  Object.fromEntries(
+    vendor.hardwareFamilies.map((family) => [
+      family.id,
+      { modeId: null, cpuTeeIds: [] },
+    ]),
+  )
 
 const yaml = (value: unknown) =>
   stringify(value, { lineWidth: 0 }).trim()

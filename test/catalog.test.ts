@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import test from 'node:test'
-import { parse } from 'yaml'
+import { parse, stringify } from 'yaml'
 import {
   buildCustomRuntimeClass,
   buildInstallScript,
@@ -10,6 +10,7 @@ import {
   buildValuesBundle,
   createAdvancedConfiguration,
   customRuntimeSnapshotter,
+  importValuesBundle,
   type ExplorerCatalog,
   usesConfidentialComputing,
   validateCustomRuntimes,
@@ -347,6 +348,38 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
   assert.equal(
     configuredValues['kata-deploy'].shims['qemu-nvidia-cpu-runtime-rs'].dropIn,
     '[agent.kata]\ndial_timeout = 999\n',
+  )
+  const importedValues = importValuesBundle(
+    catalog,
+    stringify(configuredValues),
+    'local-lab-0.1.0-alpha.4-values.yaml',
+  )
+  assert.equal(importedValues.vendorId, 'local')
+  assert.equal(importedValues.deploymentName, 'local-lab')
+  assert.deepEqual(importedValues.runtime.selectedShimIds, [
+    'qemu-nvidia-cpu-runtime-rs',
+  ])
+  assert.equal(importedValues.advanced.erofsSnapshotterMode, 'disk')
+  assert.equal(importedValues.advanced.erofsDiskSize, '24G')
+  assert.equal(importedValues.advanced.erofsDmverity, false)
+  assert.equal(importedValues.advanced.erofsEnableFsverity, true)
+  assert.equal(
+    importedValues.advanced.containerdUserDropIn,
+    '[plugins."io.containerd.grpc.v1.cri"]\n' +
+      '  disable_tcp_service = true\n',
+  )
+  assert.deepEqual(
+    parse(
+      buildValuesBundle(
+        catalog,
+        local,
+        importedValues.selections,
+        importedValues.cluster,
+        importedValues.runtime,
+        importedValues.advanced,
+      ),
+    ),
+    configuredValues,
   )
   assert.equal(
     configuredValues['kata-deploy'].shims['unselected-runtime'],
@@ -789,6 +822,39 @@ test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
   assert.equal(
     buildValuesFileName(catalog, ''),
     'krab-0.1.0-alpha.4-values.yaml',
+  )
+
+  const imported = importValuesBundle(
+    catalog,
+    values,
+    'production-kata-0.1.0-alpha.4-values.yaml',
+  )
+  assert.equal(imported.vendorId, 'nvidia')
+  assert.equal(imported.deploymentName, 'production-kata')
+  assert.deepEqual(imported.selections.hopper, {
+    modeId: 'ppcie',
+    cpuTeeIds: ['tdx'],
+  })
+  assert.deepEqual(imported.selections.blackwell, {
+    modeId: 'on',
+    cpuTeeIds: ['tdx'],
+  })
+  assert.deepEqual(imported.cluster, {
+    distributionId: 'rke2',
+    selinuxEnabled: true,
+  })
+  assert.deepEqual(
+    parse(
+      buildValuesBundle(
+        catalog,
+        vendor,
+        imported.selections,
+        imported.cluster,
+        imported.runtime,
+        imported.advanced,
+      ),
+    ),
+    generatedValues,
   )
 
   const passthroughValues = parse(
