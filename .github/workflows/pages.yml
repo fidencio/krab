@@ -2,7 +2,7 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 permissions:
@@ -19,21 +19,69 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+          path: stable
+
+      - name: Prepare development checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git -C stable show-ref --verify --quiet refs/remotes/origin/dev; then
+            git -C stable worktree add --detach ../development refs/remotes/origin/dev
+          else
+            echo "::warning::dev branch does not exist yet; previewing main"
+            cp -R stable development
+          fi
+
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      - run: npm run generate
-      - run: npm test
-      - run: npm run test:chart
-      - run: npm run lint
-      - run: npm run build
+          cache-dependency-path: |
+            stable/package-lock.json
+            development/package-lock.json
+
+      - name: Validate and build stable site
+        working-directory: stable
+        run: |
+          npm ci
+          npm run generate
+          git diff --exit-code -- src/generated
+          npm test
+          npm run test:chart
+          npm run lint
+          npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
+
+      - name: Validate and build development site
+        working-directory: development
+        run: |
+          npm ci
+          npm run generate
+          git diff --exit-code -- src/generated
+          npm test
+          npm run test:chart
+          npm run lint
+          npm run build
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/dev/
+
+      - name: Compose stable and development sites
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p site/dev
+          cp -R stable/dist/. site/
+          cp -R development/dist/. site/dev/
+
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: dist
+          path: site
 
   deploy:
     environment:

@@ -64,6 +64,12 @@ alpha dependency.
 
 ## Development
 
+Development changes land on the `dev` branch. GitHub Pages publishes the
+released `main` tree at `/krab/` and the integration tree at `/krab/dev/`.
+When cutting a release, merge `dev` into `main` and dispatch the chart release
+workflow from `main`; the workflow refuses to release if the two branch trees
+differ.
+
 ```sh
 npm ci
 npm run generate
