@@ -416,9 +416,7 @@ async function main() {
       id: 'amd',
       displayName: 'AMD',
       tagline: 'SEV-SNP',
-      description:
-        'Deploy the Kata QEMU runtime-rs class for AMD SEV-SNP ' +
-        'confidential workloads.',
+      description: 'Run AMD SEV-SNP confidential workloads with Kata.',
       logo: 'amd.svg',
       shimId: 'qemu-snp-runtime-rs',
     },
@@ -427,7 +425,7 @@ async function main() {
       displayName: 'IBM',
       tagline: 'Secure Execution for Linux',
       description:
-        'Deploy the Kata QEMU runtime-rs class for IBM Z Secure Execution workloads.',
+        'Run IBM Z Secure Execution confidential workloads with Kata.',
       logo: 'ibm.png',
       shimId: 'qemu-se-runtime-rs',
     },
@@ -435,8 +433,7 @@ async function main() {
       id: 'intel',
       displayName: 'Intel',
       tagline: 'TDX',
-      description:
-        'Deploy the Kata QEMU runtime-rs class for Intel TDX confidential workloads.',
+      description: 'Run Intel TDX confidential workloads with Kata.',
       logo: 'intel.png',
       shimId: 'qemu-tdx-runtime-rs',
     },
@@ -696,11 +693,11 @@ async function main() {
         displayName: 'Local',
         tagline: 'Standard Kata deployment',
         description:
-          `${localShims.length} upstream RuntimeClasses for a standard Kata deployment.`,
+          'Run general-purpose Kata workloads with your choice of upstream hypervisor.',
         logo: 'local.svg',
         capabilities: [
-          { id: 'runtime-classes' },
-          { id: 'local-hypervisors' },
+          { id: 'general-purpose' },
+          { id: 'multiple-hypervisors' },
         ],
         sourceUrl: sourceLink('kata-chart'),
         hardwareFamilies: [],
@@ -762,11 +759,10 @@ async function main() {
         displayName: source('nvidia-operator-values').repository.split('/')[0],
         tagline: 'GPU and confidential computing',
         description:
-          `${families.length} hardware families and ${runtimeRsShims.length} RuntimeClasses.`,
+          'Run NVIDIA GPU workloads with Kata, including confidential computing.',
         logo: 'nvidia.svg',
         capabilities: [
           { id: 'gpu', resourceName: gpuResource },
-          { id: 'nvswitch', resourceName: nvSwitchResource },
           { id: 'confidential-computing', modes: [...new Set(profileRecords.map((p) => p.ccMode))] },
         ],
         sourceUrl:

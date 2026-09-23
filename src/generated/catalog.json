@@ -108,16 +108,12 @@
       "id": "nvidia",
       "displayName": "NVIDIA",
       "tagline": "GPU and confidential computing",
-      "description": "4 hardware families and 3 RuntimeClasses.",
+      "description": "Run NVIDIA GPU workloads with Kata, including confidential computing.",
       "logo": "nvidia.svg",
       "capabilities": [
         {
           "id": "gpu",
           "resourceName": "nvidia.com/gpu"
-        },
-        {
-          "id": "nvswitch",
-          "resourceName": "nvidia.com/nvswitch"
         },
         {
           "id": "confidential-computing",
@@ -736,14 +732,14 @@
       "id": "local",
       "displayName": "Local",
       "tagline": "Standard Kata deployment",
-      "description": "7 upstream RuntimeClasses for a standard Kata deployment.",
+      "description": "Run general-purpose Kata workloads with your choice of upstream hypervisor.",
       "logo": "local.svg",
       "capabilities": [
         {
-          "id": "runtime-classes"
+          "id": "general-purpose"
         },
         {
-          "id": "local-hypervisors"
+          "id": "multiple-hypervisors"
         }
       ],
       "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml",
@@ -1005,7 +1001,7 @@
       "id": "amd",
       "displayName": "AMD",
       "tagline": "SEV-SNP",
-      "description": "Deploy the Kata QEMU runtime-rs class for AMD SEV-SNP confidential workloads.",
+      "description": "Run AMD SEV-SNP confidential workloads with Kata.",
       "logo": "amd.svg",
       "capabilities": [
         {
@@ -1134,7 +1130,7 @@
       "id": "ibm",
       "displayName": "IBM",
       "tagline": "Secure Execution for Linux",
-      "description": "Deploy the Kata QEMU runtime-rs class for IBM Z Secure Execution workloads.",
+      "description": "Run IBM Z Secure Execution confidential workloads with Kata.",
       "logo": "ibm.png",
       "capabilities": [
         {
@@ -1263,7 +1259,7 @@
       "id": "intel",
       "displayName": "Intel",
       "tagline": "TDX",
-      "description": "Deploy the Kata QEMU runtime-rs class for Intel TDX confidential workloads.",
+      "description": "Run Intel TDX confidential workloads with Kata.",
       "logo": "intel.png",
       "capabilities": [
         {
