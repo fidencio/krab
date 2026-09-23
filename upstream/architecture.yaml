@@ -2,6 +2,13 @@ schemaVersion: 1
 status: prerelease
 notice: KRAB 0.1.0-alpha.0 is prerelease software. Review generated values before deploying.
 namespace: kata-system
+images:
+  kubectl:
+    reference: quay.io/kata-containers/kubectl
+    tag: v1.37.0
+  devicePlugin:
+    repository: ghcr.io/kata-containers/kata-device-plugin
+    tag: 0.2.0-rc.0
 cluster:
   distributions:
     - id: kubeadm

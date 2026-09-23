@@ -21,9 +21,6 @@ export type HardwareFamilyCatalog = {
   supportedArches: string[]
   availability: 'available' | 'pending'
   availabilityReason: string | null
-  nvidiaValidatedModels: string[]
-  modelsNotInNvidiaMatrix: string[]
-  supportSourceUrl: string
   defaultModeId: string
   modes: ModeCatalog[]
   sourceUrl: string
@@ -73,10 +70,8 @@ export type VendorCatalog = {
       shimId: string
       runtimeClass: string
       documentedRuntimeClass: string
-      supportedCpuPlatforms: string
       nodeSelector: Record<string, string>
       sourceUrl: string
-      supportSourceUrl: string
     }>
   }
   provisioner: {
@@ -91,6 +86,12 @@ export type VendorCatalog = {
       chartPath: string
       sourceUrl: string
       experimental: boolean
+    }
+    values: {
+      image: { reference: string; tag: string }
+      job: {
+        dispatcherImage: { reference: string; tag: string }
+      }
     }
   }
   devicePlugin: {
@@ -114,14 +115,6 @@ export type VendorCatalog = {
     sandboxWorkloads: Record<string, unknown>
     defaultCcMode: string
     sourceUrl: string
-    officialSupport: {
-      documentationVersion: string
-      supportedGpuModels: string[]
-      supportedPlatformsUrl: string
-      ccModesUrl: string
-      workloadsUrl: string
-      runtimeRsStatus: string
-    }
   }
 }
 
@@ -176,9 +169,15 @@ export type ExplorerCatalog = {
       nfd: {
         chartName: string
         version: string
+        appVersion: string
         repository: string
         valuesKey: string
         required: true
+        image: {
+          repository: string
+          tag: string
+          pullPolicy?: string
+        }
         sourceUrl: string
       }
       kataDeploy: {
@@ -799,19 +798,16 @@ export function buildValuesBundle(
     dependencies.provisionerRequiredBy.includes(vendor.id)
   const nfdImages = advanced.images.nfd
   const nfdValues = {
-    ...((nfdImages.reference.trim() || nfdImages.tag.trim() || nfdImages.pullPolicy)
-      ? {
-          image: {
-            ...(nfdImages.reference.trim()
-              ? { repository: nfdImages.reference.trim() }
-              : {}),
-            ...(nfdImages.tag.trim() ? { tag: nfdImages.tag.trim() } : {}),
-            ...(nfdImages.pullPolicy
-              ? { pullPolicy: nfdImages.pullPolicy }
-              : {}),
-          },
-        }
-      : {}),
+    image: {
+      ...architecture.charts.nfd.image,
+      ...(nfdImages.reference.trim()
+        ? { repository: nfdImages.reference.trim() }
+        : {}),
+      ...(nfdImages.tag.trim() ? { tag: nfdImages.tag.trim() } : {}),
+      ...(nfdImages.pullPolicy
+        ? { pullPolicy: nfdImages.pullPolicy }
+        : {}),
+    },
     ...(pullSecrets(nfdImages).length > 0
       ? { imagePullSecrets: pullSecrets(nfdImages) }
       : {}),
@@ -844,13 +840,14 @@ export function buildValuesBundle(
     devicePluginValues.imagePullSecrets = devicePluginPullSecrets
   }
   const provisionerImages = advanced.images.provisioner
+  const provisionerValues = structuredClone(vendor.provisioner.values)
   const provisionerImage = applyImageOverride(
-    undefined,
+    provisionerValues.image,
     provisionerImages.reference,
     provisionerImages.tag,
   )
   const provisionerDispatcherImage = applyImageOverride(
-    undefined,
+    provisionerValues.job.dispatcherImage,
     provisionerImages.dispatcherReference,
     provisionerImages.dispatcherTag,
   )
@@ -867,6 +864,7 @@ export function buildValuesBundle(
     ...(includeProvisioner
       ? {
           [dependencies.provisionerValuesKey]: {
+            ...provisionerValues,
             'node-feature-discovery': { enabled: false },
             profiles,
             ...(provisionerImage ? { image: provisionerImage } : {}),
@@ -877,7 +875,12 @@ export function buildValuesBundle(
               ? { imagePullSecrets: pullSecrets(provisionerImages) }
               : {}),
             ...(provisionerDispatcherImage
-              ? { job: { dispatcherImage: provisionerDispatcherImage } }
+              ? {
+                  job: {
+                    ...provisionerValues.job,
+                    dispatcherImage: provisionerDispatcherImage,
+                  },
+                }
               : {}),
           },
         }

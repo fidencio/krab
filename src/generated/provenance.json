@@ -37,6 +37,26 @@
       "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
     },
     {
+      "id": "nfd-chart",
+      "repository": "kubernetes-sigs/node-feature-discovery",
+      "ref": "v0.19.0",
+      "release": "v0.19.0",
+      "draft": false,
+      "path": "deployment/helm/node-feature-discovery/Chart.yaml",
+      "sha256": "9b6e096649071b901d6d1aa2560701fa393864a5a58efe0e319c2414ee151300",
+      "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/v0.19.0/deployment/helm/node-feature-discovery/Chart.yaml"
+    },
+    {
+      "id": "nfd-values",
+      "repository": "kubernetes-sigs/node-feature-discovery",
+      "ref": "v0.19.0",
+      "release": "v0.19.0",
+      "draft": false,
+      "path": "deployment/helm/node-feature-discovery/values.yaml",
+      "sha256": "84c6277dd7934c1ba54c0707c307e6b206400ac51179af0674b1de300e8fcb8b",
+      "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/v0.19.0/deployment/helm/node-feature-discovery/values.yaml"
+    },
+    {
       "id": "device-plugin-code",
       "repository": "kata-containers/kata-device-plugin",
       "ref": "6a4d891aa453cd4bc4738cb3a71001fae141a2af",
@@ -172,33 +192,6 @@
       "path": "deployments/gpu-operator/values.yaml",
       "sha256": "21ebfaa82dbfb6ad92b3c0ff33d7c891c7e66c9a0b008ce1c60a1897bae34418",
       "sourceUrl": "https://github.com/NVIDIA/gpu-operator/blob/10ee5b3638b89e11e949412aafa5ba99279c3721/deployments/gpu-operator/values.yaml"
-    },
-    {
-      "id": "nvidia-supported-platforms",
-      "repository": "NVIDIA/confidential-containers-documentation",
-      "ref": "1.0.0",
-      "draft": false,
-      "path": "supported-platforms.html",
-      "sha256": "a2fdcba74acab48df1a26c019c93c74eb8ed420f41134a6d5ce62ac64b02fc74",
-      "sourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html"
-    },
-    {
-      "id": "nvidia-cc-modes",
-      "repository": "NVIDIA/confidential-containers-documentation",
-      "ref": "1.0.0",
-      "draft": false,
-      "path": "configure-cc-mode.html",
-      "sha256": "38b5a51a26cfa2ebc6bc64f04c69755faccb5c5750ee89b73560965fcef5d4bb",
-      "sourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-cc-mode.html"
-    },
-    {
-      "id": "nvidia-workloads",
-      "repository": "NVIDIA/confidential-containers-documentation",
-      "ref": "1.0.0",
-      "draft": false,
-      "path": "configure-workloads.html",
-      "sha256": "e43507cbe23f41abe8fe54e5242eee05e2811dde4544581acc863d725c6be8be",
-      "sourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-workloads.html"
     }
   ]
 }

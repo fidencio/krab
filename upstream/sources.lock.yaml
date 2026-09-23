@@ -21,6 +21,20 @@ sources:
     path: tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml
     cache: kata-containers/try-kata-nvidia-gpu.values.yaml
     sha256: 277a081cfb5220886b77e2553ad5dc6b40cc1628bfadcba85b7f41ea031c6450
+  - id: nfd-chart
+    repository: kubernetes-sigs/node-feature-discovery
+    ref: v0.19.0
+    release: v0.19.0
+    path: deployment/helm/node-feature-discovery/Chart.yaml
+    cache: node-feature-discovery/Chart.yaml
+    sha256: 9b6e096649071b901d6d1aa2560701fa393864a5a58efe0e319c2414ee151300
+  - id: nfd-values
+    repository: kubernetes-sigs/node-feature-discovery
+    ref: v0.19.0
+    release: v0.19.0
+    path: deployment/helm/node-feature-discovery/values.yaml
+    cache: node-feature-discovery/values.yaml
+    sha256: 84c6277dd7934c1ba54c0707c307e6b206400ac51179af0674b1de300e8fcb8b
   - id: device-plugin-code
     repository: kata-containers/kata-device-plugin
     ref: 6a4d891aa453cd4bc4738cb3a71001fae141a2af
@@ -116,27 +130,3 @@ sources:
     path: deployments/gpu-operator/values.yaml
     cache: nvidia-gpu-operator/values.yaml
     sha256: 21ebfaa82dbfb6ad92b3c0ff33d7c891c7e66c9a0b008ce1c60a1897bae34418
-  - id: nvidia-supported-platforms
-    repository: NVIDIA/confidential-containers-documentation
-    ref: "1.0.0"
-    path: supported-platforms.html
-    url: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html
-    sourceUrl: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html
-    cache: nvidia-confidential-containers/supported-platforms.html
-    sha256: a2fdcba74acab48df1a26c019c93c74eb8ed420f41134a6d5ce62ac64b02fc74
-  - id: nvidia-cc-modes
-    repository: NVIDIA/confidential-containers-documentation
-    ref: "1.0.0"
-    path: configure-cc-mode.html
-    url: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-cc-mode.html
-    sourceUrl: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-cc-mode.html
-    cache: nvidia-confidential-containers/configure-cc-mode.html
-    sha256: 38b5a51a26cfa2ebc6bc64f04c69755faccb5c5750ee89b73560965fcef5d4bb
-  - id: nvidia-workloads
-    repository: NVIDIA/confidential-containers-documentation
-    ref: "1.0.0"
-    path: configure-workloads.html
-    url: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-workloads.html
-    sourceUrl: https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-workloads.html
-    cache: nvidia-confidential-containers/configure-workloads.html
-    sha256: e43507cbe23f41abe8fe54e5242eee05e2811dde4544581acc863d725c6be8be

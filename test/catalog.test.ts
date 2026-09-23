@@ -82,10 +82,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
       },
     ],
   )
-  assert.equal(
-    vendor.sourceUrl,
-    'https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/latest/',
-  )
+  assert.match(vendor.sourceUrl, /^https:\/\/github\.com\/kata-containers\//)
   assert.equal(vendor.runtime.chart.version, '4.2.0')
   assert.equal(
     vendor.runtime.chart.ociReference,
@@ -94,6 +91,12 @@ test('generated catalog carries accurate upstream chart data', async () => {
   assert.equal(vendor.workload.resourceName, 'nvidia.com/gpu')
   assert.equal(catalog.plannedArchitecture.charts.nfd.required, true)
   assert.equal(catalog.plannedArchitecture.charts.nfd.version, '0.19.0')
+  assert.equal(catalog.plannedArchitecture.charts.nfd.appVersion, 'v0.19.0')
+  assert.deepEqual(catalog.plannedArchitecture.charts.nfd.image, {
+    repository: 'registry.k8s.io/nfd/node-feature-discovery',
+    pullPolicy: 'IfNotPresent',
+    tag: 'v0.19.0',
+  })
   assert.equal(catalog.plannedArchitecture.charts.kataDeploy.version, '4.2.0')
   assert.equal(catalog.plannedArchitecture.charts.devicePlugin.version, '0.1.0')
   assert.equal(
@@ -140,13 +143,6 @@ test('generated catalog carries accurate upstream chart data', async () => {
     vendor.runtime.cpuTees.map(({ id }) => id),
     ['snp', 'tdx'],
   )
-  assert.deepEqual(
-    vendor.integration.officialSupport.supportedGpuModels,
-    ['H100', 'H200', 'B200'],
-  )
-  const hopper = vendor.hardwareFamilies.find(({ id }) => id === 'hopper')
-  assert.deepEqual(hopper?.nvidiaValidatedModels, ['H100', 'H200'])
-  assert.deepEqual(hopper?.modelsNotInNvidiaMatrix, ['H800', 'H20'])
 })
 
 test('local artifacts install only the selected upstream RuntimeClasses', async () => {
@@ -184,7 +180,26 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
   assert.equal(shims['qemu-runtime-rs'].enabled, true)
   assert.equal(shims['qemu-runtime-rs'].nvrc, undefined)
   assert.equal(shims['qemu-nvidia-cpu-runtime-rs'].enabled, true)
-  assert.equal(generatedValues['kata-deploy'].job, undefined)
+  assert.deepEqual(generatedValues['kata-deploy'].image, {
+    reference: 'quay.io/kata-containers/kata-deploy',
+    tag: '4.2.0',
+  })
+  assert.deepEqual(generatedValues['kata-deploy'].kubectlImage, {
+    reference: 'quay.io/kata-containers/kubectl',
+    tag: 'v1.37.0',
+  })
+  assert.deepEqual(generatedValues['kata-deploy'].job, {
+    dispatcherImage: {
+      reference: 'ghcr.io/kata-containers/k8s-job-dispatcher',
+      tag: '0.3.0',
+    },
+  })
+  assert.deepEqual(generatedValues['node-feature-discovery'].image, {
+    repository: 'registry.k8s.io/nfd/node-feature-discovery',
+    pullPolicy: 'IfNotPresent',
+    tag: 'v0.19.0',
+  })
+  assert.doesNotMatch(JSON.stringify(generatedValues), /latest/)
   assert.equal(
     shims['qemu-nvidia-cpu-runtime-rs'].containerd.snapshotter,
     'erofs',
@@ -278,6 +293,46 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
     cocoDevValues['kata-deploy'].containerd.userDropIn,
     '[debug]\n  level = "debug"\n',
   )
+})
+
+test('NVIDIA artifacts pin every component image version', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
+  const generatedValues = parse(
+    buildValuesBundle(
+      catalog,
+      vendor,
+      {
+        hopper: { modeId: 'off', cpuTeeIds: [] },
+      },
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: [],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+
+  assert.deepEqual(generatedValues['kata-device-plugin'].image, {
+    repository: 'ghcr.io/kata-containers/kata-device-plugin',
+    tag: '0.2.0-rc.0',
+    pullPolicy: 'IfNotPresent',
+  })
+  assert.deepEqual(generatedValues['kata-device-provisioner'].image, {
+    reference: 'ghcr.io/kata-containers/kata-device-provisioner',
+    tag: '0.1.0-alpha.1',
+  })
+  assert.deepEqual(
+    generatedValues['kata-device-provisioner'].job.dispatcherImage,
+    {
+      reference: 'ghcr.io/kata-containers/k8s-job-dispatcher',
+      tag: '0.4.0',
+    },
+  )
+  assert.doesNotMatch(JSON.stringify(generatedValues), /latest/)
 })
 
 test('custom runtimes generate independent RuntimeClasses and snapshotters', async () => {
@@ -697,8 +752,8 @@ test('every generated item retains pinned provenance', async () => {
 
   assert.ok(provenance.generatedFrom.length > 0)
   for (const source of provenance.generatedFrom) {
-    assert.match(source.ref, /^(?:[a-f0-9]{40}|\d+\.\d+\.\d+)$/)
+    assert.match(source.ref, /^(?:[a-f0-9]{40}|v?\d+\.\d+\.\d+)$/)
     assert.match(source.sha256, /^[a-f0-9]{64}$/)
-    assert.match(source.sourceUrl, /^https:\/\/(?:github\.com|docs\.nvidia\.com)\//)
+    assert.match(source.sourceUrl, /^https:\/\/github\.com\//)
   }
 })

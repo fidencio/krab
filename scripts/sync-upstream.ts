@@ -51,6 +51,44 @@ const requireValue = <T>(value: T | null | undefined, message: string): T => {
   return value
 }
 
+type ImageValues = {
+  reference?: string
+  repository?: string
+  tag?: string | null
+}
+
+const resolveImage = <T extends ImageValues>(
+  image: T,
+  fallbackTag: string,
+  label: string,
+) => {
+  const reference = image.reference ?? image.repository
+  const tag = image.tag?.trim() || fallbackTag.trim()
+  requireValue(reference, `${label} image reference is missing`)
+  requireValue(tag, `${label} image tag is missing`)
+  if (tag === 'latest') {
+    throw new Error(`${label} image must not use the moving latest tag`)
+  }
+  return { ...image, tag }
+}
+
+const requireImagePin = (
+  actual: ImageValues | null | undefined,
+  expected: ImageValues,
+  label: string,
+) => {
+  const actualReference = actual?.reference ?? actual?.repository
+  const expectedReference = expected.reference ?? expected.repository
+  if (
+    actualReference !== expectedReference ||
+    actual?.tag !== expected.tag
+  ) {
+    throw new Error(
+      `${label} image pin must be ${expectedReference}:${expected.tag}`,
+    )
+  }
+}
+
 const readYaml = async (path: string) => parse(await readFile(path, 'utf8'))
 
 const firstComment = (content: string) =>
@@ -112,6 +150,8 @@ async function main() {
   const sourceLink = (id: string) => blobUrl(source(id))
 
   const kataChart = await readYaml(cachePath('kata-chart'))
+  const nfdChart = await readYaml(cachePath('nfd-chart'))
+  const nfdValues = await readYaml(cachePath('nfd-values'))
   const plannedArchitecture = await readYaml(architecturePath)
   const krabChart = await readYaml(krabChartPath)
   const krabValues = await readYaml(krabValuesPath)
@@ -121,17 +161,15 @@ async function main() {
   const kataProfileRaw = await readFile(cachePath('kata-nvidia-profile'), 'utf8')
   const kataProfile = await readYaml(cachePath('kata-nvidia-profile'))
   const provisionerChart = await readYaml(cachePath('provisioner-chart'))
+  const provisionerValues = parse(
+    await readFile(cachePath('provisioner-values'), 'utf8'),
+    { uniqueKeys: false },
+  )
   const devicePluginChart = await readYaml(cachePath('device-plugin-chart'))
   const provisionerReadme = await readFile(cachePath('provisioner-profiles'), 'utf8')
   const pluginCode = await readFile(cachePath('device-plugin-code'), 'utf8')
   const pluginValues = await readYaml(cachePath('device-plugin-values'))
   const nvidiaValues = await readYaml(cachePath('nvidia-operator-values'))
-  const nvidiaSupportedPlatforms = await readFile(
-    cachePath('nvidia-supported-platforms'),
-    'utf8',
-  )
-  const nvidiaCcModes = await readFile(cachePath('nvidia-cc-modes'), 'utf8')
-  const nvidiaWorkloads = await readFile(cachePath('nvidia-workloads'), 'utf8')
   const kataChartReference = requireValue(
     kataProfileRaw.match(/helm install \S+ (oci:\/\/\S+)/)?.[1],
     'Unable to derive the Kata chart OCI reference',
@@ -233,10 +271,16 @@ async function main() {
   plannedArchitecture.charts.nfd = {
     chartName: nfdDependency.name,
     version: nfdDependency.version,
+    appVersion: String(nfdChart.appVersion),
     repository: nfdDependency.repository,
     valuesKey: plannedArchitecture.charts.krab.dependencies.nfdValuesKey,
     required: plannedArchitecture.charts.krab.dependencies.nfdRequired,
-    sourceUrl: sourceLink('kata-chart'),
+    image: resolveImage(
+      nfdValues.image,
+      String(nfdChart.appVersion),
+      'node-feature-discovery',
+    ),
+    sourceUrl: sourceLink('nfd-chart'),
   }
   plannedArchitecture.charts.kataDeploy = {
     chartName: kataChart.name,
@@ -261,30 +305,79 @@ async function main() {
   requireValue(kataProfile.shims, 'Kata NVIDIA shim profile is missing shims')
   requireValue(provisionerChart.version, 'Provisioner chart version is missing')
   requireValue(devicePluginChart.version, 'Device plugin chart version is missing')
-  const supportedGpuModels = [
-    ...new Set(
-      [...nvidiaSupportedPlatforms.matchAll(/<td><p>NVIDIA ([HB]\d+)/g)].map(
-        ([, model]) => model,
-      ),
-    ),
-  ]
-  const amdCpuPlatforms = requireValue(
-    nvidiaSupportedPlatforms.match(/<td><p>AMD ([^<]+)<\/p><\/td>/)?.[1],
-    'Unable to parse NVIDIA-supported AMD CPU platforms',
+  const kataDeployImage = resolveImage(
+    kataValues.image,
+    String(kataChart.appVersion),
+    'kata-deploy',
   )
-  const intelCpuPlatforms = requireValue(
-    nvidiaSupportedPlatforms.match(/<td><p>Intel ([^<]+)<\/p><\/td>/)?.[1],
-    'Unable to parse NVIDIA-supported Intel CPU platforms',
+  const kataKubectlImage = resolveImage(
+    plannedArchitecture.images.kubectl,
+    '',
+    'kata-deploy kubectl',
   )
-  if (
-    !nvidiaCcModes.includes('only supported on NVIDIA Hopper GPUs') ||
-    !nvidiaCcModes.includes('Use <code class="docutils literal notranslate"><span class="pre">on</span></code> mode for Blackwell') ||
-    !nvidiaWorkloads.includes('kata-qemu-nvidia-gpu-snp') ||
-    !nvidiaWorkloads.includes('kata-qemu-nvidia-gpu-tdx')
-  ) {
-    throw new Error('NVIDIA confidential-container support documentation changed')
+  const kataDispatcherImage = resolveImage(
+    kataValues.job?.dispatcherImage,
+    '',
+    'kata-deploy dispatcher',
+  )
+  const devicePluginImage = resolveImage(
+    {
+      ...pluginValues.image,
+      ...plannedArchitecture.images.devicePlugin,
+    },
+    '',
+    'kata-device-plugin',
+  )
+  if (devicePluginImage.repository !== pluginValues.image?.repository) {
+    throw new Error(
+      'Kata device plugin image repository does not match the pinned chart',
+    )
   }
-
+  const provisionerImage = resolveImage(
+    provisionerValues.image,
+    String(provisionerChart.appVersion),
+    'kata-device-provisioner',
+  )
+  const provisionerDispatcherImage = resolveImage(
+    provisionerValues.job?.dispatcherImage,
+    '',
+    'kata-device-provisioner dispatcher',
+  )
+  requireImagePin(
+    krabValues['node-feature-discovery']?.image,
+    plannedArchitecture.charts.nfd.image,
+    'KRAB node-feature-discovery',
+  )
+  requireImagePin(
+    krabValues['kata-deploy']?.image,
+    kataDeployImage,
+    'KRAB kata-deploy',
+  )
+  requireImagePin(
+    krabValues['kata-deploy']?.kubectlImage,
+    kataKubectlImage,
+    'KRAB kata-deploy kubectl',
+  )
+  requireImagePin(
+    krabValues['kata-deploy']?.job?.dispatcherImage,
+    kataDispatcherImage,
+    'KRAB kata-deploy dispatcher',
+  )
+  requireImagePin(
+    krabValues['kata-device-plugin']?.image,
+    devicePluginImage,
+    'KRAB kata-device-plugin',
+  )
+  requireImagePin(
+    krabValues['kata-device-provisioner']?.image,
+    provisionerImage,
+    'KRAB kata-device-provisioner',
+  )
+  requireImagePin(
+    krabValues['kata-device-provisioner']?.job?.dispatcherImage,
+    provisionerDispatcherImage,
+    'KRAB kata-device-provisioner dispatcher',
+  )
   const nvidiaShims = Object.entries(kataProfile.shims)
     .filter(([name, config]) =>
       name.startsWith('qemu-nvidia-gpu') &&
@@ -318,10 +411,8 @@ async function main() {
         shimId: shim.id,
         runtimeClass: shim.runtimeClass,
         documentedRuntimeClass: shim.runtimeClass.replace('-runtime-rs', ''),
-        supportedCpuPlatforms: amdCpuPlatforms,
         nodeSelector: shim.nodeSelector,
         sourceUrl: shim.sourceUrl,
-        supportSourceUrl: sourceLink('nvidia-workloads'),
       }]
     }
     if (shim.id.includes('-tdx-')) {
@@ -331,10 +422,8 @@ async function main() {
         shimId: shim.id,
         runtimeClass: shim.runtimeClass,
         documentedRuntimeClass: shim.runtimeClass.replace('-runtime-rs', ''),
-        supportedCpuPlatforms: intelCpuPlatforms,
         nodeSelector: shim.nodeSelector,
         sourceUrl: shim.sourceUrl,
-        supportSourceUrl: sourceLink('nvidia-workloads'),
       }]
     }
     return []
@@ -401,6 +490,11 @@ async function main() {
   const localRuntimeValues = {
     debug: kataValues.debug,
     deploymentMode: kataValues.deploymentMode,
+    image: kataDeployImage,
+    kubectlImage: kataKubectlImage,
+    job: {
+      dispatcherImage: kataDispatcherImage,
+    },
     snapshotter: kataValues.snapshotter,
     shims: {
       disableAll: true,
@@ -498,6 +592,10 @@ async function main() {
           sourceUrl: sourceLink('provisioner-chart'),
           experimental: true,
         },
+        values: {
+          image: provisionerImage,
+          job: { dispatcherImage: provisionerDispatcherImage },
+        },
       },
       devicePlugin: {
         chart: plannedArchitecture.charts.devicePlugin,
@@ -514,15 +612,6 @@ async function main() {
         sandboxWorkloads: {},
         defaultCcMode: '',
         sourceUrl: sourceLink('kata-values'),
-        officialSupport: {
-          documentationVersion: String(kataChart.version),
-          supportedGpuModels: [],
-          supportedPlatformsUrl: sourceLink('kata-values'),
-          ccModesUrl: sourceLink('kata-values'),
-          workloadsUrl: sourceLink('kata-values'),
-          runtimeRsStatus:
-            'RuntimeClass configuration is derived from pinned kata-deploy values.',
-        },
       },
     }
   })
@@ -646,13 +735,6 @@ async function main() {
       supportedArches: definition.supportedArches,
       availability: definition.availability,
       availabilityReason: definition.availabilityReason,
-      nvidiaValidatedModels: models.filter((model) =>
-        supportedGpuModels.includes(model),
-      ),
-      modelsNotInNvidiaMatrix: models.filter(
-        (model) => !supportedGpuModels.includes(model),
-      ),
-      supportSourceUrl: sourceLink('nvidia-supported-platforms'),
       defaultModeId: 'off',
       modes: profiles.map((profile) => ({
         id: String(profile.ccMode),
@@ -728,6 +810,10 @@ async function main() {
             sourceUrl: sourceLink('provisioner-chart'),
             experimental: true,
           },
+          values: {
+            image: provisionerImage,
+            job: { dispatcherImage: provisionerDispatcherImage },
+          },
         },
         devicePlugin: {
           chart: plannedArchitecture.charts.devicePlugin,
@@ -744,14 +830,6 @@ async function main() {
           sandboxWorkloads: {},
           defaultCcMode: '',
           sourceUrl: sourceLink('kata-values'),
-          officialSupport: {
-            documentationVersion: String(kataChart.version),
-            supportedGpuModels: [],
-            supportedPlatformsUrl: sourceLink('kata-values'),
-            ccModesUrl: sourceLink('kata-values'),
-            workloadsUrl: sourceLink('kata-values'),
-            runtimeRsStatus: 'RuntimeClasses are derived from pinned kata-deploy values.',
-          },
         },
       },
       {
@@ -765,8 +843,7 @@ async function main() {
           { id: 'gpu', resourceName: gpuResource },
           { id: 'confidential-computing', modes: [...new Set(profileRecords.map((p) => p.ccMode))] },
         ],
-        sourceUrl:
-          'https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/latest/',
+        sourceUrl: sourceLink('kata-nvidia-profile'),
         hardwareFamilies: families,
         runtime: {
           chart: {
@@ -776,7 +853,15 @@ async function main() {
             ociReference: kataChartReference,
             namespace: provisionerNamespace,
             valuesFileName: 'kata-nvidia.values.yaml',
-            values: kataProfile,
+            values: {
+              ...kataProfile,
+              image: kataDeployImage,
+              kubectlImage: kataKubectlImage,
+              job: {
+                ...(kataProfile.job ?? {}),
+                dispatcherImage: kataDispatcherImage,
+              },
+            },
             sourceUrl: sourceLink('kata-chart'),
           },
           shims: runtimeRsShims,
@@ -795,10 +880,17 @@ async function main() {
             sourceUrl: sourceLink('provisioner-chart'),
             experimental: true,
           },
+          values: {
+            image: provisionerImage,
+            job: { dispatcherImage: provisionerDispatcherImage },
+          },
         },
         devicePlugin: {
           chart: plannedArchitecture.charts.devicePlugin,
-          values: pluginValues,
+          values: {
+            ...pluginValues,
+            image: devicePluginImage,
+          },
           sourceUrl: sourceLink('device-plugin-chart'),
         },
         workload: {
@@ -811,15 +903,6 @@ async function main() {
           sandboxWorkloads: nvidiaValues.sandboxWorkloads,
           defaultCcMode: nvidiaValues.ccManager?.defaultMode,
           sourceUrl: sourceLink('nvidia-operator-values'),
-          officialSupport: {
-            documentationVersion: source('nvidia-supported-platforms').ref,
-            supportedGpuModels,
-            supportedPlatformsUrl: sourceLink('nvidia-supported-platforms'),
-            ccModesUrl: sourceLink('nvidia-cc-modes'),
-            workloadsUrl: sourceLink('nvidia-workloads'),
-            runtimeRsStatus:
-              'Kata runtime-rs target; NVIDIA documentation names the corresponding QEMU runtime classes.',
-          },
         },
       },
       ...teeVendors,

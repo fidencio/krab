@@ -3,7 +3,10 @@ nvidia:
   enabled: false
 
 # KRAB owns the shared NFD release.
-node-feature-discovery: {}
+node-feature-discovery:
+  image:
+    repository: registry.k8s.io/nfd/node-feature-discovery
+    tag: v0.19.0
 
 kata-deploy:
   # NFD is installed directly by KRAB, so the nested dependency stays disabled.
@@ -12,11 +15,24 @@ kata-deploy:
   k8sDistribution: k8s
   selinux:
     enabled: false
+  image:
+    reference: quay.io/kata-containers/kata-deploy
+    tag: "4.2.0"
+  kubectlImage:
+    reference: quay.io/kata-containers/kubectl
+    tag: v1.37.0
+  job:
+    dispatcherImage:
+      reference: ghcr.io/kata-containers/k8s-job-dispatcher
+      tag: "0.3.0"
   shims:
     disableAll: true
 
 # Used only when nvidia.enabled=true.
 kata-device-plugin:
+  image:
+    repository: ghcr.io/kata-containers/kata-device-plugin
+    tag: 0.2.0-rc.0
   resourceNaming: alias
 
 # Multi-profile contract released by kata-device-provisioner.
@@ -24,4 +40,11 @@ kata-device-plugin:
 kata-device-provisioner:
   node-feature-discovery:
     enabled: false
+  image:
+    reference: ghcr.io/kata-containers/kata-device-provisioner
+    tag: 0.1.0-alpha.1
+  job:
+    dispatcherImage:
+      reference: ghcr.io/kata-containers/k8s-job-dispatcher
+      tag: "0.4.0"
   profiles: {}

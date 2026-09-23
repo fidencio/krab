@@ -5,6 +5,16 @@
     "status": "prerelease",
     "notice": "KRAB 0.1.0-alpha.0 is prerelease software. Review generated values before deploying.",
     "namespace": "kata-system",
+    "images": {
+      "kubectl": {
+        "reference": "quay.io/kata-containers/kubectl",
+        "tag": "v1.37.0"
+      },
+      "devicePlugin": {
+        "repository": "ghcr.io/kata-containers/kata-device-plugin",
+        "tag": "0.2.0-rc.0"
+      }
+    },
     "cluster": {
       "distributions": [
         {
@@ -76,10 +86,16 @@
       "nfd": {
         "chartName": "node-feature-discovery",
         "version": "0.19.0",
+        "appVersion": "v0.19.0",
         "repository": "https://kubernetes-sigs.github.io/node-feature-discovery/charts",
         "valuesKey": "node-feature-discovery",
         "required": true,
-        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
+        "image": {
+          "repository": "registry.k8s.io/nfd/node-feature-discovery",
+          "pullPolicy": "IfNotPresent",
+          "tag": "v0.19.0"
+        },
+        "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/v0.19.0/deployment/helm/node-feature-discovery/Chart.yaml"
       },
       "kataDeploy": {
         "chartName": "kata-deploy",
@@ -124,7 +140,7 @@
           ]
         }
       ],
-      "sourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/latest/",
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml",
       "hardwareFamilies": [
         {
           "id": "grace-blackwell",
@@ -139,12 +155,6 @@
           ],
           "availability": "pending",
           "availabilityReason": "Kata Containers support pending",
-          "nvidiaValidatedModels": [],
-          "modelsNotInNvidiaMatrix": [
-            "GB200",
-            "GB300"
-          ],
-          "supportSourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html",
           "defaultModeId": "off",
           "modes": [
             {
@@ -188,13 +198,6 @@
           ],
           "availability": "available",
           "availabilityReason": null,
-          "nvidiaValidatedModels": [
-            "B200"
-          ],
-          "modelsNotInNvidiaMatrix": [
-            "B300"
-          ],
-          "supportSourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html",
           "defaultModeId": "off",
           "modes": [
             {
@@ -269,15 +272,6 @@
           ],
           "availability": "available",
           "availabilityReason": null,
-          "nvidiaValidatedModels": [
-            "H100",
-            "H200"
-          ],
-          "modelsNotInNvidiaMatrix": [
-            "H800",
-            "H20"
-          ],
-          "supportSourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html",
           "defaultModeId": "off",
           "modes": [
             {
@@ -346,9 +340,6 @@
           ],
           "availability": "available",
           "availabilityReason": null,
-          "nvidiaValidatedModels": [],
-          "modelsNotInNvidiaMatrix": [],
-          "supportSourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html",
           "defaultModeId": "off",
           "modes": [
             {
@@ -574,6 +565,20 @@
             },
             "node-feature-discovery": {
               "enabled": true
+            },
+            "image": {
+              "reference": "quay.io/kata-containers/kata-deploy",
+              "tag": "4.2.0"
+            },
+            "kubectlImage": {
+              "reference": "quay.io/kata-containers/kubectl",
+              "tag": "v1.37.0"
+            },
+            "job": {
+              "dispatcherImage": {
+                "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+                "tag": "0.3.0"
+              }
             }
           },
           "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
@@ -625,13 +630,11 @@
             "shimId": "qemu-nvidia-gpu-snp-runtime-rs",
             "runtimeClass": "kata-qemu-nvidia-gpu-snp-runtime-rs",
             "documentedRuntimeClass": "kata-qemu-nvidia-gpu-snp",
-            "supportedCpuPlatforms": "Genoa / Milan",
             "nodeSelector": {
               "nvidia.com/cc.ready.state": "true",
               "amd.feature.node.kubernetes.io/snp": "true"
             },
-            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml",
-            "supportSourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-workloads.html"
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
           },
           {
             "id": "tdx",
@@ -639,13 +642,11 @@
             "shimId": "qemu-nvidia-gpu-tdx-runtime-rs",
             "runtimeClass": "kata-qemu-nvidia-gpu-tdx-runtime-rs",
             "documentedRuntimeClass": "kata-qemu-nvidia-gpu-tdx",
-            "supportedCpuPlatforms": "Emerald Rapids (ER) /  Granite Rapids (GR)",
             "nodeSelector": {
               "nvidia.com/cc.ready.state": "true",
               "intel.feature.node.kubernetes.io/tdx": "true"
             },
-            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml",
-            "supportSourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-workloads.html"
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
           }
         ]
       },
@@ -660,6 +661,18 @@
           "chartPath": "deploy/helm/kata-device-provisioner",
           "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/Chart.yaml",
           "experimental": true
+        },
+        "values": {
+          "image": {
+            "reference": "ghcr.io/kata-containers/kata-device-provisioner",
+            "tag": "0.1.0-alpha.1"
+          },
+          "job": {
+            "dispatcherImage": {
+              "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+              "tag": "0.4.0"
+            }
+          }
         }
       },
       "devicePlugin": {
@@ -673,7 +686,7 @@
         "values": {
           "image": {
             "repository": "ghcr.io/kata-containers/kata-device-plugin",
-            "tag": "",
+            "tag": "0.2.0-rc.0",
             "pullPolicy": "IfNotPresent"
           },
           "nodeSelector": {
@@ -713,19 +726,7 @@
           "mode": "kubevirt"
         },
         "defaultCcMode": "on",
-        "sourceUrl": "https://github.com/NVIDIA/gpu-operator/blob/10ee5b3638b89e11e949412aafa5ba99279c3721/deployments/gpu-operator/values.yaml",
-        "officialSupport": {
-          "documentationVersion": "1.0.0",
-          "supportedGpuModels": [
-            "H100",
-            "H200",
-            "B200"
-          ],
-          "supportedPlatformsUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html",
-          "ccModesUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-cc-mode.html",
-          "workloadsUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/configure-workloads.html",
-          "runtimeRsStatus": "Kata runtime-rs target; NVIDIA documentation names the corresponding QEMU runtime classes."
-        }
+        "sourceUrl": "https://github.com/NVIDIA/gpu-operator/blob/10ee5b3638b89e11e949412aafa5ba99279c3721/deployments/gpu-operator/values.yaml"
       }
     },
     {
@@ -755,6 +756,20 @@
           "values": {
             "debug": false,
             "deploymentMode": "daemonset",
+            "image": {
+              "reference": "quay.io/kata-containers/kata-deploy",
+              "tag": "4.2.0"
+            },
+            "kubectlImage": {
+              "reference": "quay.io/kata-containers/kubectl",
+              "tag": "v1.37.0"
+            },
+            "job": {
+              "dispatcherImage": {
+                "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+                "tag": "0.3.0"
+              }
+            },
             "snapshotter": {
               "setup": [
                 "nydus"
@@ -964,6 +979,18 @@
           "chartPath": "deploy/helm/kata-device-provisioner",
           "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/Chart.yaml",
           "experimental": true
+        },
+        "values": {
+          "image": {
+            "reference": "ghcr.io/kata-containers/kata-device-provisioner",
+            "tag": "0.1.0-alpha.1"
+          },
+          "job": {
+            "dispatcherImage": {
+              "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+              "tag": "0.4.0"
+            }
+          }
         }
       },
       "devicePlugin": {
@@ -986,15 +1013,7 @@
       "integration": {
         "sandboxWorkloads": {},
         "defaultCcMode": "",
-        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-        "officialSupport": {
-          "documentationVersion": "4.2.0",
-          "supportedGpuModels": [],
-          "supportedPlatformsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "ccModesUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "workloadsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "runtimeRsStatus": "RuntimeClasses are derived from pinned kata-deploy values."
-        }
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
       }
     },
     {
@@ -1021,6 +1040,20 @@
           "values": {
             "debug": false,
             "deploymentMode": "daemonset",
+            "image": {
+              "reference": "quay.io/kata-containers/kata-deploy",
+              "tag": "4.2.0"
+            },
+            "kubectlImage": {
+              "reference": "quay.io/kata-containers/kubectl",
+              "tag": "v1.37.0"
+            },
+            "job": {
+              "dispatcherImage": {
+                "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+                "tag": "0.3.0"
+              }
+            },
             "snapshotter": {
               "setup": [
                 "nydus"
@@ -1093,6 +1126,18 @@
           "chartPath": "deploy/helm/kata-device-provisioner",
           "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/Chart.yaml",
           "experimental": true
+        },
+        "values": {
+          "image": {
+            "reference": "ghcr.io/kata-containers/kata-device-provisioner",
+            "tag": "0.1.0-alpha.1"
+          },
+          "job": {
+            "dispatcherImage": {
+              "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+              "tag": "0.4.0"
+            }
+          }
         }
       },
       "devicePlugin": {
@@ -1115,15 +1160,7 @@
       "integration": {
         "sandboxWorkloads": {},
         "defaultCcMode": "",
-        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-        "officialSupport": {
-          "documentationVersion": "4.2.0",
-          "supportedGpuModels": [],
-          "supportedPlatformsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "ccModesUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "workloadsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "runtimeRsStatus": "RuntimeClass configuration is derived from pinned kata-deploy values."
-        }
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
       }
     },
     {
@@ -1150,6 +1187,20 @@
           "values": {
             "debug": false,
             "deploymentMode": "daemonset",
+            "image": {
+              "reference": "quay.io/kata-containers/kata-deploy",
+              "tag": "4.2.0"
+            },
+            "kubectlImage": {
+              "reference": "quay.io/kata-containers/kubectl",
+              "tag": "v1.37.0"
+            },
+            "job": {
+              "dispatcherImage": {
+                "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+                "tag": "0.3.0"
+              }
+            },
             "snapshotter": {
               "setup": [
                 "nydus"
@@ -1222,6 +1273,18 @@
           "chartPath": "deploy/helm/kata-device-provisioner",
           "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/Chart.yaml",
           "experimental": true
+        },
+        "values": {
+          "image": {
+            "reference": "ghcr.io/kata-containers/kata-device-provisioner",
+            "tag": "0.1.0-alpha.1"
+          },
+          "job": {
+            "dispatcherImage": {
+              "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+              "tag": "0.4.0"
+            }
+          }
         }
       },
       "devicePlugin": {
@@ -1244,15 +1307,7 @@
       "integration": {
         "sandboxWorkloads": {},
         "defaultCcMode": "",
-        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-        "officialSupport": {
-          "documentationVersion": "4.2.0",
-          "supportedGpuModels": [],
-          "supportedPlatformsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "ccModesUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "workloadsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "runtimeRsStatus": "RuntimeClass configuration is derived from pinned kata-deploy values."
-        }
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
       }
     },
     {
@@ -1279,6 +1334,20 @@
           "values": {
             "debug": false,
             "deploymentMode": "daemonset",
+            "image": {
+              "reference": "quay.io/kata-containers/kata-deploy",
+              "tag": "4.2.0"
+            },
+            "kubectlImage": {
+              "reference": "quay.io/kata-containers/kubectl",
+              "tag": "v1.37.0"
+            },
+            "job": {
+              "dispatcherImage": {
+                "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+                "tag": "0.3.0"
+              }
+            },
             "snapshotter": {
               "setup": [
                 "nydus"
@@ -1351,6 +1420,18 @@
           "chartPath": "deploy/helm/kata-device-provisioner",
           "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/Chart.yaml",
           "experimental": true
+        },
+        "values": {
+          "image": {
+            "reference": "ghcr.io/kata-containers/kata-device-provisioner",
+            "tag": "0.1.0-alpha.1"
+          },
+          "job": {
+            "dispatcherImage": {
+              "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+              "tag": "0.4.0"
+            }
+          }
         }
       },
       "devicePlugin": {
@@ -1373,15 +1454,7 @@
       "integration": {
         "sandboxWorkloads": {},
         "defaultCcMode": "",
-        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-        "officialSupport": {
-          "documentationVersion": "4.2.0",
-          "supportedGpuModels": [],
-          "supportedPlatformsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "ccModesUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "workloadsUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-          "runtimeRsStatus": "RuntimeClass configuration is derived from pinned kata-deploy values."
-        }
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
       }
     }
   ]
