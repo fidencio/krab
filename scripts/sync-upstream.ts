@@ -759,7 +759,7 @@ async function main() {
         displayName: source('nvidia-operator-values').repository.split('/')[0],
         tagline: 'GPU and confidential computing',
         description:
-          'Run NVIDIA GPU workloads with Kata, including confidential computing.',
+          'Run GPU-accelerated workloads with Kata, from standard workloads to confidential ones.',
         logo: 'nvidia.svg',
         capabilities: [
           { id: 'gpu', resourceName: gpuResource },

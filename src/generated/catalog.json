@@ -108,7 +108,7 @@
       "id": "nvidia",
       "displayName": "NVIDIA",
       "tagline": "GPU and confidential computing",
-      "description": "Run NVIDIA GPU workloads with Kata, including confidential computing.",
+      "description": "Run GPU-accelerated workloads with Kata, from standard workloads to confidential ones.",
       "logo": "nvidia.svg",
       "capabilities": [
         {
