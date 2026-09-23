@@ -257,13 +257,23 @@ const imageChartOptions = [
   { id: 'provisioner', label: 'Kata device provisioner', pullSecrets: true },
 ] as const
 
+type Theme = 'light' | 'dark'
+
+const preferredSystemTheme = (): Theme =>
+  window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+
 function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const savedTheme = window.localStorage.getItem('krab-theme')
-    const initialTheme = savedTheme === 'dark' ? 'dark' : 'light'
-    document.documentElement.dataset.theme = initialTheme
-    return initialTheme
+  const [themePreference, setThemePreference] = useState<Theme | 'system'>(() => {
+    const savedTheme = window.localStorage.getItem('krab-theme-override')
+    return savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'system'
   })
+  const [systemTheme, setSystemTheme] = useState<Theme>(() => {
+    const preferredTheme = preferredSystemTheme()
+    document.documentElement.dataset.theme =
+      themePreference === 'system' ? preferredTheme : themePreference
+    return preferredTheme
+  })
+  const theme = themePreference === 'system' ? systemTheme : themePreference
   const [step, setStep] = useState<1 | 2>(1)
   const [selectedVendorId, setSelectedVendorId] = useState(catalog.vendors[0]?.id ?? '')
   const selectedVendor = catalog.vendors.find(({ id }) => id === selectedVendorId) ??
@@ -293,8 +303,15 @@ function App() {
   )
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    window.localStorage.setItem('krab-theme', theme)
   }, [theme])
+  useEffect(() => {
+    window.localStorage.removeItem('krab-theme')
+    const colorScheme = window.matchMedia('(prefers-color-scheme: dark)')
+    const followSystemTheme = (event: MediaQueryListEvent) =>
+      setSystemTheme(event.matches ? 'dark' : 'light')
+    colorScheme.addEventListener('change', followSystemTheme)
+    return () => colorScheme.removeEventListener('change', followSystemTheme)
+  }, [])
   const artifacts = useMemo(() => ({
     values: buildValuesBundle(
       catalog,
@@ -687,9 +704,11 @@ function App() {
             aria-label={`Use ${theme === 'light' ? 'dark' : 'light'} theme`}
             title={`Use ${theme === 'light' ? 'dark' : 'light'} theme`}
             aria-pressed={theme === 'dark'}
-            onClick={() =>
-              setTheme((current) => (current === 'light' ? 'dark' : 'light'))
-            }
+            onClick={() => {
+              const nextTheme = theme === 'light' ? 'dark' : 'light'
+              window.localStorage.setItem('krab-theme-override', nextTheme)
+              setThemePreference(nextTheme)
+            }}
           >
             {theme === 'light' ? (
               <Moon size={15} aria-hidden="true" />
