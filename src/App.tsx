@@ -22,6 +22,7 @@ import {
   customRuntimeClassName,
   customRuntimeSnapshotter,
   resolveRuntimeShimIds,
+  usesConfidentialComputing,
   validateCustomRuntimes,
   type AdvancedConfiguration,
   type ChartImageConfiguration,
@@ -224,6 +225,16 @@ function App() {
       return [{ ...shim, purpose, contexts }]
     })
   }, [runtime, selectedVendor, selections])
+  const confidentialComputingEnabled = useMemo(
+    () =>
+      usesConfidentialComputing(
+        selectedVendor,
+        selections,
+        runtime,
+        advanced.customRuntimes,
+      ),
+    [advanced.customRuntimes, runtime, selectedVendor, selections],
+  )
   const customRuntimeErrors = useMemo(
     () => validateCustomRuntimes(selectedVendor, advanced.customRuntimes),
     [advanced.customRuntimes, selectedVendor],
@@ -2020,6 +2031,47 @@ function App() {
 
                   </div>
                 </section>
+
+                {confidentialComputingEnabled && (
+                  <aside className="attestation-guidance" role="note">
+                    <img
+                      src={brandLogos['./assets/brands/confidential-containers.svg']}
+                      alt="Confidential Containers"
+                    />
+                    <div className="attestation-guidance-copy">
+                      <span>Confidential Computing · attestation required</span>
+                      <h2>Secure confidential workloads with attestation</h2>
+                      <p>
+                        Attestation is required to establish trust before deploying
+                        sensitive workloads or releasing secrets, and the preferred
+                        open source solution for attestation and secret delivery is Trustee.
+                      </p>
+                      <div className="attestation-references">
+                        <a
+                          href={catalog.plannedArchitecture.attestation.trustee.documentationUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <strong>Trustee documentation</strong>
+                          <span>Architecture, components, and deployment guidance</span>
+                          <ExternalLink size={13} />
+                        </a>
+                        <a
+                          href={catalog.plannedArchitecture.attestation.trustee.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <strong>
+                            Pinned by Kata Containers{' '}
+                            {catalog.plannedArchitecture.charts.kataDeploy.version}
+                          </strong>
+                          <code>{catalog.plannedArchitecture.attestation.trustee.commit}</code>
+                          <ExternalLink size={13} />
+                        </a>
+                      </div>
+                    </div>
+                  </aside>
+                )}
 
                 <section className="deploy-section">
                   <h2 className="builder-section-title">Deploy</h2>

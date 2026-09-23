@@ -14,6 +14,13 @@ sources:
     path: tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml
     cache: kata-containers/values.yaml
     sha256: 9f5a43a2cc9f9e0f19006c1d9ded0ebb9b067dabb97b636bc939ac95c683898e
+  - id: kata-versions
+    repository: kata-containers/kata-containers
+    ref: c7351e797efff8bfc6bd73da0eb1909be12e2cfe
+    release: "4.2.0"
+    path: versions.yaml
+    cache: kata-containers/versions.yaml
+    sha256: aa845a2e362b4b2d55bf7be513634237b24a2ad9f69e07be6e99cbb4bd620b2d
   - id: kata-nvidia-profile
     repository: kata-containers/kata-containers
     ref: c7351e797efff8bfc6bd73da0eb1909be12e2cfe

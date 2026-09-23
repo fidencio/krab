@@ -150,6 +150,7 @@ async function main() {
   const sourceLink = (id: string) => blobUrl(source(id))
 
   const kataChart = await readYaml(cachePath('kata-chart'))
+  const kataVersions = await readYaml(cachePath('kata-versions'))
   const nfdChart = await readYaml(cachePath('nfd-chart'))
   const nfdValues = await readYaml(cachePath('nfd-values'))
   const plannedArchitecture = await readYaml(architecturePath)
@@ -180,6 +181,31 @@ async function main() {
   )
 
   requireValue(kataChart.version, 'Kata chart version is missing')
+  const trustee = requireValue(
+    kataVersions.externals?.['coco-trustee'],
+    'Kata Trustee version is missing',
+  )
+  const trusteeRepository = requireValue(
+    trustee.url,
+    'Kata Trustee repository is missing',
+  ).replace(/\.git$/, '')
+  const trusteeCommit = requireValue(
+    trustee.version,
+    'Kata Trustee commit is missing',
+  )
+  if (!/^[0-9a-f]{40}$/.test(trusteeCommit)) {
+    throw new Error(`Kata Trustee reference is not a full commit: ${trusteeCommit}`)
+  }
+  plannedArchitecture.attestation = {
+    trustee: {
+      displayName: 'Trustee',
+      repository: trusteeRepository,
+      commit: trusteeCommit,
+      sourceUrl: `${trusteeRepository}/commit/${trusteeCommit}`,
+      documentationUrl: `${trusteeRepository}/blob/${trusteeCommit}/README.md`,
+      kataSourceUrl: sourceLink('kata-versions'),
+    },
+  }
   if (krabChart.name !== 'krab' || krabChart.type !== 'application') {
     throw new Error('charts/krab/Chart.yaml is not a KRAB application chart')
   }

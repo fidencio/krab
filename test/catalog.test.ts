@@ -11,6 +11,7 @@ import {
   createAdvancedConfiguration,
   customRuntimeSnapshotter,
   type ExplorerCatalog,
+  usesConfidentialComputing,
   validateCustomRuntimes,
 } from '../src/lib/artifacts.ts'
 
@@ -111,6 +112,17 @@ test('generated catalog carries accurate upstream chart data', async () => {
     catalog.plannedArchitecture.charts.krab.version,
     '0.1.0-alpha.4',
   )
+  assert.deepEqual(catalog.plannedArchitecture.attestation.trustee, {
+    displayName: 'Trustee',
+    repository: 'https://github.com/confidential-containers/trustee',
+    commit: '512fed65642015b849f38fb13bfdec7806639987',
+    sourceUrl:
+      'https://github.com/confidential-containers/trustee/commit/512fed65642015b849f38fb13bfdec7806639987',
+    documentationUrl:
+      'https://github.com/confidential-containers/trustee/blob/512fed65642015b849f38fb13bfdec7806639987/README.md',
+    kataSourceUrl:
+      'https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/versions.yaml',
+  })
   const dependencies = catalog.plannedArchitecture.charts.krab.dependencies
   assert.equal(dependencies.nfdRequired, true)
   assert.equal(dependencies.runtimeRequired, true)
@@ -149,6 +161,56 @@ test('generated catalog carries accurate upstream chart data', async () => {
   assert.deepEqual(
     vendor.runtime.cpuTees.map(({ id }) => id),
     ['snp', 'tdx'],
+  )
+})
+
+test('attestation guidance follows confidential runtime selections', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const nvidia = catalog.vendors.find(({ id }) => id === 'nvidia')!
+  const local = catalog.vendors.find(({ id }) => id === 'local')!
+  const amd = catalog.vendors.find(({ id }) => id === 'amd')!
+  const runtime = (selectedShimIds: string[]) => ({
+    selectedShimIds,
+    runtimeHttpsProxy: '',
+    runtimeNoProxy: '',
+    nvidiaDcgmEnabled: false,
+  })
+
+  assert.equal(
+    usesConfidentialComputing(
+      nvidia,
+      { hopper: { modeId: 'off', cpuTeeIds: [] } },
+      runtime([]),
+    ),
+    false,
+  )
+  assert.equal(
+    usesConfidentialComputing(
+      nvidia,
+      { hopper: { modeId: 'ppcie', cpuTeeIds: ['tdx'] } },
+      runtime([]),
+    ),
+    true,
+  )
+  assert.equal(
+    usesConfidentialComputing(local, {}, runtime(['qemu-runtime-rs'])),
+    false,
+  )
+  assert.equal(
+    usesConfidentialComputing(
+      local,
+      {},
+      runtime(['qemu-coco-dev-runtime-rs']),
+    ),
+    true,
+  )
+  assert.equal(
+    usesConfidentialComputing(
+      amd,
+      {},
+      runtime(['qemu-snp-runtime-rs']),
+    ),
+    true,
   )
 })
 

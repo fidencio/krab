@@ -1035,6 +1035,112 @@ button.vendor-card {
   padding: 32px 0 28px;
 }
 
+.attestation-guidance {
+  --coco-blue: #36a9e1;
+  order: 7;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 22px;
+  margin: 10px 0 34px;
+  padding: 26px 28px;
+  border: 1px solid rgba(54, 169, 225, 0.65);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(54, 169, 225, 0.16), transparent 48%),
+    radial-gradient(circle at 0 100%, rgba(255, 77, 77, 0.055), transparent 38%),
+    #111b1d;
+}
+
+.attestation-guidance > img {
+  width: 58px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.attestation-guidance-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.attestation-guidance-copy > span {
+  color: var(--coco-blue);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.attestation-guidance h2 {
+  margin: 7px 0 0;
+  color: #e9efec;
+  font: 700 20px 'Manrope', sans-serif;
+  letter-spacing: -0.025em;
+}
+
+.attestation-guidance-copy > p {
+  margin: 9px 0 0;
+  color: #9da9a4;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.attestation-references {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.attestation-references a {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(54, 169, 225, 0.28);
+  border-radius: 7px;
+  background: rgba(0, 92, 148, 0.08);
+  color: #b9e5fa;
+  text-decoration: none;
+}
+
+.attestation-references a:hover {
+  border-color: var(--coco-blue);
+  background: rgba(0, 92, 148, 0.14);
+}
+
+.attestation-references strong,
+.attestation-references span,
+.attestation-references code {
+  grid-column: 1;
+}
+
+.attestation-references strong {
+  color: #dcebf2;
+  font-size: 10px;
+}
+
+.attestation-references span,
+.attestation-references code {
+  color: #91a8b2;
+  font-size: 9px;
+}
+
+.attestation-references code {
+  overflow-wrap: anywhere;
+}
+
+.attestation-references svg {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  color: var(--coco-blue);
+}
+
 .deploy-section {
   order: 7;
   padding: 10px 0 0;
@@ -2815,6 +2921,21 @@ button.vendor-card {
   .code-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .attestation-guidance {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 15px;
+    padding: 21px 18px;
+  }
+
+  .attestation-guidance > img {
+    width: 42px;
+    height: 48px;
+  }
+
+  .attestation-references {
+    grid-template-columns: 1fr;
   }
 
   .artifact-actions {

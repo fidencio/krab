@@ -136,6 +136,16 @@ export type ExplorerCatalog = {
       selinuxValuesPath: string
       selinuxSourceUrl: string
     }
+    attestation: {
+      trustee: {
+        displayName: string
+        repository: string
+        commit: string
+        sourceUrl: string
+        documentationUrl: string
+        kataSourceUrl: string
+      }
+    }
     charts: {
       krab: {
         repository: string
@@ -438,6 +448,31 @@ export function resolveRuntimeShimIds(
   }
 
   return [...enabledShims]
+}
+
+export function usesConfidentialComputing(
+  vendor: VendorCatalog,
+  selections: FamilySelections,
+  runtime: RuntimeConfiguration,
+  customRuntimes: CustomRuntimeConfiguration[] = [],
+) {
+  const selectedShimIds = new Set([
+    ...resolveRuntimeShimIds(vendor, selections, runtime),
+    ...customRuntimes.map(({ baseConfig }) => baseConfig),
+  ])
+  if (selectedShimIds.size === 0) return false
+
+  const vendorIsConfidentialOnly =
+    vendor.hardwareFamilies.length === 0 &&
+    vendor.capabilities.some(({ id }) => id === 'confidential-computing')
+  if (vendorIsConfidentialOnly) return true
+
+  const teeShimIds = new Set(vendor.runtime.cpuTees.map(({ shimId }) => shimId))
+  return [...selectedShimIds].some(
+    (shimId) =>
+      teeShimIds.has(shimId) ||
+      /(?:^|-)(?:coco|snp|tdx|se)(?:-|$)/.test(shimId),
+  )
 }
 
 export function buildValuesBundle(
