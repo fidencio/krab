@@ -563,6 +563,17 @@
                     "intel.feature.node.kubernetes.io/tdx": "true"
                   }
                 }
+              },
+              "qemu-nvidia-cpu-runtime-rs": {
+                "enabled": null,
+                "supportedArches": [
+                  "amd64",
+                  "arm64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "erofs"
+                }
               }
             },
             "defaultShim": {
@@ -631,6 +642,23 @@
               "intel.feature.node.kubernetes.io/tdx": "true"
             },
             "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          },
+          {
+            "id": "qemu-nvidia-cpu-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-cpu-runtime-rs",
+            "userSelectable": true,
+            "supportedArches": [
+              "amd64",
+              "arm64"
+            ],
+            "snapshotter": "erofs",
+            "snapshotterConfiguration": {
+              "erofsSnapshotterMode": "memory",
+              "erofsDmverity": true,
+              "containerdUserDropIn": "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n"
+            },
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
           }
         ],
         "cpuTees": [

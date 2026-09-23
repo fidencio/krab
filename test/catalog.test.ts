@@ -30,6 +30,20 @@ test('generated catalog carries accurate upstream chart data', async () => {
     ['nvidia', 'local', 'amd', 'ibm', 'intel'],
   )
   assert.equal(vendor.displayName, 'NVIDIA')
+  assert.deepEqual(
+    vendor.runtime.shims.map(({ id }) => id),
+    [
+      'qemu-nvidia-gpu-runtime-rs',
+      'qemu-nvidia-gpu-snp-runtime-rs',
+      'qemu-nvidia-gpu-tdx-runtime-rs',
+      'qemu-nvidia-cpu-runtime-rs',
+    ],
+  )
+  const vendorCpuRuntime = vendor.runtime.shims.at(-1)!
+  assert.equal(vendorCpuRuntime.runtimeClass, 'kata-qemu-nvidia-cpu-runtime-rs')
+  assert.equal(vendorCpuRuntime.userSelectable, true)
+  assert.deepEqual(vendorCpuRuntime.supportedArches, ['amd64', 'arm64'])
+  assert.equal(vendorCpuRuntime.snapshotter, 'erofs')
   assert.equal(local.displayName, 'Local')
   assert.equal(local.hardwareFamilies.length, 0)
   assert.deepEqual(
@@ -420,6 +434,10 @@ test('NVIDIA artifacts pin every component image version', async () => {
   assert.deepEqual(generatedValues['kata-deploy'].defaultShim, {
     amd64: 'qemu-nvidia-gpu-runtime-rs',
   })
+  assert.equal(
+    generatedValues['kata-deploy'].shims['qemu-nvidia-cpu-runtime-rs'],
+    undefined,
+  )
 
   const tdxValues = parse(
     buildValuesBundle(
@@ -452,6 +470,27 @@ test('NVIDIA artifacts pin every component image version', async () => {
   assert.deepEqual(tdxValues['kata-deploy'].defaultShim, {
     amd64: 'qemu-nvidia-gpu-tdx-runtime-rs',
   })
+
+  const cpuValues = parse(
+    buildValuesBundle(
+      catalog,
+      vendor,
+      { hopper: { modeId: 'off', cpuTeeIds: [] } },
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: ['qemu-nvidia-cpu-runtime-rs'],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+  assert.equal(
+    cpuValues['kata-deploy'].shims['qemu-nvidia-cpu-runtime-rs'].enabled,
+    true,
+  )
+  assert.deepEqual(cpuValues['kata-deploy'].snapshotter.setup, ['erofs'])
 })
 
 test('custom runtimes generate independent RuntimeClasses and snapshotters', async () => {

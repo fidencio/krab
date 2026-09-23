@@ -222,7 +222,9 @@ function App() {
       })
       const purpose =
         selectedVendor.id === 'nvidia'
-          ? tee
+          ? shim.userSelectable
+            ? 'CPU-only Kata pod sandboxes using the NVIDIA-optimized runtime.'
+            : tee
             ? `NVIDIA pod sandboxes using confidential GPUs on ${tee.displayName} hosts.`
             : 'NVIDIA pod sandboxes using direct GPU passthrough.'
           : runtimeUse(shim.id)
@@ -1716,6 +1718,49 @@ function App() {
                     selectedVendor.id === 'nvidia' ? 'nvidia-profiles' : ''
                   }`}
                 >
+                  {selectedVendor.id === 'nvidia' && (
+                    <section className="local-runtime-selection nvidia-runtime-selection">
+                      <header>
+                        <div>
+                          <span>NVIDIA deployment · Optional runtime</span>
+                          <h2>Add the NVIDIA CPU RuntimeClass</h2>
+                          <p>
+                            Select this explicitly when the cluster should also
+                            run CPU-only Kata workloads with the NVIDIA-optimized
+                            runtime.
+                          </p>
+                        </div>
+                        <em>
+                          {selectedVendor.runtime.shims.some(
+                            ({ id, userSelectable }) =>
+                              userSelectable && runtime.selectedShimIds.includes(id),
+                          )
+                            ? 'Selected'
+                            : 'Optional'}
+                        </em>
+                      </header>
+                      <div className="local-runtime-grid">
+                        {selectedVendor.runtime.shims
+                          .filter(({ userSelectable }) => userSelectable)
+                          .map((shim) => (
+                            <label key={shim.id}>
+                              <input
+                                type="checkbox"
+                                checked={runtime.selectedShimIds.includes(shim.id)}
+                                onChange={() => toggleRuntimeShim(shim.id)}
+                              />
+                              <span>
+                                <strong>{runtimeName(shim.id)}</strong>
+                                <small>{runtimeUse(shim.id)}</small>
+                                <em>
+                                  Architectures: {shim.supportedArches.join(' · ')}
+                                </em>
+                              </span>
+                            </label>
+                          ))}
+                      </div>
+                    </section>
+                  )}
                   {runtimeOnlyVendor && (
                     <section
                       className={`local-runtime-selection ${

@@ -54,6 +54,7 @@ export type VendorCatalog = {
     shims: Array<{
       id: string
       runtimeClass: string
+      userSelectable?: boolean
       snapshotter: string
       snapshotterConfiguration?: {
         erofsSnapshotterMode: 'memory' | 'disk'

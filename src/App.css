@@ -1206,6 +1206,14 @@ button.vendor-card {
   min-width: 0;
 }
 
+.nvidia-runtime-selection {
+  grid-column: 1 / -1;
+}
+
+.nvidia-runtime-selection .local-runtime-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .nvidia-profiles .profile-card > summary {
   min-height: 92px;
   gap: 16px;

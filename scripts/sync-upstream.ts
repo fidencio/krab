@@ -404,7 +404,7 @@ async function main() {
     provisionerDispatcherImage,
     'KRAB kata-device-provisioner dispatcher',
   )
-  const nvidiaShims = Object.entries(kataProfile.shims)
+  const nvidiaGpuShims = Object.entries(kataProfile.shims)
     .filter(([name, config]) =>
       name.startsWith('qemu-nvidia-gpu') &&
       typeof config === 'object' &&
@@ -425,11 +425,13 @@ async function main() {
       sourceUrl: sourceLink('kata-nvidia-profile'),
     }))
 
-  if (nvidiaShims.length === 0) {
+  if (nvidiaGpuShims.length === 0) {
     throw new Error('No enabled NVIDIA Kata shims found')
   }
-  const runtimeRsShims = nvidiaShims.filter(({ id }) => id.endsWith('-runtime-rs'))
-  const cpuTees = runtimeRsShims.flatMap((shim) => {
+  const nvidiaGpuRuntimeRsShims = nvidiaGpuShims.filter(({ id }) =>
+    id.endsWith('-runtime-rs'),
+  )
+  const cpuTees = nvidiaGpuRuntimeRsShims.flatMap((shim) => {
     if (shim.id.includes('-snp-')) {
       return [{
         id: 'snp',
@@ -455,9 +457,43 @@ async function main() {
     return []
   })
 
-  if (runtimeRsShims.length !== 3 || cpuTees.length !== 2) {
+  if (nvidiaGpuRuntimeRsShims.length !== 3 || cpuTees.length !== 2) {
     throw new Error('Expected base, SNP, and TDX NVIDIA runtime-rs shims')
   }
+
+  const nvidiaCpuShimId = 'qemu-nvidia-cpu-runtime-rs'
+  const nvidiaCpuShimConfig = structuredClone(
+    requireValue(
+      kataValues.shims?.[nvidiaCpuShimId],
+      `Kata values are missing ${nvidiaCpuShimId}`,
+    ),
+  )
+  nvidiaCpuShimConfig.containerd = {
+    ...(nvidiaCpuShimConfig.containerd ?? {}),
+    snapshotter: 'erofs',
+  }
+  const nvidiaCpuSnapshotterConfiguration = {
+    erofsSnapshotterMode: 'memory' as const,
+    erofsDmverity: true,
+    containerdUserDropIn:
+      "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n",
+  }
+  const nvidiaCpuShim = {
+    id: nvidiaCpuShimId,
+    runtimeClass: `kata-${nvidiaCpuShimId}`,
+    userSelectable: true,
+    supportedArches:
+      (nvidiaCpuShimConfig as { supportedArches?: string[] })
+        .supportedArches ?? [],
+    snapshotter: 'erofs',
+    snapshotterConfiguration: nvidiaCpuSnapshotterConfiguration,
+    nodeSelector:
+      (nvidiaCpuShimConfig as {
+        runtimeClass?: { nodeSelector?: Record<string, string> }
+      }).runtimeClass?.nodeSelector ?? {},
+    sourceUrl: sourceLink('kata-values'),
+  }
+  const runtimeRsShims = [...nvidiaGpuRuntimeRsShims, nvidiaCpuShim]
 
   const localShims = Object.entries(
     requireValue(kataValues.shims, 'Kata values are missing shims'),
@@ -483,12 +519,7 @@ async function main() {
               ?.snapshotter || 'default',
       ...(name === 'qemu-nvidia-cpu-runtime-rs'
         ? {
-            snapshotterConfiguration: {
-              erofsSnapshotterMode: 'memory',
-              erofsDmverity: true,
-              containerdUserDropIn:
-                "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n",
-            },
+            snapshotterConfiguration: nvidiaCpuSnapshotterConfiguration,
           }
         : {}),
       nodeSelector:
@@ -881,6 +912,10 @@ async function main() {
             valuesFileName: 'kata-nvidia.values.yaml',
             values: {
               ...kataProfile,
+              shims: {
+                ...kataProfile.shims,
+                [nvidiaCpuShimId]: nvidiaCpuShimConfig,
+              },
               image: kataDeployImage,
               kubectlImage: kataKubectlImage,
               job: {
