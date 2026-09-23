@@ -84,7 +84,7 @@ export type VendorCatalog = {
       namespace: string
       repository: string
       ref: string
-      pullRequest: number
+      pullRequest?: number
       chartPath: string
       sourceUrl: string
       experimental: boolean

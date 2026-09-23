@@ -96,7 +96,10 @@ test('generated catalog carries accurate upstream chart data', async () => {
   assert.equal(catalog.plannedArchitecture.charts.nfd.version, '0.19.0')
   assert.equal(catalog.plannedArchitecture.charts.kataDeploy.version, '4.2.0')
   assert.equal(catalog.plannedArchitecture.charts.devicePlugin.version, '0.1.0')
-  assert.equal(catalog.plannedArchitecture.charts.provisioner.version, '0.1.0')
+  assert.equal(
+    catalog.plannedArchitecture.charts.provisioner.version,
+    '0.1.0-alpha.1',
+  )
   assert.equal(catalog.plannedArchitecture.charts.krab.version, '0.1.0')
   const dependencies = catalog.plannedArchitecture.charts.krab.dependencies
   assert.equal(dependencies.nfdRequired, true)

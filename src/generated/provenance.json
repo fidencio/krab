@@ -66,102 +66,102 @@
     {
       "id": "provisioner-chart",
       "repository": "kata-containers/kata-device-provisioner",
-      "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
-      "pullRequest": 4,
-      "draft": true,
+      "ref": "5a27c86f7f828abbd8c3c1803c2723bfc5e86163",
+      "release": "v0.1.0-alpha.1",
+      "draft": false,
       "path": "deploy/helm/kata-device-provisioner/Chart.yaml",
-      "sha256": "bd180b9ad6a3d2e977405547c0e59c8389f89f06d51051c7f8d0601ac85a61ef",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/Chart.yaml"
+      "sha256": "9dcfa54c23d01684debfbc5c5a1553b1c9654e098a4b627f65c780d4af515e88",
+      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/Chart.yaml"
     },
     {
       "id": "provisioner-values",
       "repository": "kata-containers/kata-device-provisioner",
-      "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
-      "pullRequest": 4,
-      "draft": true,
+      "ref": "5a27c86f7f828abbd8c3c1803c2723bfc5e86163",
+      "release": "v0.1.0-alpha.1",
+      "draft": false,
       "path": "deploy/helm/kata-device-provisioner/values.yaml",
-      "sha256": "88aa2b18bc460ba0aab0306ac71d33b5b8420a62cb2e7f16be75a52fd0efc243",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/values.yaml"
+      "sha256": "f8169d4314a6641caf83009e856f8da05841a57dd2726e9432bf050bfadc6750",
+      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/values.yaml"
     },
     {
       "id": "provisioner-profiles",
       "repository": "kata-containers/kata-device-provisioner",
-      "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
-      "pullRequest": 4,
-      "draft": true,
+      "ref": "5a27c86f7f828abbd8c3c1803c2723bfc5e86163",
+      "release": "v0.1.0-alpha.1",
+      "draft": false,
       "path": "deploy/helm/kata-device-provisioner/profiles/README.md",
-      "sha256": "7decf5730af2d3adfc6039523ba72e19bd0fe924f68046c2fb5391664a67a1c2",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/profiles/README.md"
+      "sha256": "88e89f4a78d7556526e82856567634035be8f83302924eb7961b58fc021cbd48",
+      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/README.md"
     },
     {
       "id": "hopper-passthrough",
       "repository": "kata-containers/kata-device-provisioner",
-      "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
-      "pullRequest": 4,
-      "draft": true,
+      "ref": "5a27c86f7f828abbd8c3c1803c2723bfc5e86163",
+      "release": "v0.1.0-alpha.1",
+      "draft": false,
       "path": "deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml",
       "sha256": "631b8e5819a6566a598e50d5838826483d39333ad76d588c517c2ad51ecbc0bb",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml"
+      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml"
     },
     {
       "id": "hopper-confidential",
       "repository": "kata-containers/kata-device-provisioner",
-      "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
-      "pullRequest": 4,
-      "draft": true,
+      "ref": "5a27c86f7f828abbd8c3c1803c2723bfc5e86163",
+      "release": "v0.1.0-alpha.1",
+      "draft": false,
       "path": "deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml",
       "sha256": "58cd68dbad5a29622212c8ddddaefa1620270831217e11209673def8c572b832",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml"
+      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml"
     },
     {
       "id": "blackwell-passthrough",
       "repository": "kata-containers/kata-device-provisioner",
-      "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
-      "pullRequest": 4,
-      "draft": true,
+      "ref": "5a27c86f7f828abbd8c3c1803c2723bfc5e86163",
+      "release": "v0.1.0-alpha.1",
+      "draft": false,
       "path": "deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml",
       "sha256": "f63c4668d6be4f502ad59abf1c03f4ba49cbc26cf81724a5f578915d22c893ba",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml"
+      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml"
     },
     {
       "id": "blackwell-confidential",
       "repository": "kata-containers/kata-device-provisioner",
-      "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
-      "pullRequest": 4,
-      "draft": true,
+      "ref": "5a27c86f7f828abbd8c3c1803c2723bfc5e86163",
+      "release": "v0.1.0-alpha.1",
+      "draft": false,
       "path": "deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml",
       "sha256": "f3b30d14b4302f866f201afeb6df817ebdcb4fc8c694bb20406858752edd37e9",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml"
+      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml"
     },
     {
       "id": "pcie-gpu-passthrough",
       "repository": "kata-containers/kata-device-provisioner",
-      "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
-      "pullRequest": 4,
-      "draft": true,
+      "ref": "5a27c86f7f828abbd8c3c1803c2723bfc5e86163",
+      "release": "v0.1.0-alpha.1",
+      "draft": false,
       "path": "deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml",
       "sha256": "58305ba45c3351029848d8314f68cc7b33381d900db9962ac5ba57b94e661888",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml"
+      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml"
     },
     {
       "id": "pcie-gpu-confidential",
       "repository": "kata-containers/kata-device-provisioner",
-      "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
-      "pullRequest": 4,
-      "draft": true,
+      "ref": "5a27c86f7f828abbd8c3c1803c2723bfc5e86163",
+      "release": "v0.1.0-alpha.1",
+      "draft": false,
       "path": "deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml",
       "sha256": "69213efb25c8788a88814ec32174dc493689cc2fa1e6ea21d7bb0b353379fae9",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml"
+      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml"
     },
     {
       "id": "grace-blackwell-passthrough",
       "repository": "kata-containers/kata-device-provisioner",
-      "ref": "852bdb7a02d2075804bc055da00d31da1b6f8e3d",
-      "pullRequest": 4,
-      "draft": true,
+      "ref": "5a27c86f7f828abbd8c3c1803c2723bfc5e86163",
+      "release": "v0.1.0-alpha.1",
+      "draft": false,
       "path": "deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml",
       "sha256": "b06fe38375fe2a2196f33c6e6a4ef8bd945c965a5399476677f314d39fc68c87",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/852bdb7a02d2075804bc055da00d31da1b6f8e3d/deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml"
+      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml"
     },
     {
       "id": "nvidia-operator-values",
@@ -179,7 +179,7 @@
       "ref": "1.0.0",
       "draft": false,
       "path": "supported-platforms.html",
-      "sha256": "7c2038fba116eba1b7cf7c5fcc303c87ff06711a390fb4ded1b4bcbc67c04ccb",
+      "sha256": "a2fdcba74acab48df1a26c019c93c74eb8ed420f41134a6d5ce62ac64b02fc74",
       "sourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html"
     },
     {

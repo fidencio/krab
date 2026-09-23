@@ -19,7 +19,7 @@ kata-deploy:
 kata-device-plugin:
   resourceNaming: alias
 
-# Multi-profile contract proposed for kata-device-provisioner.
+# Multi-profile contract released by kata-device-provisioner.
 # Each key renders an independently named profile Job/resource set.
 kata-device-provisioner:
   node-feature-discovery:

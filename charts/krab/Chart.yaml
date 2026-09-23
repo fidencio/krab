@@ -30,6 +30,6 @@ dependencies:
     repository: oci://ghcr.io/kata-containers/kata-device-plugin-charts
     condition: nvidia.enabled
   - name: kata-device-provisioner
-    version: "0.1.0"
+    version: "0.1.0-alpha.1"
     repository: oci://ghcr.io/kata-containers/kata-device-provisioner-charts
     condition: nvidia.enabled
