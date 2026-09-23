@@ -756,25 +756,6 @@ function App() {
                 </header>
                 <div className="managed-platform-list">
                   <article className="managed-platform-row">
-                    <div className="managed-platform-brand">
-                      <img
-                        src={brandLogos['./assets/brands/openshift.svg']}
-                        alt=""
-                      />
-                      <span>
-                        <small>Red Hat OpenShift</small>
-                        <strong>OpenShift Sandboxed Containers</strong>
-                      </span>
-                    </div>
-                    <p>
-                      KRAB does not work with OpenShift. Use OpenShift Sandboxed
-                      Containers instead.
-                    </p>
-                    <span className="managed-platform-meta">
-                      Operator-managed · Kata Containers
-                    </span>
-                  </article>
-                  <article className="managed-platform-row">
                     <div className="managed-platform-brand azure-brand">
                       <img
                         src={brandLogos['./assets/brands/azure-aks.svg']}
@@ -799,6 +780,25 @@ function App() {
                     </p>
                     <span className="managed-platform-meta">
                       AKS-managed · Kata Containers
+                    </span>
+                  </article>
+                  <article className="managed-platform-row">
+                    <div className="managed-platform-brand">
+                      <img
+                        src={brandLogos['./assets/brands/openshift.svg']}
+                        alt=""
+                      />
+                      <span>
+                        <small>Red Hat OpenShift</small>
+                        <strong>OpenShift Sandboxed Containers</strong>
+                      </span>
+                    </div>
+                    <p>
+                      KRAB does not work with OpenShift. Use OpenShift Sandboxed
+                      Containers instead.
+                    </p>
+                    <span className="managed-platform-meta">
+                      Operator-managed · Kata Containers
                     </span>
                   </article>
                 </div>
