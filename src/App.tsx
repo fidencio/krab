@@ -734,7 +734,7 @@ function App() {
             </h1>
             <p>
               Choose your hardware, isolation mode, and RuntimeClasses. KRAB
-              generates version-pinned Helm values and one install command for
+              generates version-pinned Helm values and one command for deploying
               Kata and every supporting component your selected architecture
               requires.
             </p>
