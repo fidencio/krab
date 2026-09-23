@@ -59,29 +59,32 @@
     {
       "id": "device-plugin-code",
       "repository": "kata-containers/kata-device-plugin",
-      "ref": "6a4d891aa453cd4bc4738cb3a71001fae141a2af",
+      "ref": "a73df34f399a888d7e733fc280b1b30567aaac2c",
+      "release": "v0.2.0-rc.0",
       "draft": false,
       "path": "src/vfio.rs",
       "sha256": "ef5de967def81289c4b9d761df1c9a8dc657f02675f2bfedecc565d625f04c77",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/6a4d891aa453cd4bc4738cb3a71001fae141a2af/src/vfio.rs"
+      "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/a73df34f399a888d7e733fc280b1b30567aaac2c/src/vfio.rs"
     },
     {
       "id": "device-plugin-chart",
       "repository": "kata-containers/kata-device-plugin",
-      "ref": "6a4d891aa453cd4bc4738cb3a71001fae141a2af",
+      "ref": "a73df34f399a888d7e733fc280b1b30567aaac2c",
+      "release": "v0.2.0-rc.0",
       "draft": false,
       "path": "deploy/helm/kata-device-plugin/Chart.yaml",
-      "sha256": "39a1db0e3de006f8ef6658dd6b33a8e9322a5f0b05b2c31dbbb31f8f7a41b5b5",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/6a4d891aa453cd4bc4738cb3a71001fae141a2af/deploy/helm/kata-device-plugin/Chart.yaml"
+      "sha256": "4465f47aa9b8640f5e270e3a5b38acb1dc62b89d5b143520d09a169749606570",
+      "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/a73df34f399a888d7e733fc280b1b30567aaac2c/deploy/helm/kata-device-plugin/Chart.yaml"
     },
     {
       "id": "device-plugin-values",
       "repository": "kata-containers/kata-device-plugin",
-      "ref": "6a4d891aa453cd4bc4738cb3a71001fae141a2af",
+      "ref": "a73df34f399a888d7e733fc280b1b30567aaac2c",
+      "release": "v0.2.0-rc.0",
       "draft": false,
       "path": "deploy/helm/kata-device-plugin/values.yaml",
       "sha256": "4863740bb108d71ad214a6e79d77fe57e7765cc5063281c1a8298faeed1bfa84",
-      "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/6a4d891aa453cd4bc4738cb3a71001fae141a2af/deploy/helm/kata-device-plugin/values.yaml"
+      "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/a73df34f399a888d7e733fc280b1b30567aaac2c/deploy/helm/kata-device-plugin/values.yaml"
     },
     {
       "id": "provisioner-chart",

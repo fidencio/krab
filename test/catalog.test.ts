@@ -98,7 +98,10 @@ test('generated catalog carries accurate upstream chart data', async () => {
     tag: 'v0.19.0',
   })
   assert.equal(catalog.plannedArchitecture.charts.kataDeploy.version, '4.2.0')
-  assert.equal(catalog.plannedArchitecture.charts.devicePlugin.version, '0.1.0')
+  assert.equal(
+    catalog.plannedArchitecture.charts.devicePlugin.version,
+    '0.2.0-rc.0',
+  )
   assert.equal(
     catalog.plannedArchitecture.charts.provisioner.version,
     '0.1.0-alpha.1',

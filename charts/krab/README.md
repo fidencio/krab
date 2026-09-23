@@ -37,7 +37,7 @@ kata-device-provisioner:
 
 ## Installation
 
-After the remaining conditional upstream chart is published:
+Install the chart with:
 
 ```sh
 helm upgrade --install krab \
@@ -48,6 +48,5 @@ helm upgrade --install krab \
   --values values.yaml
 ```
 
-Chart publication is currently guarded because the kata-device-plugin OCI chart
-does not exist yet. The multi-profile kata-device-provisioner chart is consumed
-from its published alpha release.
+The conditional NVIDIA dependencies are consumed from their published
+prereleases.
