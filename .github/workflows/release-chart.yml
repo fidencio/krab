@@ -164,15 +164,12 @@ jobs:
         if: github.ref_type == 'tag'
         run: helm push dist-chart/krab-*.tgz "${CHART_REGISTRY}"
 
-      - name: Make chart public and verify anonymous pull
+      - name: Verify anonymous pull
         if: github.ref_type == 'tag'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
 
-          gh api --method PATCH /user/packages/container/krab -f visibility=public
           helm registry logout ghcr.io
 
           for attempt in {1..6}; do
