@@ -460,7 +460,7 @@ export function buildValuesBundle(
         nvrc?: { enableDCGM?: boolean }
       } | boolean
     >
-    defaultShim?: unknown
+    defaultShim?: Record<string, string>
     customRuntimes?: {
       enabled: boolean
       runtimes: Record<string, unknown>
@@ -573,6 +573,32 @@ export function buildValuesBundle(
     }
   }
   runtimeValues.shims = selectedShims
+  const sourceDefaultShims = runtimeValues.defaultShim ?? {}
+  const selectedShimCatalog = [...enabledShims]
+    .filter((shimId) => typeof selectedShims[shimId] === 'object')
+    .map((shimId) => vendor.runtime.shims.find(({ id }) => id === shimId))
+    .filter(
+      (shim): shim is VendorCatalog['runtime']['shims'][number] => Boolean(shim),
+    )
+  const supportedArchitectures = new Set(
+    selectedShimCatalog.flatMap(({ supportedArches }) => supportedArches),
+  )
+  const defaultShims = Object.fromEntries(
+    [...supportedArchitectures].map((architecture) => {
+      const candidates = selectedShimCatalog.filter(({ supportedArches }) =>
+        supportedArches.includes(architecture),
+      )
+      const configuredDefault = sourceDefaultShims[architecture]
+      const selectedDefault =
+        candidates.find(({ id }) => id === configuredDefault) ?? candidates[0]
+      return [architecture, selectedDefault.id]
+    }),
+  )
+  if (Object.keys(defaultShims).length > 0) {
+    runtimeValues.defaultShim = defaultShims
+  } else {
+    delete runtimeValues.defaultShim
+  }
   if (advanced.customRuntimes.length > 0) {
     runtimeValues.customRuntimes = {
       enabled: true,
@@ -648,7 +674,6 @@ export function buildValuesBundle(
       delete runtimeValues.containerd
     }
   }
-  delete runtimeValues.defaultShim
   if (runtimeValues['node-feature-discovery']) {
     runtimeValues['node-feature-discovery'].enabled = false
   }

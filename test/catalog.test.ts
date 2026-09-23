@@ -186,6 +186,12 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
   assert.equal(shims['qemu-runtime-rs'].enabled, true)
   assert.equal(shims['qemu-runtime-rs'].nvrc, undefined)
   assert.equal(shims['qemu-nvidia-cpu-runtime-rs'].enabled, true)
+  assert.deepEqual(generatedValues['kata-deploy'].defaultShim, {
+    amd64: 'qemu-runtime-rs',
+    arm64: 'qemu-runtime-rs',
+    s390x: 'qemu-runtime-rs',
+    ppc64le: 'qemu-runtime-rs',
+  })
   assert.deepEqual(generatedValues['kata-deploy'].image, {
     reference: 'quay.io/kata-containers/kata-deploy',
     tag: '4.2.0',
@@ -269,6 +275,10 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
     configuredValues['kata-deploy'].shims['unselected-runtime'],
     undefined,
   )
+  assert.deepEqual(configuredValues['kata-deploy'].defaultShim, {
+    amd64: 'qemu-nvidia-cpu-runtime-rs',
+    arm64: 'qemu-nvidia-cpu-runtime-rs',
+  })
 
   const cocoDevValues = parse(
     buildValuesBundle(
@@ -294,6 +304,11 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
   ])
   assert.deepEqual(cocoDevValues['kata-deploy'].snapshotter, {
     setup: ['nydus'],
+  })
+  assert.deepEqual(cocoDevValues['kata-deploy'].defaultShim, {
+    amd64: 'qemu-coco-dev-runtime-rs',
+    arm64: 'qemu-coco-dev-runtime-rs',
+    s390x: 'qemu-coco-dev-runtime-rs',
   })
   assert.equal(
     cocoDevValues['kata-deploy'].containerd.userDropIn,
@@ -339,6 +354,41 @@ test('NVIDIA artifacts pin every component image version', async () => {
     },
   )
   assert.doesNotMatch(JSON.stringify(generatedValues), /latest/)
+  assert.deepEqual(generatedValues['kata-deploy'].defaultShim, {
+    amd64: 'qemu-nvidia-gpu-runtime-rs',
+  })
+
+  const tdxValues = parse(
+    buildValuesBundle(
+      catalog,
+      vendor,
+      {
+        hopper: { modeId: 'ppcie', cpuTeeIds: ['tdx'] },
+      },
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: [],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+  assert.deepEqual(tdxValues['kata-deploy'].shims, {
+    disableAll: true,
+    'qemu-nvidia-gpu-tdx-runtime-rs': {
+      ...vendor.runtime.chart.values.shims[
+        'qemu-nvidia-gpu-tdx-runtime-rs'
+      ],
+      enabled: true,
+      agent: { httpsProxy: '', noProxy: '' },
+      nvrc: { enableDCGM: false },
+    },
+  })
+  assert.deepEqual(tdxValues['kata-deploy'].defaultShim, {
+    amd64: 'qemu-nvidia-gpu-tdx-runtime-rs',
+  })
 })
 
 test('custom runtimes generate independent RuntimeClasses and snapshotters', async () => {
@@ -388,6 +438,7 @@ test('custom runtimes generate independent RuntimeClasses and snapshotters', asy
   )
 
   assert.deepEqual(generated['kata-deploy'].shims, { disableAll: true })
+  assert.equal(generated['kata-deploy'].defaultShim, undefined)
   assert.deepEqual(generated['kata-deploy'].customRuntimes, {
     enabled: true,
     runtimes: {
