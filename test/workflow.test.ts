@@ -18,6 +18,8 @@ test('Pages publishes stable and development builds together', async () => {
   const { source, workflow } = await readWorkflow('pages')
 
   assert.deepEqual(workflow.on.push.branches, ['main', 'dev'])
+  assert.equal(workflow.concurrency.group, 'pages')
+  assert.equal(workflow.concurrency['cancel-in-progress'], false)
   assert.match(source, /BASE_PATH: \/\$\{\{ github\.event\.repository\.name \}\}\/dev\//)
   assert.match(source, /cp -R stable\/dist\/\. site\//)
   assert.match(source, /cp -R development\/dist\/\. site\/dev\//)
