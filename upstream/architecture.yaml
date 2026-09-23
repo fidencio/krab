@@ -1,6 +1,6 @@
 schemaVersion: 1
 status: prerelease
-notice: KRAB 0.1.0-alpha.2 is prerelease software. Review generated values before deploying.
+notice: KRAB 0.1.0-alpha.3 is prerelease software. Review generated values before deploying.
 namespace: kata-system
 images:
   kubectl:

@@ -105,7 +105,7 @@ explicit version:
 
 ```sh
 helm upgrade --install krab oci://ghcr.io/fidencio/krab \
-  --version 0.1.0-alpha.2 \
+  --version 0.1.0-alpha.3 \
   --namespace kata-system \
   --create-namespace \
   --values values.yaml

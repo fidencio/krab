@@ -2,6 +2,14 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.0-alpha.3] - 2026-09-23
+
+### Fixed
+
+- Generated values now select a valid default Kata shim for every supported
+  architecture, preventing specialized configurations such as NVIDIA TDX from
+  falling back to an unavailable generic QEMU runtime.
+
 ## [0.1.0-alpha.2] - 2026-09-23
 
 ### Fixed
