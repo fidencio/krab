@@ -87,11 +87,12 @@ KRAB chart and application versions are kept identical. Alpha releases use a
 `chart-vX.Y.Z-alpha.N` Git tag; for example, the first release is tagged
 `chart-v0.1.0-alpha.0`.
 
-The chart release workflow can be run manually as a non-publishing validation.
-A matching tag runs the same checks, packages and attests the chart, publishes
-it to `oci://ghcr.io/fidencio/krab`, verifies an anonymous pull, and creates a
-GitHub prerelease with the chart archive and checksum file. Publication is
-refused while any pinned upstream OCI dependency is unavailable.
+Dispatch the chart release workflow from `main`. It runs the checks, packages
+and attests the chart, publishes it to `oci://ghcr.io/fidencio/krab`, verifies
+an anonymous pull, and creates the matching `chart-vX.Y.Z-alpha.N` tag and
+GitHub prerelease. Reruns verify an existing chart before replacing the release
+assets. Publication is refused while any pinned upstream OCI dependency is
+unavailable.
 
 Because Helm does not select prereleases implicitly, install this alpha with an
 explicit version:

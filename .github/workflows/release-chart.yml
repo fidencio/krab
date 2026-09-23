@@ -1,9 +1,6 @@
 name: Release KRAB Helm chart
 
 on:
-  push:
-    tags:
-      - "chart-v*"
   workflow_dispatch:
 
 concurrency:
@@ -39,10 +36,15 @@ jobs:
 
       - run: npm ci
 
-      - name: Verify release versions and tag
+      - name: Verify release versions and branch
         shell: bash
         run: |
           set -euo pipefail
+
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "::error::Chart releases must be dispatched from main"
+            exit 1
+          fi
 
           metadata="$(node --input-type=module <<'NODE'
           import { readFileSync } from 'node:fs'
@@ -60,15 +62,8 @@ jobs:
             exit 1
           fi
 
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            expected_tag="chart-v${chart_version}"
-            if [[ "${GITHUB_REF_NAME}" != "${expected_tag}" ]]; then
-              echo "::error::Release tag ${GITHUB_REF_NAME} does not match ${expected_tag}"
-              exit 1
-            fi
-          fi
-
           echo "CHART_VERSION=${chart_version}" >> "${GITHUB_ENV}"
+          echo "RELEASE_TAG=chart-v${chart_version}" >> "${GITHUB_ENV}"
 
       - name: Regenerate and verify committed catalog
         run: |
@@ -140,6 +135,43 @@ jobs:
           helm package "${CHART_PATH}" --destination dist-chart
           (cd dist-chart && sha256sum -- krab-*.tgz > SHA256SUMS)
 
+      - name: Reconcile existing published chart
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          chart_package="dist-chart/krab-${CHART_VERSION}.tgz"
+          published_dir="${RUNNER_TEMP}/published-chart"
+          local_tree="${RUNNER_TEMP}/local-chart"
+          published_tree="${RUNNER_TEMP}/published-chart-tree"
+          mkdir -p "${published_dir}" "${local_tree}" "${published_tree}"
+
+          if helm pull "${CHART_REFERENCE}" \
+            --version "${CHART_VERSION}" \
+            --destination "${published_dir}" >/dev/null 2>&1; then
+            published_package="${published_dir}/krab-${CHART_VERSION}.tgz"
+            tar -xzf "${chart_package}" -C "${local_tree}"
+            tar -xzf "${published_package}" -C "${published_tree}"
+            if ! diff --recursive --brief --exclude Chart.lock \
+              "${local_tree}/krab" \
+              "${published_tree}/krab"; then
+              echo "::error::Published chart ${CHART_VERSION} differs from this build"
+              exit 1
+            fi
+            if ! diff --brief \
+              <(sed '/^generated:/d' "${local_tree}/krab/Chart.lock") \
+              <(sed '/^generated:/d' "${published_tree}/krab/Chart.lock"); then
+              echo "::error::Published chart ${CHART_VERSION} has a different dependency lock"
+              exit 1
+            fi
+            cp "${published_package}" "${chart_package}"
+            (cd dist-chart && sha256sum -- krab-*.tgz > SHA256SUMS)
+            echo "PUBLISH_CHART=false" >> "${GITHUB_ENV}"
+            echo "Chart ${CHART_VERSION} is already published with identical content"
+          else
+            echo "PUBLISH_CHART=true" >> "${GITHUB_ENV}"
+          fi
+
       - uses: actions/upload-artifact@v5
         with:
           name: krab-chart-${{ env.CHART_VERSION }}
@@ -149,28 +181,26 @@ jobs:
           if-no-files-found: error
 
       - name: Attest chart package
-        if: github.ref_type == 'tag'
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist-chart/krab-*.tgz
 
-      - name: Log in to GHCR
-        if: github.ref_type == 'tag'
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" |
-            helm registry login ghcr.io --username "${{ github.actor }}" --password-stdin
-
-      - name: Publish chart
-        if: github.ref_type == 'tag'
-        run: helm push dist-chart/krab-*.tgz "${CHART_REGISTRY}"
-
-      - name: Verify anonymous pull
-        if: github.ref_type == 'tag'
+      - name: Publish and verify chart
         shell: bash
         run: |
           set -euo pipefail
 
-          helm registry logout ghcr.io
+          chart_package="dist-chart/krab-${CHART_VERSION}.tgz"
+          if [[ "${PUBLISH_CHART}" == "true" ]]; then
+            echo "${{ secrets.GITHUB_TOKEN }}" |
+              helm registry login ghcr.io \
+                --username "${{ github.actor }}" \
+                --password-stdin
+            helm push "${chart_package}" "${CHART_REGISTRY}"
+            helm registry logout ghcr.io
+          else
+            echo "Skipping push for existing chart ${CHART_VERSION}"
+          fi
 
           for attempt in {1..6}; do
             if helm show chart "${CHART_REFERENCE}" --version "${CHART_VERSION}" >/dev/null; then
@@ -183,14 +213,26 @@ jobs:
           exit 1
 
       - name: Create GitHub prerelease
-        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            dist-chart/krab-*.tgz \
-            dist-chart/SHA256SUMS \
-            --verify-tag \
-            --title "KRAB ${CHART_VERSION}" \
-            --generate-notes \
-            --prerelease
+          set -euo pipefail
+
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" \
+              dist-chart/krab-*.tgz \
+              dist-chart/SHA256SUMS \
+              --clobber
+            gh release edit "${RELEASE_TAG}" \
+              --title "KRAB ${CHART_VERSION}" \
+              --prerelease
+          else
+            gh release create "${RELEASE_TAG}" \
+              dist-chart/krab-*.tgz \
+              dist-chart/SHA256SUMS \
+              --target "${GITHUB_SHA}" \
+              --title "KRAB ${CHART_VERSION}" \
+              --generate-notes \
+              --prerelease
+          fi

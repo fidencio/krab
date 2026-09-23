@@ -8,6 +8,8 @@ All notable changes to KRAB are documented in this file.
 
 - Release verification now checks anonymous GHCR access directly instead of
   calling an unsupported package-visibility API.
+- Releases are dispatched from `main`, with tag creation and safe reruns owned
+  by one workflow execution.
 
 ## [0.1.0-alpha.0] - 2026-09-23
 
