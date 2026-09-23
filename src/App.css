@@ -36,7 +36,7 @@
   height: 40px;
   flex: 0 0 40px;
   display: block;
-  background: url('./assets/brands/krab-kata-hybrid.png') center / contain no-repeat;
+  background: url('./assets/brands/krab-kata-hybrid-light.png') center / contain no-repeat;
 }
 
 .brand-copy {
@@ -50,7 +50,7 @@
 
 .brand-copy strong {
   color: var(--kata-orange);
-  font: 800 16px 'Manrope', sans-serif;
+  font: 800 16px 'Roboto', sans-serif;
   letter-spacing: 0.08em;
   line-height: 1.15;
 }
@@ -114,12 +114,12 @@ nav a:hover {
 }
 
 .intro h1 {
-  max-width: 800px;
+  max-width: 760px;
   margin: 0;
-  font-family: 'Manrope', sans-serif;
-  font-size: clamp(45px, 6vw, 72px);
-  line-height: 1.02;
-  letter-spacing: -0.055em;
+  font-family: 'Roboto', sans-serif;
+  font-size: clamp(40px, 5vw, 60px);
+  line-height: 1.06;
+  letter-spacing: -0.04em;
 }
 
 .intro h1 span {
@@ -172,7 +172,7 @@ nav a:hover {
   padding: 11px 14px;
   border: 1px solid #42514b;
   border-radius: 7px;
-  background: #121c19;
+  background: #172033;
   color: #dce3df;
   font-size: 11px;
   font-weight: 700;
@@ -185,7 +185,7 @@ nav a:hover {
 }
 
 .import-values-button:hover {
-  border-color: var(--green);
+  border-color: var(--kata-primary);
   color: #f1f5f3;
 }
 
@@ -210,9 +210,9 @@ nav a:hover {
   gap: 8px;
   margin: 0 0 14px;
   padding: 10px 12px;
-  border: 1px solid rgba(118, 185, 0, 0.35);
+  border: 1px solid rgba(241, 91, 62, 0.35);
   border-radius: 7px;
-  background: rgba(118, 185, 0, 0.07);
+  background: rgba(241, 91, 62, 0.07);
   color: #b8c9bf;
   font-size: 11px;
 }
@@ -223,8 +223,8 @@ nav a:hover {
 }
 
 .import-values-message.error {
-  border-color: rgba(232, 104, 16, 0.45);
-  background: rgba(232, 104, 16, 0.07);
+  border-color: rgba(230, 155, 63, 0.45);
+  background: rgba(230, 155, 63, 0.07);
   color: #e7b28f;
 }
 
@@ -240,7 +240,7 @@ nav a:hover {
 
 .panel h2 {
   margin: 0;
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Roboto', sans-serif;
   font-size: 28px;
   letter-spacing: -0.035em;
 }
@@ -276,7 +276,7 @@ nav a:hover {
 .managed-platform-guidance h3 {
   margin: 0;
   color: #e5e9e7;
-  font: 700 17px 'Manrope', sans-serif;
+  font: 700 17px 'Roboto', sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -304,17 +304,17 @@ button.vendor-card {
 
 .vendor-card.selected {
   padding: 24px 26px;
-  border: 1px solid rgba(118, 185, 0, 0.6);
+  border: 1px solid rgba(241, 91, 62, 0.6);
   background:
-    radial-gradient(circle at 95% 5%, rgba(118, 185, 0, 0.11), transparent 45%),
-    #131e1b;
-  box-shadow: inset 0 0 0 1px rgba(118, 185, 0, 0.06);
+    radial-gradient(circle at 95% 5%, rgba(241, 91, 62, 0.11), transparent 45%),
+    #182237;
+  box-shadow: inset 0 0 0 1px rgba(241, 91, 62, 0.06);
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .vendor-card.selected:hover {
   transform: translateY(-3px);
-  border-color: var(--green-bright);
+  border-color: var(--kata-primary-bright);
   box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
 }
 
@@ -323,7 +323,7 @@ button.vendor-card {
   border: 1px solid rgba(231, 237, 234, 0.32);
   background:
     radial-gradient(circle at 95% 5%, rgba(255, 255, 255, 0.07), transparent 45%),
-    #131e1b;
+    #182237;
   color: inherit;
 }
 
@@ -374,7 +374,7 @@ button.vendor-card {
 
 .external-platform-brand strong {
   color: #f1f4f2;
-  font: 700 21px 'Manrope', sans-serif;
+  font: 700 21px 'Roboto', sans-serif;
   letter-spacing: -0.03em;
 }
 
@@ -492,7 +492,7 @@ button.vendor-card {
 
 .vendor-logo-wrap.named-brand strong {
   color: #f1f4f2;
-  font: 800 21px 'Manrope', sans-serif;
+  font: 800 21px 'Roboto', sans-serif;
   letter-spacing: -0.03em;
 }
 
@@ -562,12 +562,12 @@ button.vendor-card {
   border: 1px solid #35413e;
   border-radius: 50%;
   color: #7c8b86;
-  background: #131d1b;
+  background: #182237;
 }
 
 .coming-soon h3 {
   margin: 0;
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Roboto', sans-serif;
   font-size: 17px;
 }
 
@@ -626,7 +626,7 @@ button.vendor-card {
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #111c19;
+  background: #161f31;
   text-align: left;
   cursor: pointer;
   transition: border-color 160ms ease, transform 160ms ease;
@@ -638,8 +638,8 @@ button.vendor-card {
 }
 
 .hardware-card.selected {
-  border-color: var(--green);
-  background: linear-gradient(145deg, rgba(118, 185, 0, 0.09), #111c19 55%);
+  border-color: var(--kata-primary);
+  background: linear-gradient(145deg, rgba(241, 91, 62, 0.09), #161f31 55%);
 }
 
 .hardware-icon {
@@ -651,7 +651,7 @@ button.vendor-card {
   border: 1px solid var(--line);
   border-radius: 9px;
   color: var(--kata-orange-bright);
-  background: #18231f;
+  background: #1d2940;
 }
 
 .hardware-copy {
@@ -660,7 +660,7 @@ button.vendor-card {
 }
 
 .hardware-copy strong {
-  font: 700 16px 'Manrope', sans-serif;
+  font: 700 16px 'Roboto', sans-serif;
 }
 
 .hardware-copy small {
@@ -693,8 +693,8 @@ button.vendor-card {
 }
 
 .hardware-card.selected .radio {
-  border-color: var(--green);
-  background: var(--green);
+  border-color: var(--kata-primary);
+  background: var(--kata-primary);
   color: var(--ink);
 }
 
@@ -716,8 +716,8 @@ button.vendor-card {
   padding: 11px 16px;
   border: 0;
   border-radius: 7px;
-  background: var(--green);
-  color: #08100f;
+  background: var(--kata-primary);
+  color: #0c0016;
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
@@ -792,7 +792,7 @@ button.vendor-card {
 
 .builder-vendor-logo strong {
   color: #f1f4f2;
-  font: 800 12px 'Manrope', sans-serif;
+  font: 800 12px 'Roboto', sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -823,7 +823,7 @@ button.vendor-card {
 
 .builder-heading h1 {
   margin: 0;
-  font: 800 clamp(31px, 3.4vw, 44px)/1.04 'Manrope', sans-serif;
+  font: 800 clamp(31px, 3.4vw, 44px)/1.04 'Roboto', sans-serif;
   letter-spacing: -0.045em;
 }
 
@@ -959,24 +959,24 @@ button.vendor-card {
 }
 
 .architecture-node.krab-chart {
-  border-color: rgba(232, 104, 16, 0.35);
+  border-color: rgba(241, 91, 62, 0.35);
 }
 
 .architecture-node.required {
-  border-color: rgba(118, 185, 0, 0.42);
+  border-color: rgba(241, 91, 62, 0.42);
 }
 
 .architecture-node.required small {
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
 }
 
 .architecture-node.vendor-specific {
-  border-color: rgba(118, 185, 0, 0.62);
-  background: rgba(118, 185, 0, 0.055);
+  border-color: rgba(241, 91, 62, 0.62);
+  background: rgba(241, 91, 62, 0.055);
 }
 
 .architecture-node.vendor-specific small {
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
 }
 
 .architecture-dependencies {
@@ -1013,11 +1013,11 @@ button.vendor-card {
   order: 7;
   margin-bottom: 24px;
   padding: 21px 22px;
-  border: 1px solid rgba(118, 185, 0, 0.52);
+  border: 1px solid rgba(241, 91, 62, 0.52);
   border-radius: 11px;
   background:
-    radial-gradient(circle at 100% 0, rgba(118, 185, 0, 0.1), transparent 50%),
-    #151e1d;
+    radial-gradient(circle at 100% 0, rgba(241, 91, 62, 0.1), transparent 50%),
+    #1b2639;
 }
 
 .artifact-heading {
@@ -1031,12 +1031,12 @@ button.vendor-card {
 
 .install-command-callout h2 {
   margin: 0;
-  font: 700 17px 'Manrope', sans-serif;
+  font: 700 17px 'Roboto', sans-serif;
   letter-spacing: -0.02em;
 }
 
 .install-command-callout .section-kicker {
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
 }
 
 .install-command-callout p {
@@ -1052,7 +1052,7 @@ button.vendor-card {
   padding: 13px 15px;
   border: 1px solid #394540;
   border-radius: 7px;
-  background: #0c1512;
+  background: #100719;
 }
 
 .install-command code {
@@ -1082,8 +1082,8 @@ button.vendor-card {
   padding: 0 12px;
   border: 0;
   border-radius: 6px;
-  background: var(--green);
-  color: #111714;
+  background: var(--kata-primary);
+  color: #16101c;
   font-size: 9px;
   font-weight: 800;
   cursor: pointer;
@@ -1092,27 +1092,27 @@ button.vendor-card {
 .download-artifact-button {
   width: 142px;
   flex-basis: 142px;
-  border: 1px solid #485650;
-  background: #1b2723;
+  border: 1px solid #586377;
+  background: #202d42;
   color: #dbe3df;
 }
 
 .artifact-actions .copy-artifact-button {
-  border: 1px solid #485650;
-  background: #1b2723;
+  border: 1px solid #586377;
+  background: #202d42;
   color: #dbe3df;
 }
 
 .download-artifact-button:hover:not(:disabled),
 .artifact-actions .copy-artifact-button:hover:not(:disabled) {
-  border-color: var(--green);
-  color: var(--green-bright);
+  border-color: var(--kata-primary);
+  color: var(--kata-primary-bright);
 }
 
 .copy-artifact-button:disabled,
 .download-artifact-button:disabled {
   background: #34413d;
-  color: #78847f;
+  color: #8b929f;
   cursor: not-allowed;
 }
 
@@ -1139,7 +1139,7 @@ button.vendor-card {
   background:
     radial-gradient(circle at 100% 0, rgba(54, 169, 225, 0.16), transparent 48%),
     radial-gradient(circle at 0 100%, rgba(255, 77, 77, 0.055), transparent 38%),
-    #111b1d;
+    #172133;
 }
 
 .attestation-guidance > img {
@@ -1166,7 +1166,7 @@ button.vendor-card {
 .attestation-guidance h2 {
   margin: 7px 0 0;
   color: #e9efec;
-  font: 700 20px 'Manrope', sans-serif;
+  font: 700 20px 'Roboto', sans-serif;
   letter-spacing: -0.025em;
 }
 
@@ -1239,7 +1239,7 @@ button.vendor-card {
 .builder-section-title {
   margin: 0 0 24px;
   color: #edf1ef;
-  font: 700 25px 'Manrope', sans-serif;
+  font: 700 25px 'Roboto', sans-serif;
   letter-spacing: -0.035em;
 }
 
@@ -1314,15 +1314,15 @@ button.vendor-card {
 
 .local-runtime-selection {
   padding: 20px;
-  border: 1px solid rgba(118, 185, 0, 0.44);
+  border: 1px solid rgba(241, 91, 62, 0.44);
   border-radius: 12px;
   background:
-    radial-gradient(circle at 100% 0, rgba(118, 185, 0, 0.07), transparent 42%),
-    #151e22;
+    radial-gradient(circle at 100% 0, rgba(241, 91, 62, 0.07), transparent 42%),
+    #1b2639;
 }
 
 .local-runtime-selection.incomplete {
-  border-color: rgba(232, 104, 16, 0.5);
+  border-color: rgba(230, 155, 63, 0.5);
 }
 
 .local-runtime-selection > header {
@@ -1340,7 +1340,7 @@ button.vendor-card {
 }
 
 .local-runtime-selection > header span {
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -1354,7 +1354,7 @@ button.vendor-card {
 .local-runtime-selection h2 {
   margin: 0;
   color: #edf1ef;
-  font: 700 18px 'Manrope', sans-serif;
+  font: 700 18px 'Roboto', sans-serif;
 }
 
 .local-runtime-selection header p {
@@ -1368,9 +1368,9 @@ button.vendor-card {
 .local-runtime-selection > header > em {
   flex: 0 0 auto;
   padding: 4px 7px;
-  border: 1px solid rgba(118, 185, 0, 0.4);
+  border: 1px solid rgba(241, 91, 62, 0.4);
   border-radius: 4px;
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
   font-size: 8px;
   font-style: normal;
   font-weight: 800;
@@ -1379,7 +1379,7 @@ button.vendor-card {
 }
 
 .local-runtime-selection.incomplete > header > em {
-  border-color: rgba(232, 104, 16, 0.4);
+  border-color: rgba(230, 155, 63, 0.4);
   color: var(--kata-orange-bright);
 }
 
@@ -1394,20 +1394,20 @@ button.vendor-card {
   align-items: flex-start;
   gap: 10px;
   padding: 12px;
-  border: 1px solid #33413c;
+  border: 1px solid #3a4658;
   border-radius: 7px;
-  background: #101916;
+  background: #131c2a;
   cursor: pointer;
 }
 
 .local-runtime-grid label:has(input:checked) {
-  border-color: rgba(118, 185, 0, 0.58);
-  background: rgba(118, 185, 0, 0.075);
+  border-color: rgba(241, 91, 62, 0.58);
+  background: rgba(241, 91, 62, 0.075);
 }
 
 .local-runtime-grid input {
   margin-top: 3px;
-  accent-color: var(--green);
+  accent-color: var(--kata-primary);
 }
 
 .local-runtime-grid label > span {
@@ -1437,11 +1437,11 @@ button.vendor-card {
 
 .cluster-config {
   padding: 16px 18px;
-  border: 1px solid rgba(118, 185, 0, 0.42);
+  border: 1px solid rgba(241, 91, 62, 0.42);
   border-radius: 12px;
   background:
-    radial-gradient(circle at 100% 0, rgba(118, 185, 0, 0.07), transparent 45%),
-    #151e22;
+    radial-gradient(circle at 100% 0, rgba(241, 91, 62, 0.07), transparent 45%),
+    #1b2639;
 }
 
 .cluster-config-wide {
@@ -1456,9 +1456,9 @@ button.vendor-card {
   gap: 11px;
   margin: 0 0 24px;
   padding: 13px 15px;
-  border: 1px solid rgba(232, 104, 16, 0.45);
+  border: 1px solid rgba(230, 155, 63, 0.45);
   border-radius: 8px;
-  background: rgba(232, 104, 16, 0.055);
+  background: rgba(230, 155, 63, 0.055);
   color: var(--kata-orange-bright);
 }
 
@@ -1480,9 +1480,9 @@ button.vendor-card {
 }
 
 .runtime-prerequisite.managed {
-  border-color: rgba(118, 185, 0, 0.42);
-  background: rgba(118, 185, 0, 0.055);
-  color: var(--green-bright);
+  border-color: rgba(241, 91, 62, 0.42);
+  background: rgba(241, 91, 62, 0.055);
+  color: var(--kata-primary-bright);
 }
 
 .runtime-prerequisite.managed strong {
@@ -1499,7 +1499,7 @@ button.vendor-card {
   overflow: hidden;
   border: 1px solid #32413d;
   border-radius: 12px;
-  background: #151e22;
+  background: #1b2639;
 }
 
 .advanced-config > summary {
@@ -1524,7 +1524,7 @@ button.vendor-card {
 
 .advanced-config > summary strong {
   color: #edf1ef;
-  font: 700 14px 'Manrope', sans-serif;
+  font: 700 14px 'Roboto', sans-serif;
 }
 
 .advanced-config > summary small {
@@ -1567,7 +1567,7 @@ button.vendor-card {
 .advanced-group > header > span,
 .debug-group > div > span,
 .component-toggle-group > div > span {
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -1611,20 +1611,20 @@ button.vendor-card {
 
 .advanced-field-grid label > span,
 .image-overrides > span {
-  color: #a0aaa5;
+  color: #b1adb5;
   font-size: 11px;
   font-weight: 700;
 }
 
 .advanced-field-grid label > small {
-  color: #77847e;
+  color: #8b929f;
   font-size: 10px;
 }
 
 .advanced-field-grid label > span em {
   margin-left: 6px;
   padding: 2px 4px;
-  border: 1px solid rgba(232, 104, 16, 0.42);
+  border: 1px solid rgba(230, 155, 63, 0.42);
   border-radius: 3px;
   color: var(--kata-orange-bright);
   font-size: 9px;
@@ -1654,7 +1654,7 @@ button.vendor-card {
 
 .scheduled-reconcile-schedule > span {
   flex: 0 0 auto;
-  color: #a0aaa5;
+  color: #b1adb5;
   font-size: 11px;
   font-weight: 700;
 }
@@ -1673,7 +1673,7 @@ button.vendor-card {
   max-width: 760px;
   margin: 12px 0 0;
   padding: 3px 0 3px 10px;
-  border-left: 2px solid rgba(232, 104, 16, 0.68);
+  border-left: 2px solid rgba(230, 155, 63, 0.68);
   color: #b9a399;
   font-size: 11px;
   line-height: 1.55;
@@ -1700,10 +1700,10 @@ button.vendor-card {
 .advanced-config textarea {
   min-width: 0;
   padding: 0 10px;
-  border: 1px solid #3a4742;
+  border: 1px solid #485368;
   border-radius: 6px;
   outline: 0;
-  background: #101916;
+  background: #131c2a;
   color: #e6ebe8;
   font: 12px 'DM Sans', sans-serif;
 }
@@ -1733,7 +1733,7 @@ button.vendor-card {
 .advanced-config input:focus,
 .advanced-config select:focus,
 .advanced-config textarea:focus {
-  border-color: var(--green);
+  border-color: var(--kata-primary);
 }
 
 .advanced-config input:disabled {
@@ -1774,7 +1774,7 @@ button.vendor-card {
 }
 
 .shim-drop-in > span small {
-  color: #77847e;
+  color: #8b929f;
   font-size: 10px;
   text-align: right;
 }
@@ -1787,7 +1787,7 @@ button.vendor-card {
 }
 
 .containerd-drop-in > span {
-  color: #a0aaa5;
+  color: #b1adb5;
   font-size: 11px;
   font-weight: 700;
 }
@@ -1800,7 +1800,7 @@ button.vendor-card {
 
 .custom-runtime-card {
   padding: 12px;
-  border: 1px solid #33413c;
+  border: 1px solid #3a4658;
   border-radius: 8px;
   background: rgba(9, 16, 14, 0.28);
 }
@@ -1827,7 +1827,7 @@ button.vendor-card {
 
 .custom-runtime-card > header small {
   overflow: hidden;
-  color: #77847e;
+  color: #8b929f;
   font: 10px 'IBM Plex Mono', monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1841,7 +1841,7 @@ button.vendor-card {
   place-items: center;
   border: 1px solid #4a3937;
   border-radius: 6px;
-  background: #171514;
+  background: #17101c;
   color: #b9897b;
   cursor: pointer;
 }
@@ -1866,7 +1866,7 @@ button.vendor-card {
 }
 
 .custom-runtime-editors > label > span {
-  color: #a0aaa5;
+  color: #b1adb5;
   font-size: 11px;
   font-weight: 700;
 }
@@ -1889,7 +1889,7 @@ button.vendor-card {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
-  color: #a0aaa5;
+  color: #b1adb5;
   font-size: 11px;
   font-weight: 700;
 }
@@ -1901,15 +1901,15 @@ button.vendor-card {
   padding: 6px 8px;
   border: 1px solid #40504a;
   border-radius: 5px;
-  background: #101916;
+  background: #131c2a;
   color: #b9c5bf;
   font-size: 11px;
   cursor: pointer;
 }
 
 .advanced-list-heading button:hover {
-  border-color: var(--green);
-  color: var(--green-bright);
+  border-color: var(--kata-primary);
+  color: var(--kata-primary-bright);
 }
 
 .toleration-heading {
@@ -1951,7 +1951,7 @@ button.vendor-card {
   place-items: center;
   border: 1px solid #4a3937;
   border-radius: 6px;
-  background: #171514;
+  background: #17101c;
   color: #b9897b;
   cursor: pointer;
 }
@@ -1969,7 +1969,7 @@ button.vendor-card {
 
 .chart-image-card {
   padding: 12px;
-  border: 1px solid #33413c;
+  border: 1px solid #3a4658;
   border-radius: 8px;
   background: rgba(9, 16, 14, 0.28);
 }
@@ -1997,7 +1997,7 @@ button.vendor-card {
 }
 
 .image-override-row strong {
-  color: #a0aaa5;
+  color: #b1adb5;
   font-size: 9px;
 }
 
@@ -2008,12 +2008,12 @@ button.vendor-card {
   flex-direction: column;
   gap: 3px;
   padding: 0 10px;
-  border: 1px dashed #3a4742;
+  border: 1px dashed #485368;
   border-radius: 6px;
 }
 
 .unsupported-setting span {
-  color: #a0aaa5;
+  color: #b1adb5;
   font-size: 9px;
   font-weight: 700;
 }
@@ -2062,13 +2062,13 @@ button.vendor-card {
 
 .erofs-mode-field small,
 .erofs-utilities header small {
-  color: #78847f;
+  color: #8b929f;
   font-size: 9px;
   line-height: 1.45;
 }
 
 .erofs-mode-field input:invalid {
-  border-color: rgba(232, 104, 16, 0.65);
+  border-color: rgba(230, 155, 63, 0.65);
 }
 
 .erofs-integrity-options {
@@ -2102,18 +2102,18 @@ button.vendor-card {
 }
 
 .erofs-image-field > span {
-  color: #a0aaa5;
+  color: #b1adb5;
   font-size: 9px;
   font-weight: 700;
 }
 
 .erofs-image-field small {
-  color: #78847f;
+  color: #8b929f;
   font-size: 9px;
 }
 
 .cluster-config.incomplete {
-  border-color: rgba(232, 104, 16, 0.5);
+  border-color: rgba(230, 155, 63, 0.5);
 }
 
 .cluster-config > header {
@@ -2131,7 +2131,7 @@ button.vendor-card {
 }
 
 .cluster-config > header span {
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -2144,12 +2144,12 @@ button.vendor-card {
 
 .cluster-config > header strong {
   color: #edf1ef;
-  font: 700 14px 'Manrope', sans-serif;
+  font: 700 14px 'Roboto', sans-serif;
 }
 
 .cluster-config > header em {
   padding: 4px 7px;
-  border: 1px solid rgba(232, 104, 16, 0.38);
+  border: 1px solid rgba(230, 155, 63, 0.38);
   border-radius: 4px;
   color: var(--kata-orange-bright);
   font-size: 8px;
@@ -2160,8 +2160,8 @@ button.vendor-card {
 }
 
 .cluster-config:not(.incomplete) > header em {
-  border-color: rgba(118, 185, 0, 0.4);
-  color: var(--green-bright);
+  border-color: rgba(241, 91, 62, 0.4);
+  color: var(--kata-primary-bright);
 }
 
 .cluster-fields {
@@ -2178,7 +2178,7 @@ button.vendor-card {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  color: #a0aaa5;
+  color: #b1adb5;
   font-size: 10px;
   font-weight: 700;
 }
@@ -2190,7 +2190,7 @@ button.vendor-card {
 }
 
 .field-label small {
-  color: #77847e;
+  color: #8b929f;
   font-size: 8px;
   font-weight: 600;
 }
@@ -2200,11 +2200,11 @@ button.vendor-card {
   width: 100%;
   height: 48px;
   padding: 0 42px 0 12px;
-  border: 1px solid #3a4742;
+  border: 1px solid #485368;
   border-radius: 6px;
   outline: 0;
   appearance: none;
-  background-color: #101916;
+  background-color: #131c2a;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%23b8c3be' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
@@ -2220,7 +2220,7 @@ button.vendor-card {
 
 .cluster-fields select:focus,
 .cluster-fields input:focus {
-  border-color: var(--green);
+  border-color: var(--kata-primary);
 }
 
 .info-popover {
@@ -2234,10 +2234,10 @@ button.vendor-card {
   height: 16px;
   display: grid;
   place-items: center;
-  border: 1px solid #4a5752;
+  border: 1px solid #596477;
   border-radius: 50%;
   color: #9aa69f;
-  background: #101916;
+  background: #131c2a;
   font: 700 9px ui-monospace, monospace;
   cursor: pointer;
   list-style: none;
@@ -2248,8 +2248,8 @@ button.vendor-card {
 }
 
 .info-popover[open] summary {
-  border-color: var(--green);
-  color: var(--green-bright);
+  border-color: var(--kata-primary);
+  color: var(--kata-primary-bright);
 }
 
 .popover-panel {
@@ -2261,7 +2261,7 @@ button.vendor-card {
   padding: 13px 14px;
   border: 1px solid #46544f;
   border-radius: 8px;
-  background: #0d1613;
+  background: #11091b;
   box-shadow: 0 16px 35px rgba(0, 0, 0, 0.42);
 }
 
@@ -2277,7 +2277,7 @@ button.vendor-card {
 
 .popover-panel p {
   margin: 6px 0 0;
-  color: #a0aaa5;
+  color: #b1adb5;
   font-size: 10px;
   font-weight: 500;
   line-height: 1.55;
@@ -2292,9 +2292,9 @@ button.vendor-card {
   flex-direction: row !important;
   gap: 9px !important;
   padding: 7px 12px;
-  border: 1px solid #3a4742;
+  border: 1px solid #485368;
   border-radius: 6px;
-  background: #101916;
+  background: #131c2a;
   cursor: pointer;
 }
 
@@ -2310,9 +2310,9 @@ button.vendor-card {
   flex: 0 0 34px;
   display: block;
   padding: 2px;
-  border: 1px solid #4a5752;
+  border: 1px solid #596477;
   border-radius: 999px;
-  background: #26312d;
+  background: #2a394e;
   transition: background 160ms ease, border-color 160ms ease;
 }
 
@@ -2326,12 +2326,12 @@ button.vendor-card {
 }
 
 .selinux-toggle input:checked + .toggle-track {
-  border-color: var(--green);
-  background: rgba(118, 185, 0, 0.2);
+  border-color: var(--kata-primary);
+  background: rgba(241, 91, 62, 0.2);
 }
 
 .selinux-toggle input:checked + .toggle-track > span {
-  background: var(--green-bright);
+  background: var(--kata-primary-bright);
   transform: translateX(14px);
 }
 
@@ -2357,7 +2357,7 @@ button.vendor-card {
 
 .cluster-config > p {
   margin: 11px 0 0;
-  color: #a0aaa5;
+  color: #b1adb5;
   font-size: 10px;
   line-height: 1.45;
 }
@@ -2370,17 +2370,17 @@ button.vendor-card {
   overflow: hidden;
   border: 1px solid #2b393c;
   border-radius: 12px;
-  background: #151e22;
+  background: #1b2639;
 }
 
 .profile-card[open] {
-  border-color: rgba(118, 185, 0, 0.46);
+  border-color: rgba(241, 91, 62, 0.46);
 }
 
 .profile-card.pending,
 .profile-card.pending[open] {
   border-color: #3b4241;
-  background: #171d1e;
+  background: #1b2434;
 }
 
 .profile-card.pending > summary {
@@ -2408,14 +2408,14 @@ button.vendor-card {
 
 .profile-summary-status span {
   padding: 4px 7px;
-  border: 1px solid rgba(118, 185, 0, 0.42);
+  border: 1px solid rgba(241, 91, 62, 0.42);
   border-radius: 4px;
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
   font: 700 9px ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .profile-summary-status span.incomplete {
-  border-color: rgba(232, 104, 16, 0.55);
+  border-color: rgba(230, 155, 63, 0.55);
   color: var(--kata-orange-bright);
 }
 
@@ -2435,14 +2435,14 @@ button.vendor-card {
 
 .profile-card h2 {
   margin: 0;
-  font: 700 17px 'Manrope', sans-serif;
+  font: 700 17px 'Roboto', sans-serif;
   letter-spacing: -0.02em;
 }
 
 .profile-card summary strong {
   display: block;
   margin-top: 6px;
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
   font: 600 12px ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -2513,7 +2513,7 @@ button.vendor-card {
   height: 15px;
   flex: 0 0 15px;
   margin: 2px 0 0;
-  accent-color: var(--green);
+  accent-color: var(--kata-primary);
 }
 
 .mode-option > span {
@@ -2528,7 +2528,7 @@ button.vendor-card {
 }
 
 .mode-option:has(input:checked) strong {
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
 }
 
 .mode-option small {
@@ -2542,23 +2542,23 @@ button.vendor-card {
   display: inline-block;
   margin-left: 5px;
   padding: 1px 4px;
-  border: 1px solid var(--green);
+  border: 1px solid var(--kata-primary);
   border-radius: 3px;
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
   font: 600 10px ui-monospace, monospace;
 }
 
 .cpu-tee-selection {
   margin: 0 0 0 28px;
   padding: 15px 16px 16px;
-  border: 1px solid rgba(118, 185, 0, 0.3);
+  border: 1px solid rgba(241, 91, 62, 0.3);
   border-radius: 8px;
-  background: rgba(118, 185, 0, 0.04);
+  background: rgba(241, 91, 62, 0.04);
 }
 
 .cpu-tee-selection.needs-selection {
-  border-color: rgba(232, 104, 16, 0.55);
-  background: rgba(232, 104, 16, 0.045);
+  border-color: rgba(230, 155, 63, 0.55);
+  background: rgba(230, 155, 63, 0.045);
 }
 
 .cpu-tee-selection.needs-selection legend {
@@ -2567,7 +2567,7 @@ button.vendor-card {
 
 .cpu-tee-selection legend {
   padding: 0 6px;
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -2598,19 +2598,19 @@ button.vendor-card {
   align-items: flex-start;
   gap: 9px;
   padding: 10px;
-  border: 1px solid #33413c;
+  border: 1px solid #3a4658;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .cpu-tee-selection label:has(input:checked) {
-  border-color: rgba(118, 185, 0, 0.55);
-  background: rgba(118, 185, 0, 0.07);
+  border-color: rgba(241, 91, 62, 0.55);
+  background: rgba(241, 91, 62, 0.07);
 }
 
 .cpu-tee-selection input {
   margin: 2px 0 0;
-  accent-color: var(--green);
+  accent-color: var(--kata-primary);
 }
 
 .cpu-tee-selection label > span {
@@ -2634,11 +2634,11 @@ button.vendor-card {
 .runtime-install-summary {
   order: 5;
   padding: 24px;
-  border: 1px solid rgba(118, 185, 0, 0.42);
+  border: 1px solid rgba(241, 91, 62, 0.42);
   border-radius: 12px;
   background:
-    radial-gradient(circle at 100% 0, rgba(118, 185, 0, 0.08), transparent 38%),
-    #151e22;
+    radial-gradient(circle at 100% 0, rgba(241, 91, 62, 0.08), transparent 38%),
+    #1b2639;
 }
 
 .runtime-install-summary > header {
@@ -2656,7 +2656,7 @@ button.vendor-card {
 }
 
 .runtime-install-summary > header span {
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -2666,7 +2666,7 @@ button.vendor-card {
 .runtime-install-summary h2 {
   margin: 0;
   color: #edf1ef;
-  font: 700 18px 'Manrope', sans-serif;
+  font: 700 18px 'Roboto', sans-serif;
 }
 
 .runtime-install-summary header p {
@@ -2684,9 +2684,9 @@ button.vendor-card {
 .runtime-install-summary > header > strong {
   flex: 0 0 auto;
   padding: 5px 8px;
-  border: 1px solid rgba(118, 185, 0, 0.42);
+  border: 1px solid rgba(241, 91, 62, 0.42);
   border-radius: 5px;
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
   font-size: 9px;
 }
 
@@ -2698,9 +2698,9 @@ button.vendor-card {
 
 .runtime-summary-grid article {
   padding: 15px;
-  border: 1px solid #34413e;
+  border: 1px solid #3b4658;
   border-radius: 8px;
-  background: #101916;
+  background: #131c2a;
 }
 
 .runtime-summary-title {
@@ -2712,7 +2712,7 @@ button.vendor-card {
 .runtime-summary-title > svg {
   flex: 0 0 auto;
   margin-top: 2px;
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
 }
 
 .runtime-summary-title > div {
@@ -2724,12 +2724,12 @@ button.vendor-card {
 
 .runtime-summary-title span {
   color: #edf1ef;
-  font: 700 12px 'Manrope', sans-serif;
+  font: 700 12px 'Roboto', sans-serif;
 }
 
 .runtime-summary-title code {
   overflow-wrap: anywhere;
-  color: var(--green-bright);
+  color: var(--kata-primary-bright);
   font: 10px ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -2752,7 +2752,7 @@ button.vendor-card {
 .runtime-summary-grid li {
   padding: 4px 6px;
   border-radius: 4px;
-  background: rgba(118, 185, 0, 0.09);
+  background: rgba(241, 91, 62, 0.09);
   color: #c7d2cc;
   font-size: 8px;
 }
@@ -2768,7 +2768,7 @@ button.vendor-card {
 .runtime-summary-empty {
   margin: 0;
   padding: 18px;
-  border: 1px dashed #3a4742;
+  border: 1px dashed #485368;
   border-radius: 7px;
   color: #84908b;
   font-size: 11px;
@@ -2830,7 +2830,7 @@ button.vendor-card {
 
 .code-tabs button.active {
   border-color: var(--kata-orange);
-  background: rgba(232, 104, 16, 0.08);
+  background: rgba(241, 91, 62, 0.08);
   color: #e9e9e6;
 }
 
@@ -2838,9 +2838,9 @@ button.vendor-card {
   position: relative;
   height: 520px;
   overflow: hidden;
-  border: 1px solid #34413e;
+  border: 1px solid #3b4658;
   border-radius: 12px;
-  background: #151e22;
+  background: #1b2639;
 }
 
 .code-preview pre {
@@ -2863,11 +2863,11 @@ button.vendor-card {
   justify-content: center;
   flex-direction: column;
   padding: 42px;
-  border: 1px solid rgba(232, 104, 16, 0.4);
+  border: 1px solid rgba(230, 155, 63, 0.4);
   border-radius: 12px;
   background:
-    radial-gradient(circle at 100% 0, rgba(232, 104, 16, 0.06), transparent 45%),
-    #151e22;
+    radial-gradient(circle at 100% 0, rgba(230, 155, 63, 0.06), transparent 45%),
+    #1b2639;
 }
 
 .install-command-callout .code-column {
@@ -2886,7 +2886,7 @@ button.vendor-card {
 
 .values-blocked strong {
   color: #e5e9e7;
-  font: 700 17px 'Manrope', sans-serif;
+  font: 700 17px 'Roboto', sans-serif;
 }
 
 .values-blocked ul {
@@ -2935,6 +2935,394 @@ button.vendor-card {
 .code-actions > span {
   color: #65716d;
   font-size: 10px;
+}
+
+/* Kata Containers visual language: flat white surfaces, navy type, orange action. */
+.app-shell {
+  color: #333;
+}
+
+.intro {
+  padding: 48px 0 46px;
+}
+
+.intro > p {
+  max-width: 720px;
+  margin-top: 22px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.site-header {
+  border-color: #d5d5d5;
+  background: #fff;
+}
+
+nav,
+nav a,
+.back-link {
+  color: #2a394e;
+}
+
+nav a:hover,
+.back-link:hover {
+  color: #f15b3e;
+}
+
+.intro::after {
+  display: none;
+}
+
+.intro h1,
+.panel h2,
+.managed-platform-guidance h3,
+.external-platform-brand strong,
+.vendor-logo-wrap.named-brand strong,
+.builder-vendor-logo strong,
+.hardware-copy strong,
+.builder-heading h1,
+.architecture-details summary strong,
+.architecture-chain strong,
+.install-command-callout h2,
+.local-runtime-selection h2,
+.advanced-config > summary strong,
+.advanced-group > header strong,
+.component-toggle-group > div > strong,
+.custom-runtime-card > header strong,
+.chart-image-card > strong,
+.cluster-config > header strong,
+.selinux-toggle strong,
+.profile-card h2,
+.profile-card summary strong,
+.profile-unavailable strong,
+.mode-option strong,
+.cpu-tee-selection strong,
+.runtime-install-summary h2,
+.runtime-summary-title span,
+.builder-section-title,
+.code-heading > div > span,
+.values-blocked strong {
+  color: #2a394e;
+  font-family: 'Roboto', sans-serif;
+}
+
+.intro > p,
+.panel-heading p,
+.vendor-card > p,
+.external-platform-card > p,
+.hardware-copy small,
+.builder-heading p,
+.architecture-details summary small,
+.architecture-chain span,
+.install-command-callout p,
+.local-runtime-selection header p,
+.advanced-config > summary small,
+.advanced-group > header small,
+.component-toggle-group > div > small,
+.custom-runtime-card > header small,
+.cluster-config > p,
+.selinux-toggle small,
+.profile-unavailable p,
+.mode-option small,
+.cpu-tee-selection > p,
+.runtime-install-summary header p,
+.runtime-summary-grid article > p,
+.code-heading small,
+.values-blocked p {
+  color: #6b6b6b;
+}
+
+.card-link,
+.external-platform-card > p a {
+  color: #f15b3e;
+}
+
+.panel,
+.vendor-card.selected,
+.external-platform-card,
+.hardware-card,
+.architecture-details,
+.architecture-node,
+.install-command-callout,
+.local-runtime-selection,
+.cluster-config,
+.advanced-config,
+.profile-card,
+.runtime-install-summary,
+.values-blocked {
+  border-color: #d5d5d5;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.vendor-card.selected,
+.external-platform-card {
+  background: #fff;
+}
+
+.vendor-card.selected:hover,
+.hardware-card:hover {
+  border-color: #f15b3e;
+  transform: none;
+  box-shadow: none;
+}
+
+.vendor-card.selected:hover,
+.hardware-card.selected,
+.local-runtime-grid label:has(input:checked),
+.mode-option:has(input:checked),
+.cpu-tee-selection label:has(input:checked) {
+  background: #fff7f5;
+}
+
+.profile-card.pending,
+.profile-card.pending[open] {
+  border-color: #d5d5d5;
+  background: #f6f7f8;
+}
+
+.profile-card.pending > summary {
+  opacity: 1;
+}
+
+.profile-card.pending h2,
+.profile-card.pending summary strong {
+  color: #667386;
+}
+
+.profile-summary-status span.pending {
+  border-color: #9b9b9b;
+  color: #5f6977;
+  background: #fff;
+}
+
+.managed-platform-guidance,
+.profile-list,
+.advanced-group,
+.architecture-details summary,
+.profile-card > summary {
+  border-color: #d5d5d5;
+}
+
+.import-values-button,
+.download-artifact-button,
+.artifact-actions .copy-artifact-button,
+.local-runtime-grid label,
+.hardware-icon,
+.capabilities span,
+.coming-soon,
+.architecture-node,
+.advanced-config textarea,
+.advanced-config select,
+.advanced-list-heading button,
+.advanced-row > button,
+.custom-runtime-card,
+.custom-runtime-card > header button,
+.chart-image-card,
+.cluster-fields input,
+.info-popover summary,
+.popover-panel,
+.selinux-toggle,
+.profile-unavailable,
+.runtime-summary-grid article,
+.runtime-summary-empty,
+.code-tabs button,
+.values-blocked {
+  border-color: #d5d5d5;
+  background: #f6f7f8;
+  color: #333;
+  box-shadow: none;
+}
+
+.advanced-config input,
+.advanced-config select,
+.advanced-config textarea,
+.cluster-fields select,
+.cluster-fields input {
+  border-color: #9b9b9b;
+  border-radius: 4px;
+  background: #fff;
+  color: #222;
+}
+
+.advanced-config input:focus,
+.advanced-config select:focus,
+.advanced-config textarea:focus,
+.cluster-fields input:focus {
+  border-color: #f15b3e;
+  box-shadow: 0 0 0 2px rgba(241, 91, 62, 0.14);
+}
+
+.cluster-field,
+.field-label,
+.advanced-field-grid label > span,
+.image-overrides > span,
+.scheduled-reconcile-schedule > span {
+  color: #4f5966;
+}
+
+.field-label {
+  min-height: 20px;
+}
+
+.field-label small {
+  color: #6b7280;
+}
+
+.capabilities span,
+.runtime-summary-grid li,
+.profile-summary-status span,
+.local-runtime-selection > header > em,
+.cluster-config > header em,
+.runtime-install-summary > header > strong {
+  border-radius: 2px;
+}
+
+.primary-button,
+.copy-artifact-button,
+.code-actions .primary-button {
+  background: #f15b3e;
+  color: #fff;
+}
+
+.download-artifact-button,
+.artifact-actions .copy-artifact-button {
+  border: 1px solid #2a394e;
+  background: #fff;
+  color: #2a394e;
+}
+
+.download-artifact-button:hover:not(:disabled),
+.artifact-actions .copy-artifact-button:hover:not(:disabled) {
+  border-color: #f15b3e;
+  color: #f15b3e;
+}
+
+.install-command,
+.code-preview {
+  border-color: #282828;
+  border-radius: 4px;
+  background: #282828;
+}
+
+.install-command code,
+.code-preview code {
+  color: #fff;
+}
+
+.code-tabs button.active {
+  border-color: #f15b3e;
+  background: #fff7f5;
+  color: #2a394e;
+}
+
+.toggle-track {
+  border: 1px solid #6f7a88;
+  background: #d6d9dd;
+}
+
+.toggle-track > span {
+  background: #5f6b78;
+}
+
+.selinux-toggle input:checked + .toggle-track {
+  background: #f15b3e;
+}
+
+.selinux-toggle input:checked + .toggle-track > span {
+  background: #fff;
+}
+
+.attestation-guidance {
+  border-color: #9dcfe6;
+  border-radius: 4px;
+  background: #f2f9fc;
+  box-shadow: none;
+}
+
+.attestation-guidance h2,
+.attestation-references strong {
+  color: #2a394e;
+}
+
+.attestation-guidance-copy > p,
+.attestation-references span,
+.attestation-references code {
+  color: #5d6875;
+}
+
+.attestation-references a,
+.attestation-references a:hover {
+  border-radius: 2px;
+  background: #fff;
+}
+
+.local-runtime-grid strong,
+.cpu-tee-selection strong,
+.mode-option strong,
+.runtime-summary-title span,
+.debug-group > div > strong,
+.component-toggle-group > div > strong,
+.scheduled-reconcile-toggle strong {
+  color: #2a394e;
+}
+
+.local-runtime-grid small,
+.local-runtime-grid em,
+.cpu-tee-selection > p,
+.mode-option small,
+.runtime-summary-grid article > p,
+.runtime-summary-grid article > small,
+.debug-group > div > small,
+.component-toggle-group > div > small,
+.scheduled-reconcile-toggle small {
+  color: #5f6977;
+}
+
+.runtime-install-summary header p code {
+  color: #2a394e;
+}
+
+.runtime-summary-grid li {
+  border: 1px solid #ead1cb;
+  background: #fff7f5;
+  color: #4f5966;
+}
+
+.scheduled-reconcile-note {
+  border-left-color: #f15b3e;
+  color: #5f4d49;
+}
+
+.scheduled-reconcile-note strong,
+.scheduled-reconcile-note svg {
+  color: #d9472c;
+}
+
+.runtime-prerequisite,
+.runtime-prerequisite.managed {
+  border-color: #f0a08f;
+  background: #fff7f5;
+  color: #d9472c;
+}
+
+.runtime-prerequisite strong,
+.runtime-prerequisite.managed strong {
+  color: #2a394e;
+}
+
+.runtime-prerequisite p,
+.runtime-prerequisite.managed p {
+  color: #5f4d49;
+}
+
+.advanced-config {
+  margin-bottom: 0;
+}
+
+.summary-section {
+  padding-top: 20px;
 }
 
 @media (max-width: 800px) {
