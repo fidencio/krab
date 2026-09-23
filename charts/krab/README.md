@@ -37,7 +37,7 @@ kata-device-provisioner:
 
 ## Installation
 
-After the conditional upstream charts are published:
+After the remaining conditional upstream chart is published:
 
 ```sh
 helm upgrade --install krab \
@@ -47,5 +47,6 @@ helm upgrade --install krab \
   --values values.yaml
 ```
 
-Chart publication is currently guarded because the kata-device-plugin and
-multi-profile kata-device-provisioner OCI charts do not exist yet.
+Chart publication is currently guarded because the kata-device-plugin OCI chart
+does not exist yet. The multi-profile kata-device-provisioner chart is consumed
+from its published alpha release.

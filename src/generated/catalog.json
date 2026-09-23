@@ -3,7 +3,7 @@
   "plannedArchitecture": {
     "schemaVersion": 1,
     "status": "planned",
-    "notice": "These repositories and chart interfaces are a mockup contract and do not exist yet.",
+    "notice": "The KRAB parent chart and kata-device-plugin OCI dependency are not published yet.",
     "namespace": "kata-system",
     "cluster": {
       "distributions": [

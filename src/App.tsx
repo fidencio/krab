@@ -1981,8 +1981,8 @@ function App() {
                               </strong>
                               <span>Advertises VFIO devices to kubelet</span>
                             </div>
-                            <div className="architecture-node planned vendor-specific">
-                              <small>Planned NVIDIA dependency</small>
+                            <div className="architecture-node vendor-specific">
+                              <small>NVIDIA dependency</small>
                               <strong>
                                 {catalog.plannedArchitecture.charts.provisioner.chartName}{' '}
                                 {catalog.plannedArchitecture.charts.provisioner.version}

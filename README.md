@@ -16,9 +16,9 @@ builds the site.
 4. The React UI renders that generated catalog and creates artifacts from the
    upstream chart values.
 
-The catalog currently uses released Kata Containers data and an explicitly
-marked experimental provisioner profile set from
-[`kata-device-provisioner` PR #4](https://github.com/kata-containers/kata-device-provisioner/pull/4).
+The catalog currently uses released Kata Containers data and the explicitly
+marked alpha profile set from
+[`kata-device-provisioner` v0.1.0-alpha.1](https://github.com/kata-containers/kata-device-provisioner/releases/tag/v0.1.0-alpha.1).
 GPU, CPU TEE, and CC-mode claims are validated against the pinned NVIDIA
 Confidential Containers 1.0.0 supported-platform, CC-mode, and workload
 documentation.
@@ -26,8 +26,9 @@ documentation.
 The KRAB umbrella chart always installs Node Feature Discovery and kata-deploy.
 NVIDIA configurations additionally install kata-device-plugin and a
 multi-profile kata-device-provisioner release. Existing dependency versions are
-derived from pinned chart metadata; the plugin and provisioner OCI chart
-locations remain planned until those upstream projects publish them.
+derived from pinned chart metadata. The provisioner chart is consumed from its
+published upstream OCI repository; the device-plugin OCI chart remains planned
+until that upstream project publishes it.
 
 ## Helm chart
 
@@ -57,11 +58,9 @@ Generated NVIDIA values set `nvidia.enabled=true` and configure
 confidential-computing mode, and CPU TEE combination.
 
 The chart is structurally complete, but publication is intentionally blocked
-until kata-device-plugin and the multi-profile kata-device-provisioner charts
-are available from their planned upstream OCI repositories.
-
-An applyable draft for the provisioner chart's profile-only API is available at
-[`docs/patches/kata-device-provisioner-multi-profile.patch`](docs/patches/kata-device-provisioner-multi-profile.patch).
+until the kata-device-plugin chart is available from its planned upstream OCI
+repository. The multi-profile kata-device-provisioner chart is a published
+alpha dependency.
 
 ## Development
 
