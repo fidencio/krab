@@ -288,8 +288,8 @@ button.vendor-card {
 }
 
 .external-platform-brand img {
-  width: 52px;
-  height: 52px;
+  width: 60px;
+  height: 60px;
 }
 
 .external-platform-brand span {
@@ -324,11 +324,11 @@ button.vendor-card {
 }
 
 .azure-card .external-platform-brand img {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   margin: 2px;
   box-sizing: border-box;
-  padding: 6px;
+  padding: 5px;
 }
 
 .card-topline {
@@ -338,8 +338,8 @@ button.vendor-card {
 }
 
 .vendor-logo-wrap {
-  width: 225px;
-  height: 62px;
+  width: 250px;
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -349,7 +349,7 @@ button.vendor-card {
 
 .vendor-logo-wrap img {
   max-width: 100%;
-  max-height: 34px;
+  max-height: 42px;
   display: block;
   object-fit: contain;
   object-position: left center;
@@ -368,8 +368,8 @@ button.vendor-card {
 }
 
 .vendor-logo-wrap.named-brand:not(.vendor-local) img {
-  width: 118px;
-  height: 38px;
+  width: 132px;
+  height: 44px;
   flex: 0 0 auto;
   object-position: left center;
 }
@@ -392,10 +392,10 @@ button.vendor-card {
 }
 
 .vendor-logo-wrap.named-brand.vendor-local img {
-  width: 42px;
-  height: 42px;
-  flex-basis: 42px;
-  max-height: 42px;
+  width: 50px;
+  height: 50px;
+  flex-basis: 50px;
+  max-height: 50px;
 }
 
 .vendor-logo-wrap.named-brand > span {
@@ -3029,7 +3029,7 @@ button.vendor-card {
   }
 
   .vendor-logo-wrap {
-    width: 190px;
+    width: 215px;
   }
 
   .builder-heading h1 {
