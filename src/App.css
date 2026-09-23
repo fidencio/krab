@@ -1287,8 +1287,13 @@ button.vendor-card {
 }
 
 .nvidia-profiles .profile-card > summary {
-  min-height: 100px;
+  min-height: 72px;
   gap: 16px;
+}
+
+.nvidia-profiles .profile-options {
+  gap: 12px;
+  padding: 6px 8px 18px;
 }
 
 .nvidia-profiles .profile-card > summary > div:first-child {
@@ -3184,8 +3189,11 @@ nav a:hover,
 }
 
 .nvidia-profiles .profile-card > summary {
-  padding-right: 8px;
-  padding-left: 8px;
+  padding: 14px 8px;
+}
+
+.nvidia-profiles .profile-card[open] > summary {
+  padding-bottom: 8px;
 }
 
 .profile-card.pending h2,
