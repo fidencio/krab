@@ -511,12 +511,6 @@ function App() {
                     key={vendor.id}
                     onClick={() => selectVendor(vendor)}
                   >
-                    <div className="card-topline">
-                      <span className="status-dot">Ready to build</span>
-                      <span className="selected-check">
-                        <Check size={16} strokeWidth={3} />
-                      </span>
-                    </div>
                     <div
                       className={`vendor-logo-wrap vendor-${vendor.id} ${
                         isRuntimeOnlyVendor(vendor) ? 'named-brand' : ''

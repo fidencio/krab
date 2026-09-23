@@ -181,26 +181,6 @@ nav a:hover {
   font-size: 14px;
 }
 
-.available-count,
-.status-dot {
-  color: #aabd8d;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.available-count::before,
-.status-dot::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  display: inline-block;
-  margin-right: 8px;
-  border-radius: 50%;
-  background: var(--green-bright);
-  box-shadow: 0 0 10px rgba(155, 224, 0, 0.7);
-  vertical-align: 1px;
-}
-
 .vendor-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -241,7 +221,7 @@ nav a:hover {
 }
 
 .vendor-card {
-  min-height: 360px;
+  min-height: 330px;
   display: flex;
   flex-direction: column;
   border-radius: 13px;
@@ -350,16 +330,6 @@ button.vendor-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.selected-check {
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--green);
-  color: var(--ink);
 }
 
 .vendor-logo-wrap {
@@ -2777,7 +2747,6 @@ button.vendor-card {
     padding: 28px 22px;
   }
 
-  .available-count,
   .panel-nvidia-logo {
     display: none;
   }
@@ -2802,7 +2771,7 @@ button.vendor-card {
   }
 
   .vendor-card {
-    min-height: 310px;
+    min-height: 280px;
   }
 
   .coming-soon {
