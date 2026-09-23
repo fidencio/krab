@@ -43,6 +43,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
   const vendorCpuRuntime = vendor.runtime.shims.at(-1)!
   assert.equal(vendorCpuRuntime.runtimeClass, 'kata-qemu-nvidia-cpu-runtime-rs')
   assert.equal(vendorCpuRuntime.userSelectable, true)
+  assert.equal(vendorCpuRuntime.selectionGroup, 'cpu')
   assert.deepEqual(vendorCpuRuntime.supportedArches, ['amd64', 'arm64'])
   assert.equal(vendorCpuRuntime.snapshotter, 'erofs')
   assert.equal(local.displayName, 'Local')
@@ -508,7 +509,7 @@ test('NVIDIA artifacts pin every component image version', async () => {
     buildValuesBundle(
       catalog,
       vendor,
-      { hopper: { modeId: 'off', cpuTeeIds: [] } },
+      {},
       { distributionId: 'kubeadm', selinuxEnabled: false },
       {
         selectedShimIds: ['qemu-nvidia-cpu-runtime-rs'],
@@ -524,6 +525,9 @@ test('NVIDIA artifacts pin every component image version', async () => {
     true,
   )
   assert.deepEqual(cpuValues['kata-deploy'].snapshotter.setup, ['erofs'])
+  assert.equal(cpuValues.nvidia.enabled, false)
+  assert.equal(cpuValues['kata-device-plugin'], undefined)
+  assert.equal(cpuValues['kata-device-provisioner'], undefined)
 })
 
 test('custom runtimes generate independent RuntimeClasses and snapshotters', async () => {

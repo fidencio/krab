@@ -55,6 +55,7 @@ export type VendorCatalog = {
       id: string
       runtimeClass: string
       userSelectable?: boolean
+      selectionGroup?: 'cpu'
       snapshotter: string
       snapshotterConfiguration?: {
         erofsSnapshotterMode: 'memory' | 'disk'
@@ -1132,10 +1133,12 @@ export function buildValuesBundle(
   const dependencies = architecture.charts.krab.dependencies
   const includeDevicePlugin =
     dependencies.devicePluginRequired ||
-    dependencies.devicePluginRequiredBy.includes(vendor.id)
+    (dependencies.devicePluginRequiredBy.includes(vendor.id) &&
+      Object.keys(profiles).length > 0)
   const includeProvisioner =
     dependencies.provisionerRequired ||
-    dependencies.provisionerRequiredBy.includes(vendor.id)
+    (dependencies.provisionerRequiredBy.includes(vendor.id) &&
+      Object.keys(profiles).length > 0)
   const nfdImages = advanced.images.nfd
   const nfdValues = {
     image: {

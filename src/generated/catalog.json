@@ -647,6 +647,7 @@
             "id": "qemu-nvidia-cpu-runtime-rs",
             "runtimeClass": "kata-qemu-nvidia-cpu-runtime-rs",
             "userSelectable": true,
+            "selectionGroup": "cpu",
             "supportedArches": [
               "amd64",
               "arm64"
