@@ -339,7 +339,7 @@ test('NVIDIA artifacts pin every component image version', async () => {
 
   assert.deepEqual(generatedValues['kata-device-plugin'].image, {
     repository: 'ghcr.io/kata-containers/kata-device-plugin',
-    tag: '0.2.0-rc.0',
+    tag: 'v0.2.0-rc.0',
     pullPolicy: 'IfNotPresent',
   })
   assert.deepEqual(generatedValues['kata-device-provisioner'].image, {

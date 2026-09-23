@@ -12,7 +12,7 @@
       },
       "devicePlugin": {
         "repository": "ghcr.io/kata-containers/kata-device-plugin",
-        "tag": "0.2.0-rc.0"
+        "tag": "v0.2.0-rc.0"
       }
     },
     "cluster": {
@@ -686,7 +686,7 @@
         "values": {
           "image": {
             "repository": "ghcr.io/kata-containers/kata-device-plugin",
-            "tag": "0.2.0-rc.0",
+            "tag": "v0.2.0-rc.0",
             "pullPolicy": "IfNotPresent"
           },
           "nodeSelector": {

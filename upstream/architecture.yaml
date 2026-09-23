@@ -8,7 +8,7 @@ images:
     tag: v1.37.0
   devicePlugin:
     repository: ghcr.io/kata-containers/kata-device-plugin
-    tag: 0.2.0-rc.0
+    tag: v0.2.0-rc.0
 cluster:
   distributions:
     - id: kubeadm
