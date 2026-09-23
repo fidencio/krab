@@ -1,6 +1,6 @@
 schemaVersion: 1
-status: planned
-notice: The KRAB parent chart and kata-device-plugin OCI dependency are not published yet.
+status: prerelease
+notice: KRAB 0.1.0-alpha.0 is prerelease software. Review generated values before deploying.
 namespace: kata-system
 cluster:
   distributions:

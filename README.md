@@ -81,6 +81,31 @@ npm run sync:upstream
 Updating an upstream version is a reviewed change: update the ref and checksum
 in the lock file, run the sync command, and review the generated-data diff.
 
+## Releases
+
+KRAB chart and application versions are kept identical. Alpha releases use a
+`chart-vX.Y.Z-alpha.N` Git tag; for example, the first release is tagged
+`chart-v0.1.0-alpha.0`.
+
+The chart release workflow can be run manually as a non-publishing validation.
+A matching tag runs the same checks, packages and attests the chart, publishes
+it to `oci://ghcr.io/fidencio/krab`, verifies an anonymous pull, and creates a
+GitHub prerelease with the chart archive and checksum file. Publication is
+refused while any pinned upstream OCI dependency is unavailable.
+
+Because Helm does not select prereleases implicitly, install this alpha with an
+explicit version:
+
+```sh
+helm upgrade --install krab oci://ghcr.io/fidencio/krab \
+  --version 0.1.0-alpha.0 \
+  --namespace kata-system \
+  --create-namespace \
+  --values values.yaml
+```
+
+See [CHANGELOG.md](CHANGELOG.md) for release contents and known limitations.
+
 ## GitHub Pages
 
 The Pages workflow runs generation, tests, lint, and the production build. It

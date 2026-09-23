@@ -1,0 +1,25 @@
+# Changelog
+
+All notable changes to KRAB are documented in this file.
+
+## [0.1.0-alpha.0] - Unreleased
+
+### Added
+
+- Source-generated configuration UI for NVIDIA, local, AMD, IBM, and Intel
+  Kata deployments.
+- Generated, downloadable `values.yaml` artifacts and a version-pinned Helm
+  installation command.
+- KRAB umbrella chart with Node Feature Discovery, kata-deploy,
+  kata-device-plugin, and kata-device-provisioner dependencies.
+- Custom Kata RuntimeClasses, Kata and containerd drop-ins, image overrides,
+  scheduled reconciliation, and advanced Kubernetes placement controls.
+- Checksum-validated upstream provenance and release artifact attestations.
+
+### Known limitations
+
+- The NVIDIA path requires the upstream kata-device-plugin `0.1.0` OCI chart
+  before the KRAB chart can be published.
+- GB200 and GB300 are identified as `arm64`, but remain unavailable while Kata
+  Containers support is pending.
+- The chart consumes kata-device-provisioner `0.1.0-alpha.1`.

@@ -360,7 +360,7 @@ test('custom runtimes generate independent RuntimeClasses and snapshotters', asy
   assert.ok(validationErrors.some(({ field }) => field === 'baseConfig'))
 })
 
-test('artifacts wrap upstream profiles in the planned KRAB parent chart', async () => {
+test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
   const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
   const selections = {

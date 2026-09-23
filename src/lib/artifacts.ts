@@ -129,7 +129,7 @@ export type ExplorerCatalog = {
   schemaVersion: number
   plannedArchitecture: {
     schemaVersion: number
-    status: 'planned'
+    status: 'prerelease'
     notice: string
     namespace: string
     cluster: {

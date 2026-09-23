@@ -1975,8 +1975,8 @@ function App() {
                       <ChevronDown size={17} />
                     </summary>
                     <div className="architecture-chain">
-                      <div className="architecture-node planned">
-                        <small>Planned parent chart</small>
+                      <div className="architecture-node prerelease">
+                        <small>KRAB alpha chart</small>
                         <strong>
                           {catalog.plannedArchitecture.charts.krab.chartName}
                         </strong>

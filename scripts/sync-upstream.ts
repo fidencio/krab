@@ -26,7 +26,7 @@ type LockFile = {
 const root = resolve(import.meta.dirname, '..')
 const cacheRoot = resolve(root, 'upstream/cache')
 const lockPath = resolve(root, 'upstream/sources.lock.yaml')
-const plannedArchitecturePath = resolve(root, 'upstream/planned-architecture.yaml')
+const architecturePath = resolve(root, 'upstream/architecture.yaml')
 const krabChartPath = resolve(root, 'charts/krab/Chart.yaml')
 const krabValuesPath = resolve(root, 'charts/krab/values.yaml')
 const krabSchemaPath = resolve(root, 'charts/krab/values.schema.json')
@@ -112,7 +112,7 @@ async function main() {
   const sourceLink = (id: string) => blobUrl(source(id))
 
   const kataChart = await readYaml(cachePath('kata-chart'))
-  const plannedArchitecture = await readYaml(plannedArchitecturePath)
+  const plannedArchitecture = await readYaml(architecturePath)
   const krabChart = await readYaml(krabChartPath)
   const krabValues = await readYaml(krabValuesPath)
   const krabSchema = JSON.parse(await readFile(krabSchemaPath, 'utf8'))
@@ -204,10 +204,10 @@ async function main() {
   }
   plannedArchitecture.charts.krab.version = String(krabChart.version)
   plannedArchitecture.charts.krab.appVersion = String(krabChart.appVersion)
-  if (plannedArchitecture.status !== 'planned') {
-    throw new Error('Planned architecture must remain explicitly marked as planned')
+  if (plannedArchitecture.status !== 'prerelease') {
+    throw new Error('KRAB architecture must remain explicitly marked as prerelease')
   }
-  requireValue(plannedArchitecture.charts?.krab?.ociReference, 'Missing planned KRAB chart')
+  requireValue(plannedArchitecture.charts?.krab?.ociReference, 'Missing KRAB chart OCI reference')
   const upstreamDistributions = requireValue(
     kataValuesRaw.match(/k8sDistribution:[^#]+#\s*([^\n]+)/)?.[1],
     'Unable to derive supported Kubernetes distributions from Kata values',
@@ -833,8 +833,8 @@ async function main() {
 
   const provenance = {
     schemaVersion: 1,
-    plannedContract: {
-      path: 'upstream/planned-architecture.yaml',
+    releaseContract: {
+      path: 'upstream/architecture.yaml',
       status: plannedArchitecture.status,
       notice: plannedArchitecture.notice,
     },

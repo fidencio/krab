@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "plannedContract": {
-    "path": "upstream/planned-architecture.yaml",
-    "status": "planned",
-    "notice": "The KRAB parent chart and kata-device-plugin OCI dependency are not published yet."
+  "releaseContract": {
+    "path": "upstream/architecture.yaml",
+    "status": "prerelease",
+    "notice": "KRAB 0.1.0-alpha.0 is prerelease software. Review generated values before deploying."
   },
   "generatedFrom": [
     {

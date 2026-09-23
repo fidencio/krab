@@ -869,7 +869,7 @@ button.vendor-card {
   background: rgba(255, 255, 255, 0.02);
 }
 
-.architecture-node.planned {
+.architecture-node.prerelease {
   border-color: rgba(232, 104, 16, 0.35);
 }
 

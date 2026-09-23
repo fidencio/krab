@@ -42,6 +42,7 @@ After the remaining conditional upstream chart is published:
 ```sh
 helm upgrade --install krab \
   oci://ghcr.io/fidencio/krab \
+  --version 0.1.0-alpha.0 \
   --namespace kata-system \
   --create-namespace \
   --values values.yaml
