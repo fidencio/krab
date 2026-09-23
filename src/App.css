@@ -653,7 +653,6 @@ button.vendor-card {
   margin: 0;
 }
 
-.builder-toolbar > a,
 .builder-vendor-context {
   display: inline-flex;
   align-items: center;

@@ -608,28 +608,14 @@ function App() {
             <div className="install-builder">
               <div className="builder-toolbar">
                 <button className="back-link" onClick={restart}>← Back to vendors</button>
-                {runtimeOnlyVendor ? (
-                  <span className="builder-vendor-context">
-                    <span className={`builder-vendor-logo vendor-${selectedVendor.id}`}>
-                      <img src={logoFor(selectedVendor)} alt="" />
-                      {selectedVendor.id === 'local' && (
-                        <strong>{selectedVendor.displayName}</strong>
-                      )}
-                    </span>
+                <span className="builder-vendor-context">
+                  <span className={`builder-vendor-logo vendor-${selectedVendor.id}`}>
+                    <img src={logoFor(selectedVendor)} alt="" />
+                    {selectedVendor.id === 'local' && (
+                      <strong>{selectedVendor.displayName}</strong>
+                    )}
                   </span>
-                ) : (
-                  <a
-                    href={selectedVendor.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`Open ${selectedVendor.displayName} source`}
-                  >
-                    <span className={`builder-vendor-logo vendor-${selectedVendor.id}`}>
-                      <img src={logoFor(selectedVendor)} alt={selectedVendor.displayName} />
-                    </span>
-                    <ExternalLink size={11} />
-                  </a>
-                )}
+                </span>
               </div>
 
               <section
@@ -1821,17 +1807,7 @@ function App() {
                                 >
                                   <legend>Base CPUs / confidential-computing TEEs</legend>
                                   <p>
-                                    Select every host CPU type used with this GPU family.{' '}
-                                    <a
-                                      href={
-                                        selectedVendor.integration.officialSupport
-                                          .workloadsUrl
-                                      }
-                                      target="_blank"
-                                      rel="noreferrer"
-                                    >
-                                      Official documentation <ExternalLink size={10} />
-                                    </a>
+                                    Select every host CPU type used with this GPU family.
                                   </p>
                                   {needsCpuSelection(selections[family.id]) && (
                                     <strong className="selection-required">
