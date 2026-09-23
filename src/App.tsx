@@ -21,6 +21,7 @@ import {
   createAdvancedConfiguration,
   customRuntimeClassName,
   customRuntimeSnapshotter,
+  normalizeDeploymentName,
   resolveRuntimeShimIds,
   usesConfidentialComputing,
   validateCustomRuntimes,
@@ -176,6 +177,10 @@ function App() {
     install: buildInstallScript(catalog, deploymentName),
   }), [advanced, cluster, deploymentName, runtime, selectedVendor, selections])
   const valuesFileName = buildValuesFileName(catalog, deploymentName)
+  const effectiveDeploymentName = normalizeDeploymentName(
+    deploymentName,
+    catalog.plannedArchitecture.charts.krab.releaseName,
+  )
   const incompleteFamilies = selectedVendor.hardwareFamilies.filter((family) =>
     family.availability === 'available' &&
     needsCpuSelection(selections[family.id]),
@@ -1978,11 +1983,9 @@ function App() {
                       <ChevronDown size={17} />
                     </summary>
                     <div className="architecture-chain">
-                      <div className="architecture-node prerelease">
-                        <small>KRAB alpha chart</small>
-                        <strong>
-                          {catalog.plannedArchitecture.charts.krab.chartName}
-                        </strong>
+                      <div className="architecture-node krab-chart">
+                        <small>KRAB chart</small>
+                        <strong>{effectiveDeploymentName}</strong>
                         <span>Reference architecture entry point</span>
                       </div>
                       <ArrowRight size={18} />
