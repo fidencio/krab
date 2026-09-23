@@ -60,6 +60,9 @@ const humanize = (value: string) =>
     .replaceAll('-', ' ')
     .replace(/\b\w/g, (character) => character.toUpperCase())
 
+const capabilityName = (id: string) =>
+  id === 'gpu' ? 'GPU' : humanize(id)
+
 const runtimeTokenNames: Record<string, string> = {
   qemu: 'QEMU',
   clh: 'Cloud Hypervisor',
@@ -531,7 +534,7 @@ function App() {
                     <div className="capabilities">
                       {vendor.capabilities.map((capability) => (
                         <span key={capability.id}>
-                          {capability.resourceName ?? humanize(capability.id)}
+                          {capabilityName(capability.id)}
                         </span>
                       ))}
                     </div>
