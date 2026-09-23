@@ -1,5 +1,21 @@
 #root {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: min(82vw, 82vh, 1100px);
+  aspect-ratio: 1;
+  pointer-events: none;
+  background: url('./assets/brands/krab-kata-hybrid-light.png') center / contain no-repeat;
+  opacity: 0.04;
+  transform: translate(-50%, -50%);
 }
 
 .app-shell {
