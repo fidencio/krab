@@ -16,6 +16,8 @@ import {
   Upload,
 } from 'lucide-react'
 import catalogData from './generated/catalog.json'
+import krabLogoDark from './assets/brands/krab-kata-hybrid.png'
+import krabLogoLight from './assets/brands/krab-kata-hybrid-light.png'
 import {
   buildCustomRuntimeClass,
   buildInstallScript,
@@ -726,18 +728,21 @@ function App() {
       <main>
         {step === 1 && (
           <section className="intro">
-            <h1>
-              Deploy the full Kata stack
-              <br />
-              {' '}
-              <span>with one command.</span>
-            </h1>
-            <p>
-              Choose your hardware, isolation mode, and RuntimeClasses. KRAB
-              generates version-pinned Helm values and one command for deploying
-              Kata and every supporting component your selected architecture
-              requires.
-            </p>
+            <div className="intro-copy">
+              <h1>
+                Deploy the full Kata stack
+                <br />
+                {' '}
+                <span>with one command.</span>
+              </h1>
+              <p>KRAB generates version-pinned Helm values and a deployment command.</p>
+            </div>
+            <img
+              className="intro-logo"
+              src={theme === 'dark' ? krabLogoDark : krabLogoLight}
+              alt=""
+              aria-hidden="true"
+            />
           </section>
         )}
 

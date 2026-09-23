@@ -126,7 +126,17 @@ nav a:hover {
 
 .intro {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, max-content) clamp(120px, 12vw, 150px);
+  align-items: center;
+  justify-content: center;
   padding: 62px 0 60px;
+}
+
+.intro-logo {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .intro::after {
@@ -149,18 +159,19 @@ nav a:hover {
   font-size: clamp(40px, 5vw, 60px);
   line-height: 1.06;
   letter-spacing: -0.04em;
+  text-align: center;
 }
 
 .intro h1 span {
   color: var(--kata-orange);
 }
 
-.intro > p {
-  max-width: 610px;
-  margin: 26px 0 0;
+.intro-copy > p {
+  margin: 14px 0 0;
   color: var(--muted);
-  font-size: 17px;
-  line-height: 1.7;
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .explorer {
@@ -3141,13 +3152,6 @@ button.vendor-card {
   padding: 48px 0 46px;
 }
 
-.intro > p {
-  max-width: 720px;
-  margin-top: 22px;
-  font-size: 16px;
-  line-height: 1.6;
-}
-
 .site-header {
   border-color: #d5d5d5;
   background: #fff;
@@ -3202,7 +3206,6 @@ nav a:hover,
   font-family: 'Roboto', sans-serif;
 }
 
-.intro > p,
 .panel-heading p,
 .vendor-card > p,
 .external-platform-card > p,
@@ -3873,7 +3876,6 @@ nav a:hover,
   color: #eef2f7;
 }
 
-:root[data-theme='dark'] .intro > p,
 :root[data-theme='dark'] .panel-heading p,
 :root[data-theme='dark'] .vendor-card > p,
 :root[data-theme='dark'] .external-platform-card > p,
@@ -4157,7 +4159,12 @@ nav a:hover,
   }
 
   .intro {
+    display: block;
     padding: 58px 0 42px;
+  }
+
+  .intro-logo {
+    display: none;
   }
 
   .intro h1 br {
@@ -4348,10 +4355,6 @@ nav a:hover,
 @media (max-width: 480px) {
   .intro h1 {
     font-size: 39px;
-  }
-
-  .intro > p {
-    font-size: 15px;
   }
 
   .panel h2 {
