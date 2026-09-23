@@ -2101,16 +2101,16 @@ function App() {
                     >
                       <summary
                         onClick={(event) => {
-                          if (
-                            family.availability === 'available' &&
-                            !isFamilyEnabled(selections[family.id])
-                          ) {
+                          if (family.availability === 'available') {
                             event.preventDefault()
-                            toggleFamily(family.id, true)
+                            const enabled = isFamilyEnabled(
+                              selections[family.id],
+                            )
+                            toggleFamily(family.id, !enabled)
                             const details = event.currentTarget.parentElement as
                               | HTMLDetailsElement
                               | null
-                            if (details) details.open = true
+                            if (details) details.open = !enabled
                           }
                         }}
                       >
@@ -2129,12 +2129,10 @@ function App() {
                               onChange={(event) => {
                                 const enabled = event.target.checked
                                 toggleFamily(family.id, enabled)
-                                if (enabled) {
-                                  const details = event.currentTarget.closest(
-                                    'details',
-                                  ) as HTMLDetailsElement | null
-                                  if (details) details.open = true
-                                }
+                                const details = event.currentTarget.closest(
+                                  'details',
+                                ) as HTMLDetailsElement | null
+                                if (details) details.open = enabled
                               }}
                             />
                           </label>
@@ -2167,8 +2165,7 @@ function App() {
                                 )}
                             </span>
                           )}
-                          {(family.availability === 'pending' ||
-                            isFamilyEnabled(selections[family.id])) && (
+                          {family.availability === 'pending' && (
                             <ChevronDown size={16} />
                           )}
                         </div>
