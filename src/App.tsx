@@ -556,22 +556,22 @@ function App() {
                 <div>
                   <h2>Choose your deployment path</h2>
                   <p>
-                    Select a hardware platform, or start with a standard
-                    vendor-neutral Kata deployment.
+                    Start a new configuration below, or load a values.yaml from
+                    a previous KRAB deployment.
                   </p>
+                  <label className="import-values-button deployment-import-values">
+                    <Upload size={15} />
+                    Load previous deployment
+                    <input
+                      type="file"
+                      accept=".yaml,.yml,application/yaml,text/yaml,text/x-yaml"
+                      onChange={(event) => {
+                        void loadValuesFile(event.target.files?.[0])
+                        event.target.value = ''
+                      }}
+                    />
+                  </label>
                 </div>
-                <label className="import-values-button">
-                  <Upload size={16} />
-                  Load values.yaml
-                  <input
-                    type="file"
-                    accept=".yaml,.yml,application/yaml,text/yaml,text/x-yaml"
-                    onChange={(event) => {
-                      void loadValuesFile(event.target.files?.[0])
-                      event.target.value = ''
-                    }}
-                  />
-                </label>
               </div>
 
               {importMessage?.type === 'error' && (
@@ -580,57 +580,70 @@ function App() {
                 </p>
               )}
 
-              <div className="vendor-grid">
-                {catalog.vendors.map((vendor) => (
+              <div className="platform-directory">
+                <section className="platform-group">
+                  <header>
+                    <span>Standard deployment</span>
+                    <p>Upstream Kata for general-purpose workloads.</p>
+                  </header>
+                  <div className="platform-list">
+                    {catalog.vendors.filter(({ id }) => id === 'local').map((vendor) => (
+                      <button
+                        className="platform-row"
+                        key={vendor.id}
+                        onClick={() => selectVendor(vendor)}
+                      >
+                        <span className={`platform-row-brand vendor-${vendor.id}`}>
+                          <img src={logoFor(vendor)} alt={vendor.displayName} />
+                          <strong>{vendor.displayName}</strong>
+                        </span>
+                        <span className="platform-row-description">{vendor.description}</span>
+                        <span className="platform-row-capabilities">
+                          {vendor.capabilities.map(({ id }) => capabilityName(id)).join(' · ')}
+                        </span>
+                        <span className="platform-row-action">
+                          Configure <ArrowRight size={17} />
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="platform-group">
+                  <header>
+                    <span>Optimized hardware</span>
+                    <p>Vendor-specific runtime and confidential-computing paths.</p>
+                  </header>
+                  <div className="platform-list">
+                    {catalog.vendors.filter(({ id }) => id !== 'local').map((vendor) => (
                   <button
-                    className="vendor-card selected"
+                    className="platform-row"
                     key={vendor.id}
                     onClick={() => selectVendor(vendor)}
                   >
-                    <div
-                      className={`vendor-logo-wrap vendor-${vendor.id} ${
-                        isRuntimeOnlyVendor(vendor) ? 'named-brand' : ''
-                      }`}
-                    >
-                      <img
-                        src={logoFor(vendor)}
-                        alt={vendor.id === 'local' ? '' : vendor.displayName}
-                      />
-                      {vendor.id === 'local' && (
-                        <span>
-                          <strong>{vendor.displayName}</strong>
-                          <small>{vendor.tagline}</small>
-                        </span>
-                      )}
-                    </div>
-                    <p>{vendor.description}</p>
-                    <div className="capabilities">
-                      {vendor.capabilities.map((capability) => (
-                        <span key={capability.id}>
-                          {capabilityName(capability.id)}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="card-link">
-                      Build with {vendor.displayName}
-                      <ArrowRight size={18} />
-                    </div>
+                    <span className={`platform-row-brand vendor-${vendor.id}`}>
+                      <img src={logoFor(vendor)} alt={vendor.displayName} />
+                    </span>
+                    <span className="platform-row-description">{vendor.description}</span>
+                    <span className="platform-row-capabilities">
+                      {vendor.capabilities.map(({ id }) => capabilityName(id)).join(' · ')}
+                    </span>
+                    <span className="platform-row-action">
+                      Configure <ArrowRight size={17} />
+                    </span>
                   </button>
-                ))}
+                    ))}
+                  </div>
+                </section>
               </div>
 
               <section className="managed-platform-guidance">
                 <header>
-                  <h3>Platform guidance</h3>
+                  <h3>Managed platform guidance</h3>
                 </header>
-                <div className="managed-platform-grid">
-                  <article
-                    className="vendor-card external-platform-card openshift-card"
-                  >
-                    <div className="card-topline">
-                      <span className="external-platform-status">Running OpenShift?</span>
-                    </div>
-                    <div className="external-platform-brand">
+                <div className="managed-platform-list">
+                  <article className="managed-platform-row">
+                    <div className="managed-platform-brand">
                       <img
                         src={brandLogos['./assets/brands/openshift.svg']}
                         alt=""
@@ -644,18 +657,12 @@ function App() {
                       KRAB does not work with OpenShift. Use OpenShift Sandboxed
                       Containers instead.
                     </p>
-                    <div className="capabilities">
-                      <span>Operator-managed</span>
-                      <span>Kata Containers</span>
-                    </div>
+                    <span className="managed-platform-meta">
+                      Operator-managed · Kata Containers
+                    </span>
                   </article>
-                  <article
-                    className="vendor-card external-platform-card azure-card"
-                  >
-                    <div className="card-topline">
-                      <span className="external-platform-status">Running Azure AKS?</span>
-                    </div>
-                    <div className="external-platform-brand">
+                  <article className="managed-platform-row">
+                    <div className="managed-platform-brand azure-brand">
                       <img
                         src={brandLogos['./assets/brands/azure-aks.svg']}
                         alt=""
@@ -677,10 +684,9 @@ function App() {
                       </a>
                       .
                     </p>
-                    <div className="capabilities">
-                      <span>AKS-managed</span>
-                      <span>Kata Containers</span>
-                    </div>
+                    <span className="managed-platform-meta">
+                      AKS-managed · Kata Containers
+                    </span>
                   </article>
                 </div>
               </section>
@@ -689,18 +695,6 @@ function App() {
             <div className="install-builder">
               <div className="builder-toolbar">
                 <button className="back-link" onClick={restart}>← Back to vendors</button>
-                <label className="import-values-button compact">
-                  <Upload size={14} />
-                  Load values.yaml
-                  <input
-                    type="file"
-                    accept=".yaml,.yml,application/yaml,text/yaml,text/x-yaml"
-                    onChange={(event) => {
-                      void loadValuesFile(event.target.files?.[0])
-                      event.target.value = ''
-                    }}
-                  />
-                </label>
                 <span className="builder-vendor-context">
                   <span className={`builder-vendor-logo vendor-${selectedVendor.id}`}>
                     <img src={logoFor(selectedVendor)} alt="" />
