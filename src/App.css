@@ -6,6 +6,11 @@
   width: min(1180px, calc(100% - 48px));
   min-height: 100vh;
   margin: 0 auto;
+  font-size-adjust: 0.56;
+}
+
+.app-shell * {
+  font-size-adjust: inherit;
 }
 
 .site-header {
@@ -45,20 +50,20 @@
 
 .brand-copy strong {
   color: var(--kata-orange);
-  font: 800 14px 'Manrope', sans-serif;
+  font: 800 16px 'Manrope', sans-serif;
   letter-spacing: 0.08em;
   line-height: 1.15;
 }
 
 .brand-separator {
   color: var(--kata-orange);
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1;
 }
 
 .brand-copy small {
   color: var(--kata-orange);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.01em;
   line-height: 1.3;
@@ -970,7 +975,7 @@ button.vendor-card {
   flex: 1;
   overflow-x: auto;
   color: #dfe7e3;
-  font: 10px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
   white-space: nowrap;
 }
 
@@ -1463,14 +1468,14 @@ button.vendor-card {
 .debug-group > div > strong,
 .component-toggle-group > div > strong {
   color: #dfe5e2;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .advanced-group > header > span,
 .debug-group > div > span,
 .component-toggle-group > div > span {
   color: var(--green-bright);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1480,7 +1485,7 @@ button.vendor-card {
 .debug-group > div > small,
 .component-toggle-group > div > small {
   color: #83908a;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .advanced-config .drop-in-warning {
@@ -1488,7 +1493,7 @@ button.vendor-card {
   align-items: center;
   gap: 5px;
   color: var(--kata-orange-bright);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1514,13 +1519,13 @@ button.vendor-card {
 .advanced-field-grid label > span,
 .image-overrides > span {
   color: #a0aaa5;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .advanced-field-grid label > small {
   color: #77847e;
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .advanced-field-grid label > span em {
@@ -1529,7 +1534,7 @@ button.vendor-card {
   border: 1px solid rgba(232, 104, 16, 0.42);
   border-radius: 3px;
   color: var(--kata-orange-bright);
-  font-size: 7px;
+  font-size: 9px;
   font-style: normal;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1557,7 +1562,7 @@ button.vendor-card {
 .scheduled-reconcile-schedule > span {
   flex: 0 0 auto;
   color: #a0aaa5;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1577,7 +1582,7 @@ button.vendor-card {
   padding: 3px 0 3px 10px;
   border-left: 2px solid rgba(232, 104, 16, 0.68);
   color: #b9a399;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -1607,7 +1612,7 @@ button.vendor-card {
   outline: 0;
   background: #101916;
   color: #e6ebe8;
-  font: 10px 'DM Sans', sans-serif;
+  font: 12px 'DM Sans', sans-serif;
 }
 
 .advanced-config input,
@@ -1670,14 +1675,14 @@ button.vendor-card {
 .shim-drop-in > span strong {
   overflow: hidden;
   color: #dfe5e2;
-  font: 600 9px 'IBM Plex Mono', monospace;
+  font: 600 11px 'IBM Plex Mono', monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .shim-drop-in > span small {
   color: #77847e;
-  font-size: 8px;
+  font-size: 10px;
   text-align: right;
 }
 
@@ -1690,7 +1695,7 @@ button.vendor-card {
 
 .containerd-drop-in > span {
   color: #a0aaa5;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1724,13 +1729,13 @@ button.vendor-card {
 
 .custom-runtime-card > header strong {
   color: #dfe5e2;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .custom-runtime-card > header small {
   overflow: hidden;
   color: #77847e;
-  font: 8px 'IBM Plex Mono', monospace;
+  font: 10px 'IBM Plex Mono', monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1769,7 +1774,7 @@ button.vendor-card {
 
 .custom-runtime-editors > label > span {
   color: #a0aaa5;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1781,7 +1786,7 @@ button.vendor-card {
   margin: 10px 0 0;
   padding-left: 18px;
   color: #e69662;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -1792,7 +1797,7 @@ button.vendor-card {
   gap: 12px;
   margin-bottom: 8px;
   color: #a0aaa5;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1805,7 +1810,7 @@ button.vendor-card {
   border-radius: 5px;
   background: #101916;
   color: #b9c5bf;
-  font-size: 9px;
+  font-size: 11px;
   cursor: pointer;
 }
 
@@ -1821,7 +1826,7 @@ button.vendor-card {
 .advanced-empty {
   margin: 0;
   color: #6f7d76;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .advanced-rows {
@@ -1946,7 +1951,7 @@ button.vendor-card {
 
 .debug-group .selinux-toggle,
 .component-toggle-group .selinux-toggle {
-  width: min(300px, 48%);
+  width: min(380px, 55%);
 }
 
 .erofs-installer .selinux-toggle {
@@ -2186,7 +2191,8 @@ button.vendor-card {
 }
 
 .selinux-toggle {
-  height: 48px;
+  min-height: 56px;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2206,9 +2212,9 @@ button.vendor-card {
 }
 
 .toggle-track {
-  width: 30px;
-  height: 18px;
-  flex: 0 0 30px;
+  width: 34px;
+  height: 20px;
+  flex: 0 0 34px;
   display: block;
   padding: 2px;
   border: 1px solid #4a5752;
@@ -2218,8 +2224,8 @@ button.vendor-card {
 }
 
 .toggle-track > span {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   display: block;
   border-radius: 50%;
   background: #8b9792;
@@ -2233,7 +2239,7 @@ button.vendor-card {
 
 .selinux-toggle input:checked + .toggle-track > span {
   background: var(--green-bright);
-  transform: translateX(12px);
+  transform: translateX(14px);
 }
 
 .toggle-copy {
@@ -2246,13 +2252,14 @@ button.vendor-card {
 
 .selinux-toggle strong {
   color: #dfe5e2;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .selinux-toggle small {
   color: #98a49e;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
+  line-height: 1.4;
 }
 
 .cluster-config > p {
@@ -2752,7 +2759,7 @@ button.vendor-card {
 
 .code-preview code {
   color: #eee8df;
-  font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
   white-space: pre;
 }
 
