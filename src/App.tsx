@@ -2014,7 +2014,15 @@ function App() {
                           .filter(({ userSelectable, selectionGroup }) =>
                             userSelectable && selectionGroup === 'cpu')
                           .map((shim) => (
-                            <label key={shim.id}>
+                            <label
+                              key={shim.id}
+                              onClick={(event) => {
+                                if ((event.target as HTMLElement).tagName !== 'INPUT') {
+                                  event.preventDefault()
+                                  toggleRuntimeShim(shim.id)
+                                }
+                              }}
+                            >
                               <input
                                 type="checkbox"
                                 checked={runtime.selectedShimIds.includes(shim.id)}
@@ -2056,7 +2064,15 @@ function App() {
                       </header>
                       <div className="local-runtime-grid">
                         {selectedVendor.runtime.shims.map((shim) => (
-                          <label key={shim.id}>
+                          <label
+                            key={shim.id}
+                            onClick={(event) => {
+                              if ((event.target as HTMLElement).tagName !== 'INPUT') {
+                                event.preventDefault()
+                                toggleRuntimeShim(shim.id)
+                              }
+                            }}
+                          >
                             <input
                               type="checkbox"
                               checked={runtime.selectedShimIds.includes(shim.id)}
@@ -2083,7 +2099,21 @@ function App() {
                       }`}
                       key={family.id}
                     >
-                      <summary>
+                      <summary
+                        onClick={(event) => {
+                          if (
+                            family.availability === 'available' &&
+                            !isFamilyEnabled(selections[family.id])
+                          ) {
+                            event.preventDefault()
+                            toggleFamily(family.id, true)
+                            const details = event.currentTarget.parentElement as
+                              | HTMLDetailsElement
+                              | null
+                            if (details) details.open = true
+                          }
+                        }}
+                      >
                         <div className="profile-family-heading">
                           <label
                             className="profile-family-checkbox"
@@ -2208,7 +2238,18 @@ function App() {
                                           ?.supportedCpuTeeIds.includes(tee.id),
                                       )
                                       .map((tee) => (
-                                      <label key={tee.id}>
+                                      <label
+                                        key={tee.id}
+                                        onClick={(event) => {
+                                          if (
+                                            (event.target as HTMLElement).tagName !==
+                                            'INPUT'
+                                          ) {
+                                            event.preventDefault()
+                                            toggleCpuTee(family.id, tee.id)
+                                          }
+                                        }}
+                                      >
                                         <input
                                           type="checkbox"
                                           checked={
