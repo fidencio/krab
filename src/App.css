@@ -2189,6 +2189,16 @@ button.vendor-card {
   border-color: rgba(118, 185, 0, 0.46);
 }
 
+.profile-card.pending,
+.profile-card.pending[open] {
+  border-color: #3b4241;
+  background: #171d1e;
+}
+
+.profile-card.pending > summary {
+  opacity: 0.72;
+}
+
 .profile-card > summary {
   display: flex;
   align-items: flex-start;
@@ -2219,6 +2229,11 @@ button.vendor-card {
 .profile-summary-status span.incomplete {
   border-color: rgba(232, 104, 16, 0.55);
   color: var(--kata-orange-bright);
+}
+
+.profile-summary-status span.pending {
+  border-color: #56605d;
+  color: #b6bfbb;
 }
 
 .profile-summary-status svg {
@@ -2256,6 +2271,46 @@ button.vendor-card {
   flex-direction: column;
   gap: 18px;
   padding: 20px 22px;
+}
+
+.profile-unavailable {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 16px;
+  border: 1px solid #3b4744;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.018);
+  color: #9ca7a2;
+}
+
+.profile-unavailable svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.profile-unavailable > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.profile-unavailable strong {
+  color: #c9d0cd;
+  font-size: 12px;
+}
+
+.profile-unavailable span {
+  color: #aab4b0;
+  font: 700 9px ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-transform: uppercase;
+}
+
+.profile-unavailable p {
+  margin: 2px 0 0;
+  color: #818d88;
+  font-size: 10px;
+  line-height: 1.5;
 }
 
 .mode-option {

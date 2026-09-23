@@ -604,14 +604,34 @@ async function main() {
       }),
   )
 
-  const familyDisplayNames: Record<string, string> = {
-    'grace-blackwell': 'NVIDIA GBx00',
-    blackwell: 'NVIDIA HGX Bx00',
-    hopper: 'NVIDIA HGX Hx00',
-    'pcie-gpu': 'NVIDIA PCIe GPUs',
+  const familyDefinitions = {
+    'grace-blackwell': {
+      displayName: 'NVIDIA GBx00',
+      supportedArches: ['arm64'],
+      availability: 'pending',
+      availabilityReason: 'Kata Containers support pending',
+    },
+    blackwell: {
+      displayName: 'NVIDIA HGX Bx00',
+      supportedArches: ['amd64'],
+      availability: 'available',
+      availabilityReason: null,
+    },
+    hopper: {
+      displayName: 'NVIDIA HGX Hx00',
+      supportedArches: ['amd64'],
+      availability: 'available',
+      availabilityReason: null,
+    },
+    'pcie-gpu': {
+      displayName: 'NVIDIA PCIe GPUs',
+      supportedArches: ['amd64'],
+      availability: 'available',
+      availabilityReason: null,
+    },
   }
 
-  const families = Object.keys(familyDisplayNames).map((generation) => {
+  const families = Object.entries(familyDefinitions).map(([generation, definition]) => {
     const profiles = profileRecords.filter((profile) => profile.generation === generation)
     const passthrough = requireValue(
       profiles.find((profile) => profile.ccMode === 'off'),
@@ -623,9 +643,12 @@ async function main() {
 
     return {
       id: generation,
-      displayName: familyDisplayNames[generation],
+      displayName: definition.displayName,
       upstreamName: passthrough.nodes.replace(/\s*\([^)]+\)/, ''),
       models,
+      supportedArches: definition.supportedArches,
+      availability: definition.availability,
+      availabilityReason: definition.availabilityReason,
       nvidiaValidatedModels: models.filter((model) =>
         supportedGpuModels.includes(model),
       ),

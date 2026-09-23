@@ -170,6 +170,7 @@ function App() {
     install: buildInstallScript(catalog),
   }), [advanced, cluster, runtime, selectedVendor, selections])
   const incompleteFamilies = selectedVendor.hardwareFamilies.filter((family) =>
+    family.availability === 'available' &&
     needsCpuSelection(selections[family.id]),
   )
   const selectedDistribution =
@@ -193,6 +194,7 @@ function App() {
         ({ shimId: teeShimId }) => teeShimId === shimId,
       )
       const contexts = selectedVendor.hardwareFamilies.flatMap((family) => {
+        if (family.availability !== 'available') return []
         const selection = selections[family.id]
         const mode = family.modes.find(({ id }) => id === selection?.modeId)
         if (!mode) return []
@@ -223,13 +225,17 @@ function App() {
   const hasRuntimeSelection =
     installedRuntimeClasses.length > 0 || advanced.customRuntimes.length > 0
   const hasHardwareSelection = selectedVendor.hardwareFamilies.some(
-    (family) => Boolean(selections[family.id]?.modeId),
+    (family) =>
+      family.availability === 'available' &&
+      Boolean(selections[family.id]?.modeId),
   )
   const installedRuntimeClassCount =
     installedRuntimeClasses.length + advanced.customRuntimes.length
   const requiresErofs =
     selectedVendor.hardwareFamilies.some(
-      (family) => selections[family.id]?.modeId === 'off',
+      (family) =>
+        family.availability === 'available' &&
+        selections[family.id]?.modeId === 'off',
     ) ||
     selectedVendor.runtime.shims.some(
       ({ id, snapshotter }) =>
@@ -269,9 +275,9 @@ function App() {
   }
 
   const selectMode = (familyId: string, modeId: string | null) => {
-    const mode = selectedVendor.hardwareFamilies
-      .find(({ id }) => id === familyId)
-      ?.modes.find(({ id }) => id === modeId)
+    const family = selectedVendor.hardwareFamilies.find(({ id }) => id === familyId)
+    if (!family || family.availability !== 'available') return
+    const mode = family.modes.find(({ id }) => id === modeId)
     const supportedCpuTeeIds = mode?.supportedCpuTeeIds ?? []
     setSelections((current) => ({
       ...current,
@@ -1742,7 +1748,12 @@ function App() {
                     </section>
                   )}
                   {selectedVendor.hardwareFamilies.map((family) => (
-                    <details className="profile-card" key={family.id}>
+                    <details
+                      className={`profile-card ${
+                        family.availability === 'pending' ? 'pending' : ''
+                      }`}
+                      key={family.id}
+                    >
                       <summary>
                         <div>
                           <h2>{family.displayName}</h2>
@@ -1755,106 +1766,127 @@ function App() {
                         <div className="profile-summary-status">
                           <span
                             className={
-                              needsCpuSelection(selections[family.id])
+                              family.availability === 'pending'
+                                ? 'pending'
+                                : needsCpuSelection(selections[family.id])
                                 ? 'incomplete'
                                 : ''
                             }
                           >
-                            {profileSummary(selectedVendor, selections[family.id])}
+                            {family.availabilityReason ??
+                              profileSummary(selectedVendor, selections[family.id])}
                           </span>
                           <ChevronDown size={16} />
                         </div>
                       </summary>
                       <div className="profile-options">
-                        {family.modes.map((mode) => (
-                          <label className="mode-option" key={mode.id}>
-                            <input
-                              type="radio"
-                              name={`${family.id}-mode`}
-                              checked={selections[family.id]?.modeId === mode.id}
-                              onChange={() => selectMode(family.id, mode.id)}
-                            />
-                            <span>
-                              <strong>
-                                {mode.displayName}
-                                {mode.badge && <em>{mode.badge}</em>}
-                              </strong>
-                            </span>
-                          </label>
-                        ))}
-
-                        {selections[family.id]?.modeId &&
-                          selections[family.id].modeId !== 'off' && (
-                            <fieldset
-                              className={`cpu-tee-selection ${
-                                needsCpuSelection(selections[family.id])
-                                  ? 'needs-selection'
-                                  : ''
-                              }`}
-                            >
-                              <legend>Base CPUs / confidential-computing TEEs</legend>
+                        {family.availability === 'pending' ? (
+                          <div className="profile-unavailable">
+                            <AlertTriangle size={17} />
+                            <div>
+                              <strong>{family.availabilityReason}</strong>
+                              <span>
+                                Architecture: {family.supportedArches.join(' · ')}
+                              </span>
                               <p>
-                                Select every host CPU type used with this GPU family.{' '}
-                                <a
-                                  href={
-                                    selectedVendor.integration.officialSupport
-                                      .workloadsUrl
-                                  }
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  Official documentation <ExternalLink size={10} />
-                                </a>
+                                KRAB does not generate deployment artifacts for
+                                this hardware family yet.
                               </p>
-                              {needsCpuSelection(selections[family.id]) && (
-                                <strong className="selection-required">
-                                  Select at least one CPU / TEE to generate values.yaml.
-                                </strong>
-                              )}
-                              <div>
-                                {selectedVendor.runtime.cpuTees
-                                  .filter((tee) =>
-                                    family.modes
-                                      .find(
-                                        ({ id }) =>
-                                          id === selections[family.id]?.modeId,
-                                      )
-                                      ?.supportedCpuTeeIds.includes(tee.id),
-                                  )
-                                  .map((tee) => (
-                                  <label key={tee.id}>
-                                    <input
-                                      type="checkbox"
-                                      checked={
-                                        selections[family.id]?.cpuTeeIds.includes(
-                                          tee.id,
-                                        ) ?? false
-                                      }
-                                      onChange={() =>
-                                        toggleCpuTee(family.id, tee.id)
-                                      }
-                                    />
-                                    <span>
-                                      <strong>{tee.displayName}</strong>
-                                    </span>
-                                  </label>
-                                  ))}
-                              </div>
-                            </fieldset>
-                          )}
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {family.modes.map((mode) => (
+                              <label className="mode-option" key={mode.id}>
+                                <input
+                                  type="radio"
+                                  name={`${family.id}-mode`}
+                                  checked={selections[family.id]?.modeId === mode.id}
+                                  onChange={() => selectMode(family.id, mode.id)}
+                                />
+                                <span>
+                                  <strong>
+                                    {mode.displayName}
+                                    {mode.badge && <em>{mode.badge}</em>}
+                                  </strong>
+                                </span>
+                              </label>
+                            ))}
 
-                        <label className="mode-option">
-                          <input
-                            type="radio"
-                            name={`${family.id}-mode`}
-                            checked={selections[family.id]?.modeId === null}
-                            onChange={() => selectMode(family.id, null)}
-                          />
-                          <span>
-                            <strong>Not present in this cluster</strong>
-                            <small>Do not generate a provisioner release for this family.</small>
-                          </span>
-                        </label>
+                            {selections[family.id]?.modeId &&
+                              selections[family.id].modeId !== 'off' && (
+                                <fieldset
+                                  className={`cpu-tee-selection ${
+                                    needsCpuSelection(selections[family.id])
+                                      ? 'needs-selection'
+                                      : ''
+                                  }`}
+                                >
+                                  <legend>Base CPUs / confidential-computing TEEs</legend>
+                                  <p>
+                                    Select every host CPU type used with this GPU family.{' '}
+                                    <a
+                                      href={
+                                        selectedVendor.integration.officialSupport
+                                          .workloadsUrl
+                                      }
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      Official documentation <ExternalLink size={10} />
+                                    </a>
+                                  </p>
+                                  {needsCpuSelection(selections[family.id]) && (
+                                    <strong className="selection-required">
+                                      Select at least one CPU / TEE to generate values.yaml.
+                                    </strong>
+                                  )}
+                                  <div>
+                                    {selectedVendor.runtime.cpuTees
+                                      .filter((tee) =>
+                                        family.modes
+                                          .find(
+                                            ({ id }) =>
+                                              id === selections[family.id]?.modeId,
+                                          )
+                                          ?.supportedCpuTeeIds.includes(tee.id),
+                                      )
+                                      .map((tee) => (
+                                      <label key={tee.id}>
+                                        <input
+                                          type="checkbox"
+                                          checked={
+                                            selections[family.id]?.cpuTeeIds.includes(
+                                              tee.id,
+                                            ) ?? false
+                                          }
+                                          onChange={() =>
+                                            toggleCpuTee(family.id, tee.id)
+                                          }
+                                        />
+                                        <span>
+                                          <strong>{tee.displayName}</strong>
+                                        </span>
+                                      </label>
+                                      ))}
+                                  </div>
+                                </fieldset>
+                              )}
+
+                            <label className="mode-option">
+                              <input
+                                type="radio"
+                                name={`${family.id}-mode`}
+                                checked={selections[family.id]?.modeId === null}
+                                onChange={() => selectMode(family.id, null)}
+                              />
+                              <span>
+                                <strong>Not present in this cluster</strong>
+                                <small>Do not generate a provisioner release for this family.</small>
+                              </span>
+                            </label>
+                          </>
+                        )}
                       </div>
                     </details>
                   ))}

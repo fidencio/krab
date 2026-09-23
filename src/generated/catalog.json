@@ -138,6 +138,11 @@
             "GB200",
             "GB300"
           ],
+          "supportedArches": [
+            "arm64"
+          ],
+          "availability": "pending",
+          "availabilityReason": "Kata Containers support pending",
           "nvidiaValidatedModels": [],
           "modelsNotInNvidiaMatrix": [
             "GB200",
@@ -182,6 +187,11 @@
             "B200",
             "B300"
           ],
+          "supportedArches": [
+            "amd64"
+          ],
+          "availability": "available",
+          "availabilityReason": null,
           "nvidiaValidatedModels": [
             "B200"
           ],
@@ -258,6 +268,11 @@
             "H800",
             "H20"
           ],
+          "supportedArches": [
+            "amd64"
+          ],
+          "availability": "available",
+          "availabilityReason": null,
           "nvidiaValidatedModels": [
             "H100",
             "H200"
@@ -330,6 +345,11 @@
           "displayName": "NVIDIA PCIe GPUs",
           "upstreamName": "discrete cards, no NVSwitch",
           "models": [],
+          "supportedArches": [
+            "amd64"
+          ],
+          "availability": "available",
+          "availabilityReason": null,
           "nvidiaValidatedModels": [],
           "modelsNotInNvidiaMatrix": [],
           "supportSourceUrl": "https://docs.nvidia.com/datacenter/cloud-native/confidential-containers/1.0.0/supported-platforms.html",

@@ -116,6 +116,15 @@ test('generated catalog carries accurate upstream chart data', async () => {
     vendor.hardwareFamilies.map(({ id }) => id),
     ['grace-blackwell', 'blackwell', 'hopper', 'pcie-gpu'],
   )
+  const graceBlackwell = vendor.hardwareFamilies.find(
+    ({ id }) => id === 'grace-blackwell',
+  )
+  assert.deepEqual(graceBlackwell?.supportedArches, ['arm64'])
+  assert.equal(graceBlackwell?.availability, 'pending')
+  assert.equal(
+    graceBlackwell?.availabilityReason,
+    'Kata Containers support pending',
+  )
   assert.deepEqual(
     vendor.hardwareFamilies.map(({ modes }) => modes.map(({ id }) => id)),
     [['off'], ['off', 'on'], ['off', 'ppcie'], ['off', 'on']],
@@ -355,6 +364,7 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
   const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
   const selections = {
+    'grace-blackwell': { modeId: 'off', cpuTeeIds: [] },
     hopper: { modeId: 'ppcie', cpuTeeIds: ['snp', 'tdx'] },
     blackwell: { modeId: 'on', cpuTeeIds: ['tdx'] },
   }
@@ -441,6 +451,10 @@ test('artifacts wrap upstream profiles in the planned KRAB parent chart', async 
   )
   assert.equal(
     generatedValues['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-SNP'],
+    undefined,
+  )
+  assert.equal(
+    generatedValues['kata-device-provisioner'].profiles.GBx00,
     undefined,
   )
   assert.ok(

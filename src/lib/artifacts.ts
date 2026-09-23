@@ -18,6 +18,9 @@ export type HardwareFamilyCatalog = {
   displayName: string
   upstreamName: string
   models: string[]
+  supportedArches: string[]
+  availability: 'available' | 'pending'
+  availabilityReason: string | null
   nvidiaValidatedModels: string[]
   modelsNotInNvidiaMatrix: string[]
   supportSourceUrl: string
@@ -417,6 +420,7 @@ export function resolveRuntimeShimIds(
   )
 
   for (const family of vendor.hardwareFamilies) {
+    if (family.availability !== 'available') continue
     const selection = selections[family.id]
     const mode = family.modes.find(
       (candidate) => candidate.id === selection?.modeId,
@@ -507,6 +511,7 @@ export function buildValuesBundle(
   )
 
   for (const family of vendor.hardwareFamilies) {
+    if (family.availability !== 'available') continue
     const selection = selections[family.id]
     const mode = family.modes.find(
       (candidate) => candidate.id === selection?.modeId,
