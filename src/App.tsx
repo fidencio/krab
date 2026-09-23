@@ -554,9 +554,10 @@ function App() {
             <div className="panel vendor-panel">
               <div className="panel-heading">
                 <div>
-                  <h2>Who powers your architecture?</h2>
+                  <h2>Choose your deployment path</h2>
                   <p>
-                    Choose the infrastructure KRAB should build around.
+                    Select a hardware platform, or start with a standard
+                    vendor-neutral Kata deployment.
                   </p>
                 </div>
                 <label className="import-values-button">
