@@ -6,55 +6,194 @@ on:
       - "chart-v*"
   workflow_dispatch:
 
+concurrency:
+  group: release-chart
+  cancel-in-progress: false
+
 permissions:
-  contents: read
+  contents: write
   packages: write
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+env:
+  CHART_PATH: charts/krab
+  CHART_REGISTRY: oci://ghcr.io/fidencio
+  CHART_REFERENCE: oci://ghcr.io/fidencio/krab
 
 jobs:
   release:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      - run: npm run generate
-      - run: npm run test:chart
 
-      - name: Verify upstream OCI chart dependencies
+      - uses: azure/setup-helm@v5
+
+      - run: npm ci
+
+      - name: Verify release versions and tag
         shell: bash
         run: |
           set -euo pipefail
 
-          declare -a missing=()
-          while read -r chart version; do
-            if ! helm show chart "${chart}" --version "${version}" >/dev/null 2>&1; then
-              missing+=("${chart}:${version}")
+          metadata="$(node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs'
+          import { parse } from 'yaml'
+
+          const chart = parse(readFileSync('charts/krab/Chart.yaml', 'utf8'))
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+          console.log([chart.version, chart.appVersion, pkg.version].join('\t'))
+          NODE
+          )"
+          IFS=$'\t' read -r chart_version app_version package_version <<<"${metadata}"
+
+          if [[ "${chart_version}" != "${app_version}" || "${chart_version}" != "${package_version}" ]]; then
+            echo "::error::Chart version (${chart_version}), appVersion (${app_version}), and package version (${package_version}) must match"
+            exit 1
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            expected_tag="chart-v${chart_version}"
+            if [[ "${GITHUB_REF_NAME}" != "${expected_tag}" ]]; then
+              echo "::error::Release tag ${GITHUB_REF_NAME} does not match ${expected_tag}"
+              exit 1
             fi
-          done <<'CHARTS'
-          oci://ghcr.io/kata-containers/kata-device-plugin-charts/kata-device-plugin 0.1.0
-          oci://ghcr.io/kata-containers/kata-device-provisioner-charts/kata-device-provisioner 0.1.0
-          CHARTS
+          fi
+
+          echo "CHART_VERSION=${chart_version}" >> "${GITHUB_ENV}"
+
+      - name: Regenerate and verify committed catalog
+        run: |
+          npm run generate
+          git diff --exit-code -- src/generated
+
+      - name: Validate application and chart contracts
+        run: |
+          npm test
+          npm run test:chart
+          npm run lint
+          npm run build
+
+      - name: Verify upstream OCI dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          node --input-type=module > "${RUNNER_TEMP}/oci-dependencies.tsv" <<'NODE'
+          import { readFileSync } from 'node:fs'
+          import { parse } from 'yaml'
+
+          const chart = parse(readFileSync('charts/krab/Chart.yaml', 'utf8'))
+          for (const dependency of chart.dependencies ?? []) {
+            if (dependency.repository?.startsWith('oci://')) {
+              console.log([
+                `${dependency.repository}/${dependency.name}`,
+                dependency.version,
+              ].join('\t'))
+            }
+          }
+          NODE
+
+          missing=()
+          while IFS=$'\t' read -r reference version; do
+            if ! helm show chart "${reference}" --version "${version}" >/dev/null 2>&1; then
+              missing+=("${reference}:${version}")
+            fi
+          done < "${RUNNER_TEMP}/oci-dependencies.tsv"
 
           if (( ${#missing[@]} > 0 )); then
             printf '::error::KRAB chart publication is blocked. Missing upstream OCI chart: %s\n' "${missing[@]}"
             exit 1
           fi
 
-      - name: Build and lint chart
+      - name: Build, lint, and render chart
+        shell: bash
         run: |
-          helm dependency build charts/krab
-          helm lint charts/krab
-          helm package charts/krab --destination dist-chart
+          set -euo pipefail
+
+          helm dependency build "${CHART_PATH}"
+          helm lint "${CHART_PATH}"
+          helm template krab "${CHART_PATH}" --namespace kata-system >/dev/null
+
+          cat > "${RUNNER_TEMP}/nvidia-values.yaml" <<'VALUES'
+          nvidia:
+            enabled: true
+          kata-device-provisioner:
+            profiles:
+              release-smoke:
+                enabled: true
+                ccMode: "off"
+          VALUES
+          helm template krab "${CHART_PATH}" \
+            --namespace kata-system \
+            --values "${RUNNER_TEMP}/nvidia-values.yaml" >/dev/null
+
+          mkdir -p dist-chart
+          helm package "${CHART_PATH}" --destination dist-chart
+          (cd dist-chart && sha256sum -- krab-*.tgz > SHA256SUMS)
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: krab-chart-${{ env.CHART_VERSION }}
+          path: |
+            dist-chart/krab-*.tgz
+            dist-chart/SHA256SUMS
+          if-no-files-found: error
+
+      - name: Attest chart package
+        if: github.ref_type == 'tag'
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist-chart/krab-*.tgz
 
       - name: Log in to GHCR
-        if: startsWith(github.ref, 'refs/tags/chart-v')
+        if: github.ref_type == 'tag'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" |
             helm registry login ghcr.io --username "${{ github.actor }}" --password-stdin
 
       - name: Publish chart
-        if: startsWith(github.ref, 'refs/tags/chart-v')
-        run: helm push dist-chart/krab-*.tgz oci://ghcr.io/fidencio
+        if: github.ref_type == 'tag'
+        run: helm push dist-chart/krab-*.tgz "${CHART_REGISTRY}"
+
+      - name: Make chart public and verify anonymous pull
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          gh api --method PATCH /user/packages/container/krab -f visibility=public
+          helm registry logout ghcr.io
+
+          for attempt in {1..6}; do
+            if helm show chart "${CHART_REFERENCE}" --version "${CHART_VERSION}" >/dev/null; then
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "::error::Published chart is not anonymously pullable"
+          exit 1
+
+      - name: Create GitHub prerelease
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            dist-chart/krab-*.tgz \
+            dist-chart/SHA256SUMS \
+            --verify-tag \
+            --title "KRAB ${CHART_VERSION}" \
+            --generate-notes \
+            --prerelease
