@@ -259,6 +259,14 @@ function App() {
       family.availability === 'available' &&
       Boolean(selections[family.id]?.modeId),
   )
+  const hasStandaloneRuntimeSelection = selectedVendor.runtime.shims.some(
+    ({ id, userSelectable }) =>
+      userSelectable && runtime.selectedShimIds.includes(id),
+  )
+  const selectedNvidiaCpuRuntimeCount = selectedVendor.runtime.shims.filter(
+    ({ id, selectionGroup }) =>
+      selectionGroup === 'cpu' && runtime.selectedShimIds.includes(id),
+  ).length
   const installedRuntimeClassCount =
     installedRuntimeClasses.length + advanced.customRuntimes.length
   const requiresErofs =
@@ -284,7 +292,9 @@ function App() {
     incompleteFamilies.length === 0 &&
     !erofsDiskSizeMissing &&
     customRuntimeErrors.length === 0 &&
-    (runtimeOnlyVendor ? hasRuntimeSelection : hasHardwareSelection)
+    (runtimeOnlyVendor
+      ? hasRuntimeSelection
+      : hasHardwareSelection || hasStandaloneRuntimeSelection)
 
   const selectVendor = (vendor: VendorCatalog) => {
     setImportMessage(null)
@@ -880,8 +890,8 @@ function App() {
                         {installedRuntimeClasses.map((shim) => (
                           <label className="shim-drop-in" key={shim.id}>
                             <span>
-                              <strong>{shim.runtimeClass}</strong>
-                              <small>{runtimeName(shim.id)}</small>
+                              <strong>{runtimeName(shim.id)}</strong>
+                              <small>{shim.runtimeClass}</small>
                             </span>
                             <small className="drop-in-warning" role="note">
                               <AlertTriangle size={12} />
@@ -1570,11 +1580,14 @@ function App() {
                     </header>
                     <div className="scheduled-reconcile-controls">
                       <label className="selinux-toggle scheduled-reconcile-toggle">
-                        <strong>
-                          {advanced.scheduledReconcileEnabled
-                            ? 'Enabled'
-                            : 'Disabled'}
-                        </strong>
+                        <span className="toggle-copy">
+                          <strong>Reconcile nodes periodically</strong>
+                          <small>
+                            {advanced.scheduledReconcileEnabled
+                              ? 'Enabled'
+                              : 'Disabled by default'}
+                          </small>
+                        </span>
                         <input
                           type="checkbox"
                           checked={advanced.scheduledReconcileEnabled}
@@ -1799,29 +1812,37 @@ function App() {
                   }`}
                 >
                   {selectedVendor.id === 'nvidia' && (
+                    <header className="nvidia-workload-heading">
+                      <span>NVIDIA deployment · GPU workloads</span>
+                      <h2>Select NVIDIA GPU platforms</h2>
+                      <p>
+                        Configure each GPU family present in this cluster, or
+                        leave it marked as not present.
+                      </p>
+                    </header>
+                  )}
+                  {selectedVendor.id === 'nvidia' && (
                     <section className="local-runtime-selection nvidia-runtime-selection">
                       <header>
                         <div>
-                          <span>NVIDIA deployment · Optional runtime</span>
-                          <h2>Add the NVIDIA CPU RuntimeClass</h2>
+                          <span>NVIDIA deployment · CPU workloads</span>
+                          <h2>Select NVIDIA CPU RuntimeClasses</h2>
                           <p>
-                            Select this explicitly when the cluster should also
-                            run CPU-only Kata workloads with the NVIDIA-optimized
-                            runtime.
+                            Choose the CPU runtimes this cluster should install.
+                            Confidential-computing variants appear here when they
+                            are supported by the pinned Kata release.
                           </p>
                         </div>
                         <em>
-                          {selectedVendor.runtime.shims.some(
-                            ({ id, userSelectable }) =>
-                              userSelectable && runtime.selectedShimIds.includes(id),
-                          )
-                            ? 'Selected'
-                            : 'Optional'}
+                          {selectedNvidiaCpuRuntimeCount > 0
+                            ? `${selectedNvidiaCpuRuntimeCount} selected`
+                            : 'None selected'}
                         </em>
                       </header>
                       <div className="local-runtime-grid">
                         {selectedVendor.runtime.shims
-                          .filter(({ userSelectable }) => userSelectable)
+                          .filter(({ userSelectable, selectionGroup }) =>
+                            userSelectable && selectionGroup === 'cpu')
                           .map((shim) => (
                             <label key={shim.id}>
                               <input
@@ -2047,11 +2068,8 @@ function App() {
                       {installedRuntimeClasses.map((shim) => (
                         <article key={shim.id}>
                           <div className="runtime-summary-title">
-                            <Check size={14} />
-                            <div>
-                              <span>{runtimeName(shim.id)}</span>
-                              <code>{shim.runtimeClass}</code>
-                            </div>
+                            <span>{runtimeName(shim.id)}</span>
+                            <code>{shim.runtimeClass}</code>
                           </div>
                           <p>{shim.purpose}</p>
                           {shim.contexts.length > 0 && (
@@ -2071,11 +2089,8 @@ function App() {
                       {advanced.customRuntimes.map((customRuntime, index) => (
                         <article key={`custom-runtime-${index}`}>
                           <div className="runtime-summary-title">
-                            <Check size={14} />
-                            <div>
-                              <span>Custom · {runtimeName(customRuntime.baseConfig)}</span>
-                              <code>{customRuntimeClassName(customRuntime)}</code>
-                            </div>
+                            <span>Custom · {runtimeName(customRuntime.baseConfig)}</span>
+                            <code>{customRuntimeClassName(customRuntime)}</code>
                           </div>
                           <p>
                             Custom runtime based on{' '}
@@ -2131,7 +2146,7 @@ function App() {
                           </strong>
                           <span>Installs Kata runtimes and RuntimeClasses</span>
                         </div>
-                        {selectedVendor.id === 'nvidia' && (
+                        {selectedVendor.id === 'nvidia' && hasHardwareSelection && (
                           <>
                             <div className="architecture-node vendor-specific">
                               <small>NVIDIA dependency</small>
@@ -2273,8 +2288,10 @@ function App() {
                           !hasRuntimeSelection && (
                             <li>At least one Kata RuntimeClass</li>
                           )}
-                        {!runtimeOnlyVendor && !hasHardwareSelection && (
-                          <li>At least one NVIDIA platform</li>
+                        {!runtimeOnlyVendor &&
+                          !hasHardwareSelection &&
+                          !hasStandaloneRuntimeSelection && (
+                          <li>At least one CPU runtime or GPU platform</li>
                         )}
                         {customRuntimeErrors.map((error, index) => (
                           <li key={`custom-runtime-error-${index}`}>
@@ -2291,8 +2308,9 @@ function App() {
                         ))}
                       </ul>
                       <p>
-                        KRAB will generate values.yaml once the cluster platform
-                        and every confidential GPU profile are fully configured.
+                        KRAB will generate values.yaml once the cluster platform,
+                        workload path, and every confidential GPU profile are fully
+                        configured.
                       </p>
                     </div>
                   )}

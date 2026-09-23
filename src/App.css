@@ -1237,31 +1237,24 @@ button.vendor-card {
 }
 
 .summary-workspace {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
+  display: flex;
+  flex-direction: column;
   gap: 20px;
 }
 
 .summary-workspace .architecture-details {
-  order: initial;
-  grid-column: 1;
-  grid-row: 1;
+  order: 1;
+  width: 100%;
   margin: 0;
 }
 
 .summary-workspace .architecture-chain {
-  grid-template-columns: 1fr;
-}
-
-.summary-workspace .architecture-chain > svg {
-  margin: -7px auto;
-  transform: rotate(90deg);
+  grid-template-columns: minmax(240px, 0.65fr) auto minmax(0, 1.35fr);
 }
 
 .summary-workspace .runtime-install-summary {
-  grid-column: 2;
-  grid-row: 1;
+  order: 2;
+  width: 100%;
 }
 
 .profile-list {
@@ -1275,9 +1268,9 @@ button.vendor-card {
 }
 
 .profile-list.nvidia-profiles {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .nvidia-profiles .profile-card {
@@ -1285,15 +1278,16 @@ button.vendor-card {
 }
 
 .nvidia-runtime-selection {
-  grid-column: 1 / -1;
+  order: 2;
+  margin-top: 28px;
 }
 
 .nvidia-runtime-selection .local-runtime-grid {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .nvidia-profiles .profile-card > summary {
-  min-height: 92px;
+  min-height: 100px;
   gap: 16px;
 }
 
@@ -1303,6 +1297,36 @@ button.vendor-card {
 
 .nvidia-profiles .profile-card summary strong {
   overflow-wrap: anywhere;
+}
+
+.nvidia-workload-heading {
+  order: -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 4px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.nvidia-workload-heading span {
+  color: var(--kata-primary-bright);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.nvidia-workload-heading h2 {
+  margin: 0;
+  color: #edf1ef;
+  font: 700 18px 'Roboto', sans-serif;
+}
+
+.nvidia-workload-heading p {
+  margin: 0;
+  color: #96a29c;
+  font-size: 10px;
+  line-height: 1.5;
 }
 
 .local-runtime-selection {
@@ -1627,22 +1651,26 @@ button.vendor-card {
 }
 
 .scheduled-reconcile-controls {
-  display: flex;
-  align-items: center;
-  gap: 11px;
+  width: min(100%, 760px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
 }
 
 .scheduled-reconcile-toggle {
-  width: 142px;
-  height: 38px;
-  flex: 0 0 142px;
+  width: 100%;
+}
+
+.scheduled-reconcile-toggle:last-child {
+  grid-column: 1 / -1;
 }
 
 .scheduled-reconcile-schedule {
-  width: 260px;
   display: flex;
-  align-items: center;
-  gap: 9px;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .scheduled-reconcile-schedule > span {
@@ -1654,7 +1682,8 @@ button.vendor-card {
 
 .scheduled-reconcile-schedule input {
   min-width: 0;
-  flex: 1;
+  width: 100%;
+  flex: 1 1 auto;
   height: 38px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -1740,8 +1769,8 @@ button.vendor-card {
 
 .shim-drop-in-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
 }
 
 .shim-drop-in {
@@ -1753,23 +1782,20 @@ button.vendor-card {
 
 .shim-drop-in > span {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .shim-drop-in > span strong {
-  overflow: hidden;
   color: #dfe5e2;
-  font: 600 11px 'IBM Plex Mono', monospace;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font: 700 12px 'Roboto', sans-serif;
 }
 
 .shim-drop-in > span small {
+  overflow-wrap: anywhere;
   color: #8b929f;
-  font-size: 10px;
-  text-align: right;
+  font: 10px 'IBM Plex Mono', monospace;
 }
 
 .containerd-drop-in {
@@ -2698,19 +2724,6 @@ button.vendor-card {
 
 .runtime-summary-title {
   display: flex;
-  align-items: flex-start;
-  gap: 9px;
-}
-
-.runtime-summary-title > svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: var(--kata-primary-bright);
-}
-
-.runtime-summary-title > div {
-  min-width: 0;
-  display: flex;
   flex-direction: column;
   gap: 3px;
 }
@@ -2978,6 +2991,7 @@ nav a:hover,
 .architecture-chain strong,
 .install-command-callout h2,
 .local-runtime-selection h2,
+.nvidia-workload-heading h2,
 .advanced-config > summary strong,
 .advanced-group > header strong,
 .component-toggle-group > div > strong,
@@ -3009,6 +3023,7 @@ nav a:hover,
 .architecture-chain span,
 .install-command-callout p,
 .local-runtime-selection header p,
+.nvidia-workload-heading p,
 .advanced-config > summary small,
 .advanced-group > header small,
 .component-toggle-group > div > small,
@@ -3077,6 +3092,21 @@ nav a:hover,
 
 .profile-card.pending > summary {
   opacity: 1;
+}
+
+.nvidia-profiles .profile-card,
+.nvidia-profiles .profile-card[open],
+.nvidia-profiles .profile-card.pending,
+.nvidia-profiles .profile-card.pending[open] {
+  border-width: 0 0 1px;
+  border-color: #d5d5d5;
+  border-radius: 0;
+  background: transparent;
+}
+
+.nvidia-profiles .profile-card > summary {
+  padding-right: 8px;
+  padding-left: 8px;
 }
 
 .profile-card.pending h2,
@@ -3161,6 +3191,14 @@ nav a:hover,
 
 .field-label small {
   color: #6b7280;
+}
+
+.shim-drop-in > span strong {
+  color: #2a394e;
+}
+
+.shim-drop-in > span small {
+  color: #667386;
 }
 
 .capabilities span,
@@ -3800,8 +3838,7 @@ nav a:hover,
   }
 
   .scheduled-reconcile-controls {
-    align-items: stretch;
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .scheduled-reconcile-toggle,
