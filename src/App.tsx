@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
@@ -47,6 +47,109 @@ const brandLogos = import.meta.glob('./assets/brands/*.{svg,png}', {
 
 const logoFor = (vendor: { logo: string }) =>
   brandLogos[`./assets/brands/${vendor.logo}`]
+
+type DistributionOption =
+  ExplorerCatalog['plannedArchitecture']['cluster']['distributions'][number]
+
+const DistributionSelect = ({
+  options,
+  value,
+  onChange,
+}: {
+  options: DistributionOption[]
+  value: string | null
+  onChange: (value: string) => void
+}) => {
+  const [open, setOpen] = useState(false)
+  const listboxId = useId()
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const selectedIndex = options.findIndex(({ id }) => id === value)
+  const selectedOption = options[selectedIndex]
+
+  const focusOption = (index: number) => {
+    const normalizedIndex = (index + options.length) % options.length
+    optionRefs.current[normalizedIndex]?.focus()
+  }
+
+  const openAndFocus = (index: number) => {
+    setOpen(true)
+    requestAnimationFrame(() => focusOption(index))
+  }
+
+  return (
+    <div
+      className={`distribution-select ${open ? 'open' : ''}`}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)
+      }}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        className="distribution-select-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={listboxId}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault()
+            openAndFocus(
+              selectedIndex >= 0
+                ? selectedIndex
+                : event.key === 'ArrowDown'
+                  ? 0
+                  : options.length - 1,
+            )
+          }
+        }}
+      >
+        <span className={selectedOption ? '' : 'placeholder'}>
+          {selectedOption?.displayName ?? 'Select distribution…'}
+        </span>
+        <ChevronDown size={18} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="distribution-select-options" id={listboxId} role="listbox">
+          {options.map((option, index) => (
+            <button
+              ref={(element) => {
+                optionRefs.current[index] = element
+              }}
+              type="button"
+              role="option"
+              aria-selected={option.id === value}
+              className={option.id === value ? 'selected' : ''}
+              key={option.id}
+              onClick={() => {
+                onChange(option.id)
+                setOpen(false)
+                triggerRef.current?.focus()
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                  event.preventDefault()
+                  focusOption(index + (event.key === 'ArrowDown' ? 1 : -1))
+                } else if (event.key === 'Home' || event.key === 'End') {
+                  event.preventDefault()
+                  focusOption(event.key === 'Home' ? 0 : options.length - 1)
+                } else if (event.key === 'Escape') {
+                  event.preventDefault()
+                  setOpen(false)
+                  triggerRef.current?.focus()
+                }
+              }}
+            >
+              <span>{option.displayName}</span>
+              {option.id === value && <Check size={16} aria-hidden="true" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const isRuntimeOnlyVendor = (vendor: VendorCatalog) =>
   vendor.hardwareFamilies.length === 0
@@ -757,24 +860,16 @@ function App() {
                         </div>
                       </details>
                     </div>
-                    <select
-                      value={cluster.distributionId ?? ''}
-                      onChange={(event) =>
+                    <DistributionSelect
+                      options={catalog.plannedArchitecture.cluster.distributions}
+                      value={cluster.distributionId}
+                      onChange={(distributionId) =>
                         setCluster((current) => ({
                           ...current,
-                          distributionId: event.target.value || null,
+                          distributionId,
                         }))
                       }
-                    >
-                      <option value="">Select distribution…</option>
-                      {catalog.plannedArchitecture.cluster.distributions.map(
-                        (distribution) => (
-                          <option key={distribution.id} value={distribution.id}>
-                            {distribution.displayName}
-                          </option>
-                        ),
-                      )}
-                    </select>
+                    />
                   </div>
                   <label className="cluster-field">
                     <span className="field-label">
