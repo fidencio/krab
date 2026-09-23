@@ -517,7 +517,6 @@ function App() {
     <div className="app-shell">
       <header className="site-header">
         <button className="brand" onClick={restart} aria-label="Kata Reference Architecture Builder home">
-          <span className="header-krab-mark" aria-hidden="true" />
           <span className="brand-copy">
             <strong>KRAB</strong>
             <span className="brand-separator">·</span>

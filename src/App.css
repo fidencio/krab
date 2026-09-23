@@ -47,14 +47,6 @@ body::before {
   cursor: pointer;
 }
 
-.brand .header-krab-mark {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-  display: block;
-  background: url('./assets/brands/krab-kata-hybrid-light.png') center / contain no-repeat;
-}
-
 .brand-copy {
   min-height: 40px;
   display: flex;
