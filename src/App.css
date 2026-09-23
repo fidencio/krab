@@ -388,6 +388,26 @@ button.vendor-card {
   -webkit-line-clamp: 2;
 }
 
+.external-platform-card > p a {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  color: #dbe9e3;
+  font-weight: 700;
+  text-decoration-color: rgba(219, 233, 227, 0.45);
+  text-underline-offset: 3px;
+}
+
+.external-platform-card > p a:hover {
+  color: #fff;
+  text-decoration-color: currentColor;
+}
+
+.external-platform-card > p a svg {
+  flex: 0 0 auto;
+  transform: translateY(1px);
+}
+
 .azure-card .external-platform-brand img {
   width: 56px;
   height: 56px;

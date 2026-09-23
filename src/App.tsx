@@ -664,8 +664,16 @@ function App() {
                       </span>
                     </div>
                     <p>
-                      Although KRAB works on Azure, the preferred path is AKS Pod
-                      Sandboxing.
+                      Although KRAB works on Azure, the preferred path is{' '}
+                      <a
+                        href="https://learn.microsoft.com/en-us/azure/aks/use-pod-sandboxing"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        AKS Pod Sandboxing
+                        <ExternalLink size={12} />
+                      </a>
+                      .
                     </p>
                     <div className="capabilities">
                       <span>AKS-managed</span>
