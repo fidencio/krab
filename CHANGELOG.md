@@ -2,7 +2,14 @@
 
 All notable changes to KRAB are documented in this file.
 
-## [0.1.0-alpha.0] - Unreleased
+## [0.1.0-alpha.1] - 2026-09-23
+
+### Fixed
+
+- Release verification now checks anonymous GHCR access directly instead of
+  calling an unsupported package-visibility API.
+
+## [0.1.0-alpha.0] - 2026-09-23
 
 ### Added
 
@@ -18,8 +25,6 @@ All notable changes to KRAB are documented in this file.
 
 ### Known limitations
 
-- The NVIDIA path requires the upstream kata-device-plugin `0.1.0` OCI chart
-  before the KRAB chart can be published.
 - GB200 and GB300 are identified as `arm64`, but remain unavailable while Kata
   Containers support is pending.
 - The chart consumes kata-device-provisioner `0.1.0-alpha.1`.

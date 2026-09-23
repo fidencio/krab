@@ -108,7 +108,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
   )
   assert.equal(
     catalog.plannedArchitecture.charts.krab.version,
-    '0.1.0-alpha.0',
+    '0.1.0-alpha.1',
   )
   const dependencies = catalog.plannedArchitecture.charts.krab.dependencies
   assert.equal(dependencies.nfdRequired, true)
@@ -627,7 +627,7 @@ test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
   assert.equal(generatedValues['kata-deploy'].containerd?.userDropIn, undefined)
   assert.equal(
     install,
-    'helm upgrade --install krab oci://ghcr.io/fidencio/krab --version 0.1.0-alpha.0 --namespace kata-system --create-namespace --values values.yaml',
+    'helm upgrade --install krab oci://ghcr.io/fidencio/krab --version 0.1.0-alpha.1 --namespace kata-system --create-namespace --values values.yaml',
   )
 
   const passthroughValues = parse(

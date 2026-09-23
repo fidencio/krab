@@ -2,8 +2,8 @@ apiVersion: v2
 name: krab
 description: Kata Reference Architecture Builder umbrella chart
 type: application
-version: 0.1.0-alpha.0
-appVersion: "0.1.0-alpha.0"
+version: 0.1.0-alpha.1
+appVersion: "0.1.0-alpha.1"
 home: https://github.com/fidencio/krab
 icon: https://fidencio.github.io/krab/favicon.png
 sources:
