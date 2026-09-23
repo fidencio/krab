@@ -536,13 +536,15 @@ function App() {
         {step === 1 && (
           <section className="intro">
             <h1>
-              Build your Kata
+              Deploy the full Kata stack
               <br />
-              <span>reference architecture.</span>
+              <span>with one command.</span>
             </h1>
             <p>
-              KRAB assembles source-backed hardware profiles, runtime classes,
-              and deployment artifacts into one reproducible path.
+              Choose your hardware, isolation mode, and RuntimeClasses. KRAB
+              generates version-pinned Helm values and one install command for
+              Kata and every supporting component your selected architecture
+              requires.
             </p>
           </section>
         )}
