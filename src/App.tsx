@@ -16,6 +16,7 @@ import catalogData from './generated/catalog.json'
 import {
   buildCustomRuntimeClass,
   buildInstallScript,
+  buildValuesFileName,
   buildValuesBundle,
   createAdvancedConfiguration,
   customRuntimeClassName,
@@ -152,6 +153,7 @@ function App() {
     distributionId: null,
     selinuxEnabled: false,
   })
+  const [deploymentName, setDeploymentName] = useState('')
   const [runtime, setRuntime] = useState<RuntimeConfiguration>({
     selectedShimIds: [],
     runtimeHttpsProxy: '',
@@ -170,8 +172,9 @@ function App() {
       runtime,
       advanced,
     ),
-    install: buildInstallScript(catalog),
-  }), [advanced, cluster, runtime, selectedVendor, selections])
+    install: buildInstallScript(catalog, deploymentName),
+  }), [advanced, cluster, deploymentName, runtime, selectedVendor, selections])
+  const valuesFileName = buildValuesFileName(catalog, deploymentName)
   const incompleteFamilies = selectedVendor.hardwareFamilies.filter((family) =>
     family.availability === 'available' &&
     needsCpuSelection(selections[family.id]),
@@ -448,7 +451,7 @@ function App() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = catalog.plannedArchitecture.charts.krab.valuesFileName
+    link.download = valuesFileName
     document.body.append(link)
     link.click()
     link.remove()
@@ -630,7 +633,7 @@ function App() {
                   </div>
                   <em>{cluster.distributionId ? 'Configured' : 'Required'}</em>
                 </header>
-                <div className="cluster-fields single-field">
+                <div className="cluster-fields">
                   <div className="cluster-field">
                     <div className="field-label">
                       Distribution
@@ -665,6 +668,19 @@ function App() {
                       )}
                     </select>
                   </div>
+                  <label className="cluster-field">
+                    <span className="field-label">
+                      Deployment name
+                      <small>Optional · defaults to krab</small>
+                    </span>
+                    <input
+                      type="text"
+                      value={deploymentName}
+                      maxLength={53}
+                      placeholder="krab"
+                      onChange={(event) => setDeploymentName(event.target.value)}
+                    />
+                  </label>
                 </div>
                 {!cluster.distributionId && (
                   <p>Select a distribution to generate values.yaml.</p>
@@ -2032,7 +2048,7 @@ function App() {
                   <aside className="code-column">
                   <div className="code-heading">
                     <div>
-                      <span><FileCode2 size={15} /> Generated values.yaml</span>
+                      <span><FileCode2 size={15} /> Generated {valuesFileName}</span>
                       <small>
                         {valuesReady
                           ? `${selectedDistribution?.displayName} · Installer SELinux ${
@@ -2057,7 +2073,7 @@ function App() {
                         onClick={() => copyCode('values')}
                       >
                         {copied === 'values' ? <Check size={15} /> : <Clipboard size={15} />}
-                        {copied === 'values' ? 'Copied' : 'Copy values.yaml'}
+                        {copied === 'values' ? 'Copied' : 'Copy values'}
                       </button>
                     </div>
                   </div>

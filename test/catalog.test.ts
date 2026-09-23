@@ -6,6 +6,7 @@ import { parse } from 'yaml'
 import {
   buildCustomRuntimeClass,
   buildInstallScript,
+  buildValuesFileName,
   buildValuesBundle,
   createAdvancedConfiguration,
   customRuntimeSnapshotter,
@@ -678,7 +679,15 @@ test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
   assert.equal(generatedValues['kata-deploy'].containerd?.userDropIn, undefined)
   assert.equal(
     install,
-    'helm upgrade --install krab oci://ghcr.io/fidencio/krab --version 0.1.0-alpha.3 --namespace kata-system --create-namespace --values values.yaml',
+    'helm upgrade --install krab oci://ghcr.io/fidencio/krab --version 0.1.0-alpha.3 --namespace kata-system --create-namespace --values krab-0.1.0-alpha.3-values.yaml',
+  )
+  assert.equal(
+    buildInstallScript(catalog, 'My production/Kata'),
+    'helm upgrade --install my-production-kata oci://ghcr.io/fidencio/krab --version 0.1.0-alpha.3 --namespace kata-system --create-namespace --values my-production-kata-0.1.0-alpha.3-values.yaml',
+  )
+  assert.equal(
+    buildValuesFileName(catalog, ''),
+    'krab-0.1.0-alpha.3-values.yaml',
   )
 
   const passthroughValues = parse(

@@ -913,10 +913,37 @@ export function buildValuesBundle(
   })}`
 }
 
+export function normalizeDeploymentName(
+  name: string,
+  fallback = 'krab',
+) {
+  const normalized = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 53)
+    .replace(/-+$/g, '')
+  return normalized || fallback
+}
+
+export function buildValuesFileName(
+  catalog: ExplorerCatalog,
+  deploymentName = '',
+) {
+  const { krab } = catalog.plannedArchitecture.charts
+  const releaseName = normalizeDeploymentName(deploymentName, krab.releaseName)
+  const valuesStem = krab.valuesFileName.replace(/\.ya?ml$/i, '')
+  return `${releaseName}-${krab.version}-${valuesStem}.yaml`
+}
+
 export function buildInstallScript(
   catalog: ExplorerCatalog,
+  deploymentName = '',
 ) {
   const { krab } = catalog.plannedArchitecture.charts
   const { namespace } = catalog.plannedArchitecture
-  return `helm upgrade --install ${krab.releaseName} ${krab.ociReference} --version ${krab.version} --namespace ${namespace} --create-namespace --values ${krab.valuesFileName}`
+  const releaseName = normalizeDeploymentName(deploymentName, krab.releaseName)
+  const valuesFileName = buildValuesFileName(catalog, deploymentName)
+  return `helm upgrade --install ${releaseName} ${krab.ociReference} --version ${krab.version} --namespace ${namespace} --create-namespace --values ${valuesFileName}`
 }

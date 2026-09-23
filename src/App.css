@@ -1985,7 +1985,14 @@ button.vendor-card {
   gap: 6px;
 }
 
-.cluster-fields select {
+.field-label small {
+  color: #77847e;
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.cluster-fields select,
+.cluster-fields input {
   width: 100%;
   height: 48px;
   padding: 0 42px 0 12px;
@@ -2002,7 +2009,13 @@ button.vendor-card {
   font: 11px 'DM Sans', sans-serif;
 }
 
-.cluster-fields select:focus {
+.cluster-fields input {
+  padding-right: 12px;
+  background-image: none;
+}
+
+.cluster-fields select:focus,
+.cluster-fields input:focus {
   border-color: var(--green);
 }
 
