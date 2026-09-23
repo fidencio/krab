@@ -40,6 +40,19 @@ test('KRAB chart declares unconditional and NVIDIA dependencies', async () => {
   )
 })
 
+test('chart prerelease annotation matches its semantic version', async () => {
+  const chart = await readYaml('charts/krab/Chart.yaml')
+  const match = chart.version.match(
+    /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/,
+  )
+
+  assert.ok(match, `${chart.version} must be valid SemVer`)
+  assert.equal(
+    chart.annotations['artifacthub.io/prerelease'],
+    String(match[1] !== undefined),
+  )
+})
+
 test('chart defaults and generated values satisfy the values schema', async () => {
   const schema = JSON.parse(
     await readFile(resolve(root, 'charts/krab/values.schema.json'), 'utf8'),

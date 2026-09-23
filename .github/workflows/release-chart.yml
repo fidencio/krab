@@ -52,18 +52,41 @@ jobs:
 
           const chart = parse(readFileSync('charts/krab/Chart.yaml', 'utf8'))
           const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
-          console.log([chart.version, chart.appVersion, pkg.version].join('\t'))
+          const match = chart.version.match(
+            /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/,
+          )
+          if (!match) {
+            throw new Error(`Chart version ${chart.version} is not valid SemVer`)
+          }
+          console.log([
+            chart.version,
+            chart.appVersion,
+            pkg.version,
+            String(match[1] !== undefined),
+            chart.annotations?.['artifacthub.io/prerelease'],
+          ].join('\t'))
           NODE
           )"
-          IFS=$'\t' read -r chart_version app_version package_version <<<"${metadata}"
+          IFS=$'\t' read -r \
+            chart_version \
+            app_version \
+            package_version \
+            is_prerelease \
+            artifacthub_prerelease <<<"${metadata}"
 
           if [[ "${chart_version}" != "${app_version}" || "${chart_version}" != "${package_version}" ]]; then
             echo "::error::Chart version (${chart_version}), appVersion (${app_version}), and package version (${package_version}) must match"
             exit 1
           fi
 
+          if [[ "${artifacthub_prerelease}" != "${is_prerelease}" ]]; then
+            echo "::error::Artifact Hub prerelease annotation (${artifacthub_prerelease}) must match SemVer prerelease status (${is_prerelease})"
+            exit 1
+          fi
+
           echo "CHART_VERSION=${chart_version}" >> "${GITHUB_ENV}"
           echo "RELEASE_TAG=chart-v${chart_version}" >> "${GITHUB_ENV}"
+          echo "IS_PRERELEASE=${is_prerelease}" >> "${GITHUB_ENV}"
 
       - name: Regenerate and verify committed catalog
         run: |
@@ -219,6 +242,12 @@ jobs:
         run: |
           set -euo pipefail
 
+          if [[ "${IS_PRERELEASE}" == "true" ]]; then
+            release_type_flags=(--prerelease --latest=false)
+          else
+            release_type_flags=(--prerelease=false --latest)
+          fi
+
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release upload "${RELEASE_TAG}" \
               dist-chart/krab-*.tgz \
@@ -226,7 +255,7 @@ jobs:
               --clobber
             gh release edit "${RELEASE_TAG}" \
               --title "KRAB ${CHART_VERSION}" \
-              --prerelease
+              "${release_type_flags[@]}"
           else
             gh release create "${RELEASE_TAG}" \
               dist-chart/krab-*.tgz \
@@ -234,5 +263,5 @@ jobs:
               --target "${GITHUB_SHA}" \
               --title "KRAB ${CHART_VERSION}" \
               --generate-notes \
-              --prerelease
+              "${release_type_flags[@]}"
           fi
