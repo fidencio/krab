@@ -651,6 +651,7 @@ function App() {
             <h1>
               Deploy the full Kata stack
               <br />
+              {' '}
               <span>with one command.</span>
             </h1>
             <p>
