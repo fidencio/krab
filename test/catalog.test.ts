@@ -836,10 +836,12 @@ test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
   assert.equal(imported.vendorId, 'nvidia')
   assert.equal(imported.deploymentName, 'production-kata')
   assert.deepEqual(imported.selections.hopper, {
+    enabled: true,
     modeId: 'ppcie',
     cpuTeeIds: ['tdx'],
   })
   assert.deepEqual(imported.selections.blackwell, {
+    enabled: true,
     modeId: 'on',
     cpuTeeIds: ['tdx'],
   })

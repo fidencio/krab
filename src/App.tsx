@@ -165,7 +165,7 @@ const initialSelections = (vendor: VendorCatalog): FamilySelections =>
   Object.fromEntries(
     vendor.hardwareFamilies.map((family) => [
       family.id,
-      { modeId: null, cpuTeeIds: [] },
+      { enabled: false, modeId: null, cpuTeeIds: [] },
     ]),
   )
 
@@ -224,11 +224,15 @@ const runtimeUse = (id: string) => {
   return 'The broadly compatible default for general Kata workloads.'
 }
 
+const isFamilyEnabled = (
+  selection: FamilySelections[string] | undefined,
+) => selection?.enabled ?? Boolean(selection?.modeId)
+
 const profileSummary = (
   vendor: VendorCatalog,
   selection: FamilySelections[string] | undefined,
 ) => {
-  if (!selection?.modeId) return 'NOT PRESENT'
+  if (!selection?.modeId) return isFamilyEnabled(selection) ? 'SELECT MODE' : ''
   if (selection.modeId === 'off') return 'PASSTHROUGH'
   const mode = selection.modeId === 'on' ? 'CC' : selection.modeId.toUpperCase()
   const tees = vendor.runtime.cpuTees
@@ -309,7 +313,9 @@ function App() {
   )
   const incompleteFamilies = selectedVendor.hardwareFamilies.filter((family) =>
     family.availability === 'available' &&
-    needsCpuSelection(selections[family.id]),
+    isFamilyEnabled(selections[family.id]) &&
+    (!selections[family.id]?.modeId ||
+      needsCpuSelection(selections[family.id])),
   )
   const selectedDistribution =
     catalog.plannedArchitecture.cluster.distributions.find(
@@ -386,6 +392,9 @@ function App() {
   const selectedNvidiaCpuRuntimeCount = selectedVendor.runtime.shims.filter(
     ({ id, selectionGroup }) =>
       selectionGroup === 'cpu' && runtime.selectedShimIds.includes(id),
+  ).length
+  const selectedRuntimeShimCount = selectedVendor.runtime.shims.filter(({ id }) =>
+    runtime.selectedShimIds.includes(id),
   ).length
   const installedRuntimeClassCount =
     installedRuntimeClasses.length + advanced.customRuntimes.length
@@ -467,6 +476,7 @@ function App() {
     setSelections((current) => ({
       ...current,
       [familyId]: {
+        enabled: true,
         modeId,
         cpuTeeIds:
           modeId && modeId !== 'off'
@@ -480,10 +490,26 @@ function App() {
     }))
   }
 
+  const toggleFamily = (familyId: string, enabled: boolean) => {
+    const family = selectedVendor.hardwareFamilies.find(({ id }) => id === familyId)
+    if (!family || family.availability !== 'available') return
+    setSelections((current) => ({
+      ...current,
+      [familyId]: enabled
+        ? {
+            enabled: true,
+            modeId: current[familyId]?.modeId ?? null,
+            cpuTeeIds: current[familyId]?.cpuTeeIds ?? [],
+          }
+        : { enabled: false, modeId: null, cpuTeeIds: [] },
+    }))
+  }
+
   const toggleCpuTee = (familyId: string, cpuTeeId: string) => {
     setSelections((current) => ({
       ...current,
       [familyId]: {
+        enabled: true,
         modeId: current[familyId]?.modeId ?? null,
         cpuTeeIds: current[familyId]?.cpuTeeIds.includes(cpuTeeId)
           ? current[familyId].cpuTeeIds.filter((id) => id !== cpuTeeId)
@@ -1945,8 +1971,8 @@ function App() {
                       <span>NVIDIA deployment · GPU workloads</span>
                       <h2>Select NVIDIA GPU platforms</h2>
                       <p>
-                        Configure each GPU family present in this cluster, or
-                        leave it marked as not present.
+                        Enable each GPU family KRAB should configure. Disabled
+                        platforms are omitted from the generated deployment.
                       </p>
                     </header>
                   )}
@@ -1958,15 +1984,11 @@ function App() {
                           <h2>Select NVIDIA CPU RuntimeClasses</h2>
                           <p>
                             Choose the CPU runtimes this cluster should install.
-                            Confidential-computing variants appear here when they
-                            are supported by the pinned Kata release.
                           </p>
                         </div>
-                        <em>
-                          {selectedNvidiaCpuRuntimeCount > 0
-                            ? `${selectedNvidiaCpuRuntimeCount} selected`
-                            : 'None selected'}
-                        </em>
+                        {selectedNvidiaCpuRuntimeCount > 0 && (
+                          <em>{selectedNvidiaCpuRuntimeCount} selected</em>
+                        )}
                       </header>
                       <div className="local-runtime-grid">
                         {selectedVendor.runtime.shims
@@ -2009,11 +2031,9 @@ function App() {
                                 'supported default.'}
                           </p>
                         </div>
-                        <em>
-                          {hasRuntimeSelection
-                            ? `${installedRuntimeClassCount} configured`
-                            : 'Required'}
-                        </em>
+                        {selectedRuntimeShimCount > 0 && (
+                          <em>{selectedRuntimeShimCount} selected</em>
+                        )}
                       </header>
                       <div className="local-runtime-grid">
                         {selectedVendor.runtime.shims.map((shim) => (
@@ -2045,31 +2065,68 @@ function App() {
                       key={family.id}
                     >
                       <summary>
-                        <div>
-                          <h2>{family.displayName}</h2>
-                          <strong>
-                            {family.models.length > 0
-                              ? family.models.join(' / ')
-                              : family.upstreamName}
-                          </strong>
+                        <div className="profile-family-heading">
+                          <label
+                            className="profile-family-checkbox"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              aria-label={`Enable ${family.displayName}`}
+                              disabled={family.availability !== 'available'}
+                              checked={isFamilyEnabled(
+                                selections[family.id],
+                              )}
+                              onChange={(event) => {
+                                const enabled = event.target.checked
+                                toggleFamily(family.id, enabled)
+                                if (enabled) {
+                                  const details = event.currentTarget.closest(
+                                    'details',
+                                  ) as HTMLDetailsElement | null
+                                  if (details) details.open = true
+                                }
+                              }}
+                            />
+                          </label>
+                          <div>
+                            <h2>{family.displayName}</h2>
+                            <strong>
+                              {family.models.length > 0
+                                ? family.models.join(' / ')
+                                : family.upstreamName}
+                            </strong>
+                          </div>
                         </div>
                         <div className="profile-summary-status">
-                          <span
-                            className={
-                              family.availability === 'pending'
-                                ? 'pending'
-                                : needsCpuSelection(selections[family.id])
-                                ? 'incomplete'
-                                : ''
-                            }
-                          >
-                            {family.availabilityReason ??
-                              profileSummary(selectedVendor, selections[family.id])}
-                          </span>
-                          <ChevronDown size={16} />
+                          {(family.availabilityReason ||
+                            isFamilyEnabled(selections[family.id])) && (
+                            <span
+                              className={
+                                family.availability === 'pending'
+                                  ? 'pending'
+                                  : !selections[family.id]?.modeId ||
+                                      needsCpuSelection(selections[family.id])
+                                  ? 'incomplete'
+                                  : ''
+                              }
+                            >
+                              {family.availabilityReason ??
+                                profileSummary(
+                                  selectedVendor,
+                                  selections[family.id],
+                                )}
+                            </span>
+                          )}
+                          {(family.availability === 'pending' ||
+                            isFamilyEnabled(selections[family.id])) && (
+                            <ChevronDown size={16} />
+                          )}
                         </div>
                       </summary>
-                      <div className="profile-options">
+                      {(family.availability === 'pending' ||
+                        isFamilyEnabled(selections[family.id])) && (
+                        <div className="profile-options">
                         {family.availability === 'pending' ? (
                           <div className="profile-unavailable">
                             <AlertTriangle size={17} />
@@ -2152,22 +2209,10 @@ function App() {
                                   </div>
                                 </fieldset>
                               )}
-
-                            <label className="mode-option">
-                              <input
-                                type="radio"
-                                name={`${family.id}-mode`}
-                                checked={selections[family.id]?.modeId === null}
-                                onChange={() => selectMode(family.id, null)}
-                              />
-                              <span>
-                                <strong>Not present in this cluster</strong>
-                                <small>Do not generate a provisioner release for this family.</small>
-                              </span>
-                            </label>
                           </>
                         )}
-                      </div>
+                        </div>
+                      )}
                     </details>
                   ))}
                 </div>
@@ -2432,7 +2477,9 @@ function App() {
                         )}
                         {incompleteFamilies.map((family) => (
                           <li key={family.id}>
-                            CPU / TEE for {family.displayName}
+                            {selections[family.id]?.modeId
+                              ? `CPU / TEE for ${family.displayName}`
+                              : `Deployment mode for ${family.displayName}`}
                           </li>
                         ))}
                       </ul>

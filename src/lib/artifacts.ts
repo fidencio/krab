@@ -212,7 +212,7 @@ export type ExplorerCatalog = {
 
 export type FamilySelections = Record<
   string,
-  { modeId: string | null; cpuTeeIds: string[] }
+  { enabled?: boolean; modeId: string | null; cpuTeeIds: string[] }
 >
 
 export type ClusterConfiguration = {
@@ -430,7 +430,11 @@ export function importValuesBundle(
     for (const family of vendor.hardwareFamilies) {
       for (const mode of family.modes) {
         if (mode.id === 'off' && asRecord(configuredProfiles[mode.profileName]).enabled) {
-          selections[family.id] = { modeId: mode.id, cpuTeeIds: [] }
+          selections[family.id] = {
+            enabled: true,
+            modeId: mode.id,
+            cpuTeeIds: [],
+          }
           break
         }
         const cpuTeeIds = mode.supportedCpuTeeIds.filter((cpuTeeId) =>
@@ -439,7 +443,7 @@ export function importValuesBundle(
           ).enabled === true,
         )
         if (cpuTeeIds.length > 0) {
-          selections[family.id] = { modeId: mode.id, cpuTeeIds }
+          selections[family.id] = { enabled: true, modeId: mode.id, cpuTeeIds }
           break
         }
       }
@@ -607,7 +611,7 @@ const initialFamilySelections = (vendor: VendorCatalog): FamilySelections =>
   Object.fromEntries(
     vendor.hardwareFamilies.map((family) => [
       family.id,
-      { modeId: null, cpuTeeIds: [] },
+      { enabled: false, modeId: null, cpuTeeIds: [] },
     ]),
   )
 
