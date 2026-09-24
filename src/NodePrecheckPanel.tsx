@@ -16,11 +16,11 @@ function shortReason(label: string, status: string, reason: string) {
   if (status === 'unknown' || status === 'review') return `${label} unconfirmed`
   if (reason.includes('requires an Intel CPU')) return 'Intel CPU required'
   if (reason.includes('requires an AMD CPU')) return 'AMD CPU required'
-  if (reason.includes('requires s390x')) return 's390x required'
+  if (reason.includes('requires s390x')) return 'S390X required'
   if (label === 'EROFS utilities') return 'EROFS setup needed'
   if (label === 'NVIDIA GPU') return 'NVIDIA GPU not found'
   if (label === 'IOMMUFD' || label === 'KVM') return `${label} unavailable`
-  if (reason.startsWith('/host/')) return 'Host support not detected'
+  if (reason.startsWith('/')) return 'Host support not detected'
   return reason
 }
 
@@ -39,17 +39,14 @@ function readinessResult(report: NodePrecheck, check: RequestedCheck, selectedGp
     !selectedGpuModels.some((model) => hasGpuModel(report, model))
   const reasons = unmet.map(({ label, probe }) =>
     check === 'se' && report.node.architecture !== 's390x'
-      ? 's390x host required'
+      ? 'S390X required'
       : shortReason(label, probe.status, probe.reason))
-  const technicalDetails = unmet.map(({ label, probe }) =>
-    `${label}: ${probe.reason || probe.status}`).join(' · ')
   if (modelNeeded) reasons.push(report.gpus.devices.length === 0
     ? 'GPU model unconfirmed'
     : `${selectedGpuModels.join(' or ')} not found`)
   return {
     ready: unmet.length === 0 && !modelNeeded,
     reason: reasons.join(' · '),
-    technicalDetails,
   }
 }
 
@@ -98,7 +95,7 @@ export function NodePrecheckPanel({
   const evaluatedNodes = nodeReports.map(({ name, report }) => {
     const failedChecks = activeChecks.flatMap(({ id, label }) => {
       const result = readinessResult(report, id, selectedGpuModels)
-      return result.ready ? [] : [{ id, label, reason: result.reason, technicalDetails: result.technicalDetails }]
+      return result.ready ? [] : [{ id, label, reason: result.reason }]
     })
     return {
       name,
@@ -191,16 +188,13 @@ export function NodePrecheckPanel({
         {matchingNodes.length > 0 && <ul className="precheck-node-list">{visibleNodes.map(({ name, report, failedChecks }) => {
           const blockers = report.checks.kvm.status === 'no' ? ['KVM unavailable'] : []
           return <li key={name}>
-            <div className="precheck-node-identity"><strong>{name}</strong><small>{report.node.architecture}</small></div>
+            <strong className="precheck-node-name">{name}</strong>
+            <small className="precheck-node-architecture">{report.node.architecture}</small>
             {blockers.length > 0
               ? <span className="precheck-node-unsupported"><b>UNSUPPORTED</b><small>{blockers.join(' · ')}</small></span>
-              : <span className="precheck-tee-results">{failedChecks.map(({ id, label, reason, technicalDetails }) =>
+              : <span className="precheck-tee-results">{failedChecks.map(({ id, label, reason }) =>
                 <span className="precheck-tee-result" key={id}>
-                  <span className="precheck-tee-result-line"><b className="precheck-tee-no">NO</b><strong>{label}</strong><small>{reason}</small></span>
-                  {technicalDetails && technicalDetails !== reason && <details className="precheck-probe-details">
-                    <summary>Technical details</summary>
-                    <code>{technicalDetails}</code>
-                  </details>}
+                  <strong>{label}</strong><b className="precheck-tee-no">NO</b><small>{reason}</small>
                 </span>
               )}</span>}
           </li>
