@@ -616,6 +616,35 @@ function App() {
     }))
   }
 
+  const toggleCustomArchitecture = (architecture: string) => {
+    const nextArchitectures = customArchitectures.includes(architecture)
+      ? customArchitectures.filter((item) => item !== architecture)
+      : [...customArchitectures, architecture]
+    const gpuArchitectures = new Set(
+      selectedVendor.runtime.shims
+        .filter(({ selectionGroup }) => selectionGroup === 'gpu')
+        .flatMap(({ supportedArches }) => supportedArches),
+    )
+
+    setCluster((current) => ({ ...current, architectures: nextArchitectures }))
+    setRuntime((current) => ({
+      ...current,
+      selectedShimIds: current.selectedShimIds.filter((id) =>
+        selectedVendor.runtime.shims.some((shim) =>
+          shim.id === id && shim.supportedArches.some((arch) =>
+            nextArchitectures.includes(arch))),
+      ),
+    }))
+    setSelections((current) => Object.fromEntries(
+      selectedVendor.hardwareFamilies.map((family) => [family.id,
+        family.supportedArches.some((arch) =>
+          nextArchitectures.includes(arch) && gpuArchitectures.has(arch))
+          ? current[family.id]
+          : { enabled: false, modeId: null, cpuTeeIds: [] },
+      ]),
+    ))
+  }
+
   const updateNodeSelector = (
     index: number,
     field: 'key' | 'value',
@@ -1032,12 +1061,7 @@ function App() {
                 <div className="custom-architecture-options">
                   {['amd64', 'arm64', 'ppc64le', 's390x'].map((architecture) => <label key={architecture}>
                     <input type="checkbox" checked={customArchitectures.includes(architecture)} onChange={() =>
-                      setCluster((current) => ({
-                        ...current,
-                        architectures: customArchitectures.includes(architecture)
-                          ? customArchitectures.filter((item) => item !== architecture)
-                          : [...customArchitectures, architecture],
-                      }))
+                      toggleCustomArchitecture(architecture)
                     } />
                     {architecture.toUpperCase()}
                   </label>)}
