@@ -121,18 +121,13 @@ export function unavailableFamilyReason(family: HardwareFamilyCatalog, reports: 
 export function unavailableModeReason(modeId: string, reports: NodePrecheck[], cpuTeeIds: string[] = [], family?: HardwareFamilyCatalog): string | null {
   if (!reports.length || modeId === 'off') return null
   const candidates = family ? reports.filter((report) => possibleFamilyOnNode(family, report)) : reports
-  if (candidates.every(({ gpus }) => gpus.cc.status === 'no'))
-    return 'NVIDIA reports no CC capable GPU on these nodes.'
-  if (modeId === 'ppcie' && candidates.every(({ gpus }) => gpus.ppcie.status === 'no'))
-    return 'No uploaded node supports this PPCIE path.'
+  // The provisioner can change CC/PPCIE mode during installation, so the
+  // GPU's pre-flight state must not disable a deployment mode.
+  if (candidates.length === 0)
+    return 'No uploaded node meets this mode’s confirmed prerequisites.'
   if (cpuTeeIds.length > 0 && candidates.every((report) =>
     cpuTeeIds.every((id) => report.checks[id as keyof NodePrecheck['checks']]?.status === 'no')))
     return 'No required CPU TEE is available on the uploaded nodes.'
-  if (!candidates.some((report) => report.gpus.cc.status !== 'no' &&
-      (modeId !== 'ppcie' || report.gpus.ppcie.status !== 'no') &&
-      (cpuTeeIds.length === 0 || cpuTeeIds.some((id) =>
-        report.checks[id as keyof NodePrecheck['checks']]?.status !== 'no'))))
-    return 'No uploaded node meets this mode’s confirmed prerequisites.'
   return null
 }
 

@@ -21,7 +21,7 @@ Each option runs only its corresponding check. Options may be combined. The exit
 | `--ibm-se` | `/sys/firmware/uv/prot_virt_host` is `Y` or `1` |
 | `--iommufd` | `/dev/iommu` is a character device |
 | `--erofs` | The first executable `mkfs.erofs` in `PATH` (or standard system directories) contains the `mkfs-time` and `sort` option strings required by Kata Deploy |
-| `--gpu` | `kata-device-provisioner status` reports a supported NVIDIA GPU |
+| `--gpu` | `kata-device-provisioner status --all` reports a supported NVIDIA GPU |
 | `--gpu-cc` | At least one supported NVIDIA GPU reports CC capability |
 | `--gpu-ppcie` | At least one supported NVIDIA GPU reports PPCIE capability |
 
@@ -29,7 +29,7 @@ The kernel checks report presence or enabled state. They do not open the devices
 
 The EROFS check reads the `mkfs.erofs` binary for the `mkfs-time` and `sort` option strings, following [Kata Deploy's option check](https://github.com/kata-containers/kata-containers/blob/main/tools/packaging/kata-deploy/binary/src/main.rs). It does not execute `mkfs.erofs`. Like Kata Deploy's option check, it does not inspect `-T` separately. It does not check kernel EROFS support, containerd version, or whether the snapshotter is configured.
 
-The GPU checks require [`kata-device-provisioner`](https://github.com/kata-containers/kata-device-provisioner) in `PATH`, or at the path in `KRAB_PROVISIONER`. They call its read-only `status` command and inspect its device rows. These checks report hardware capability for the supported NVIDIA GPUs; they do not call `status --probe`, read live CC/PPCIE modes, or require every GPU on the node to support the feature. The provisioner currently emits human-readable status rather than a machine-readable format, so these checks depend on its current output layout.
+The GPU checks require [`kata-device-provisioner`](https://github.com/kata-containers/kata-device-provisioner) in `PATH`, or at the path in `KRAB_PROVISIONER`. They call its read-only `status --all` command so a GPU already set to another CC mode is still included. These checks report hardware capability for the supported NVIDIA GPUs; they do not call `status --probe`, read live CC/PPCIE modes, or require every GPU on the node to support the feature. The provisioner currently emits human-readable status rather than a machine-readable format, so these checks depend on its current output layout.
 
 ## Container image
 

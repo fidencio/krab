@@ -16,6 +16,8 @@ pub fn check(kind: Check, paths: &Paths) -> Result {
     let program = env::var_os("KRAB_PROVISIONER").unwrap_or_else(|| PROGRAM.into());
     let output = match Command::new(&program)
         .arg("status")
+        // Include devices already provisioned in another CC mode.
+        .arg("--all")
         .arg("--sysfs")
         .arg(&paths.sys)
         .output()

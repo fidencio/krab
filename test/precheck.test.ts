@@ -117,6 +117,17 @@ test('one capable node preserves a choice in a mixed cluster', () => {
   assert.equal(allNodesLack([blocked, possible], 'tdx'), false)
 })
 
+test('current GPU CC mode does not rule out passthrough or PPCIE deployment', () => {
+  const node = report()
+  node.gpus.cc = probe('no')
+  node.gpus.ppcie = probe('yes')
+  assert.equal(unavailableFamilyReason(family, [node]), null)
+  assert.equal(unavailableModeReason('off', [node], [], family), null)
+  node.checks.tdx = probe('yes')
+  node.gpus.ppcie = probe('no')
+  assert.equal(unavailableModeReason('ppcie', [node], ['tdx'], family), null)
+})
+
 test('the first page can rule out an unsupported vendor path', () => {
   const intel = { hardwareFamilies: [], runtime: { shims: [
     { id: 'qemu-tdx-runtime-rs', supportedArches: ['amd64'] },
