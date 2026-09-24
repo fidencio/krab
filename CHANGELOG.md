@@ -2,6 +2,20 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.0-alpha.7] - 2026-09-24
+
+### Added
+
+- Custom deployments can combine CPU TEE and NVIDIA GPU paths across selected
+  target architectures, with GPU components included when needed.
+- The front page shows the pinned component versions before deployment selection.
+
+### Changed
+
+- Pre-flight check and GPU model choices now appear with uploaded results, with
+  a more compact failing-node report.
+- The Local deployment path is now called Custom.
+
 ## [0.1.0-alpha.6] - 2026-09-24
 
 ### Fixed

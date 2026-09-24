@@ -2,8 +2,8 @@ apiVersion: v2
 name: krab
 description: Kata Reference Architecture Builder umbrella chart
 type: application
-version: 0.1.0-alpha.6
-appVersion: "0.1.0-alpha.6"
+version: 0.1.0-alpha.7
+appVersion: "0.1.0-alpha.7"
 home: https://github.com/fidencio/krab
 icon: https://fidencio.github.io/krab/favicon.png
 sources:
@@ -20,6 +20,12 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/prerelease: "true"
   artifacthub.io/changes: |
+    - kind: added
+      description: Combine CPU TEE and NVIDIA GPU paths in Custom deployments.
+    - kind: added
+      description: Show pinned component versions before deployment selection.
+    - kind: changed
+      description: Simplify pre-flight report choices and failing-node details.
     - kind: fixed
       description: Ignore existing GPU CC mode when selecting deployment options.
     - kind: changed
