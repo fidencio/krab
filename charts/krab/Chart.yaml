@@ -2,8 +2,8 @@ apiVersion: v2
 name: krab
 description: Kata Reference Architecture Builder umbrella chart
 type: application
-version: 0.1.0-alpha.5
-appVersion: "0.1.0-alpha.5"
+version: 0.1.0-alpha.6
+appVersion: "0.1.0-alpha.6"
 home: https://github.com/fidencio/krab
 icon: https://fidencio.github.io/krab/favicon.png
 sources:
@@ -20,6 +20,10 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/prerelease: "true"
   artifacthub.io/changes: |
+    - kind: fixed
+      description: Ignore existing GPU CC mode when selecting deployment options.
+    - kind: changed
+      description: Release the pre-flight image and chart with KRAB.
     - kind: fixed
       description: Use the published v0.2.0-rc.0 kata-device-plugin image tag.
     - kind: added

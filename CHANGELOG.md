@@ -2,6 +2,17 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.0-alpha.6] - 2026-09-24
+
+### Fixed
+
+- Existing NVIDIA GPU CC and PPCIE modes no longer block deployment choices
+  that the provisioner can configure.
+
+### Changed
+
+- The pre-flight image and chart are now published with the KRAB release.
+
 ## [0.1.0-alpha.5] - 2026-09-24
 
 ### Added

@@ -126,7 +126,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
   )
   assert.equal(
     catalog.plannedArchitecture.charts.krab.version,
-    '0.1.0-alpha.5',
+    '0.1.0-alpha.6',
   )
   assert.deepEqual(catalog.plannedArchitecture.attestation.trustee, {
     displayName: 'Trustee',
@@ -353,7 +353,7 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
   const importedValues = importValuesBundle(
     catalog,
     stringify(configuredValues),
-    'local-lab-0.1.0-alpha.5-values.yaml',
+    'local-lab-0.1.0-alpha.6-values.yaml',
   )
   assert.equal(importedValues.vendorId, 'local')
   assert.equal(importedValues.deploymentName, 'local-lab')
@@ -817,21 +817,21 @@ test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
   assert.equal(generatedValues['kata-deploy'].containerd?.userDropIn, undefined)
   assert.equal(
     install,
-    'helm upgrade --install krab oci://ghcr.io/fidencio/krab --version 0.1.0-alpha.5 --namespace kata-system --create-namespace --values krab-0.1.0-alpha.5-values.yaml',
+    'helm upgrade --install krab oci://ghcr.io/fidencio/krab --version 0.1.0-alpha.6 --namespace kata-system --create-namespace --values krab-0.1.0-alpha.6-values.yaml',
   )
   assert.equal(
     buildInstallScript(catalog, 'My production/Kata'),
-    'helm upgrade --install my-production-kata oci://ghcr.io/fidencio/krab --version 0.1.0-alpha.5 --namespace kata-system --create-namespace --values my-production-kata-0.1.0-alpha.5-values.yaml',
+    'helm upgrade --install my-production-kata oci://ghcr.io/fidencio/krab --version 0.1.0-alpha.6 --namespace kata-system --create-namespace --values my-production-kata-0.1.0-alpha.6-values.yaml',
   )
   assert.equal(
     buildValuesFileName(catalog, ''),
-    'krab-0.1.0-alpha.5-values.yaml',
+    'krab-0.1.0-alpha.6-values.yaml',
   )
 
   const imported = importValuesBundle(
     catalog,
     values,
-    'production-kata-0.1.0-alpha.5-values.yaml',
+    'production-kata-0.1.0-alpha.6-values.yaml',
   )
   assert.equal(imported.vendorId, 'nvidia')
   assert.equal(imported.deploymentName, 'production-kata')
