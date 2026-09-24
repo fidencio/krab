@@ -179,7 +179,7 @@ nav a:hover {
 }
 
 .component-versions {
-  width: min(760px, calc(100% - 48px));
+  width: min(680px, calc(100% - 48px));
   margin: 8px auto 0;
   padding: 16px 0;
   border-block: 1px solid var(--line);
@@ -188,7 +188,7 @@ nav a:hover {
 .component-versions > header {
   display: flex;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .component-versions h3 {
@@ -197,32 +197,18 @@ nav a:hover {
   font-size: 15px;
 }
 
-.component-version-row > strong {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.component-version-row {
-  display: grid;
-  grid-template-columns: 145px minmax(0, 1fr);
-  gap: 12px;
-  padding: 5px 0;
-}
-
-.component-version-row > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 18px;
-  color: var(--ink);
-  font-size: 12px;
-}
-
-.component-version-row b {
-  margin-left: 3px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-weight: 600;
-}
+.component-versions table { width: 100%; border-collapse: collapse; table-layout: fixed; text-align: left; }
+.component-versions thead th { padding: 0 8px 6px; color: var(--muted); font-size: 11px; font-weight: 600; }
+.component-versions thead th:nth-child(1) { width: 32%; }
+.component-versions thead th:nth-child(2) { width: 38%; }
+.component-versions thead th:nth-child(3) { width: 30%; }
+.component-versions tbody th,
+.component-versions tbody td { padding: 5px 8px; font-size: 12px; line-height: 1.35; vertical-align: top; }
+.component-versions tbody th { color: var(--muted); font-weight: 500; }
+.component-versions tbody td { color: var(--ink); }
+.component-versions tbody + tbody tr:first-child > * { border-top: 1px solid var(--line); padding-top: 9px; }
+.component-versions tbody + tbody tr:last-child > * { padding-bottom: 9px; }
+.component-versions code { color: var(--ink); font-size: 12px; font-weight: 600; white-space: nowrap; }
 
 .node-precheck {
   width: min(760px, calc(100% - 48px));
@@ -4543,7 +4529,12 @@ nav a:hover,
 
 @media (max-width: 480px) {
   .component-versions { width: 100%; }
-  .component-version-row { grid-template-columns: 1fr; gap: 2px; padding: 7px 0; }
+  .component-versions thead th:nth-child(1) { width: 31%; }
+  .component-versions thead th:nth-child(2) { width: 35%; }
+  .component-versions thead th:nth-child(3) { width: 34%; }
+  .component-versions tbody th,
+  .component-versions tbody td { padding-inline: 4px; font-size: 11px; }
+  .component-versions code { font-size: 11px; white-space: normal; overflow-wrap: anywhere; }
   .node-precheck { width: 100%; }
   .node-precheck-content { padding-left: 0; }
   .precheck-upload-step { flex-wrap: wrap; }

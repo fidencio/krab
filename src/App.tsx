@@ -917,14 +917,18 @@ function App() {
                 <header>
                   <h3 id="component-versions-title">Component versions</h3>
                 </header>
-                {frontPageVersions.map(({ label, components }) => (
-                  <div className="component-version-row" key={label}>
-                    <strong>{label}</strong>
-                    <div>{components.map(({ name, version }) => (
-                      <span key={name}><span>{name}</span> <b>{version}</b></span>
-                    ))}</div>
-                  </div>
-                ))}
+                <table>
+                  <thead><tr><th scope="col">Used for</th><th scope="col">Component</th><th scope="col">Version</th></tr></thead>
+                  {frontPageVersions.map(({ label, components }) => (
+                    <tbody key={label}>{components.map(({ name, version }, index) => (
+                      <tr key={name}>
+                        {index === 0 && <th scope="rowgroup" rowSpan={components.length}>{label}</th>}
+                        <td>{name}</td>
+                        <td><code>{version}</code></td>
+                      </tr>
+                    ))}</tbody>
+                  ))}
+                </table>
               </section>
 
               <NodePrecheckPanel
