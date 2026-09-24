@@ -916,7 +916,6 @@ function App() {
               <section className="component-versions" aria-labelledby="component-versions-title">
                 <header>
                   <h3 id="component-versions-title">Component versions</h3>
-                  <span>Helm charts pinned by this builder</span>
                 </header>
                 {frontPageVersions.map(({ label, components }) => (
                   <div className="component-version-row" key={label}>
