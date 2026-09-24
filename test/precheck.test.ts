@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import test from 'node:test'
 import { parse } from 'yaml'
+import catalog from '../src/generated/catalog.json' with { type: 'json' }
 import {
   allNodesLack,
   erofsPrecheckStatus,
@@ -10,9 +11,12 @@ import {
   parseNodePrecheck,
   parsePrecheckUpload,
   unavailableFamilyReason,
+  unavailableFamilyForChecks,
   unavailableModeReason,
+  unavailableModeForChecks,
   unavailableShimReason,
   unavailableVendorReason,
+  unavailableVendorForChecks,
   type NodePrecheck,
 } from '../src/lib/precheck.ts'
 import type { HardwareFamilyCatalog, VendorCatalog } from '../src/lib/artifacts.ts'
@@ -122,6 +126,44 @@ test('the first page can rule out an unsupported vendor path', () => {
   assert.match(unavailableVendorReason(intel, [node])!, /No uploaded node/)
   node.checks.tdx = probe('unknown')
   assert.equal(unavailableVendorReason(intel, [node]), null)
+})
+
+test('selected checks and GPU models restrict vendor cards', () => {
+  const vendors = Object.fromEntries(catalog.vendors.map((vendor) => [vendor.id, vendor as VendorCatalog]))
+  const available = (checks: Array<'tdx' | 'snp' | 'se' | 'gpu'>, models: string[] = [], nodes: NodePrecheck[] = []) =>
+    catalog.vendors.filter((vendor) =>
+      !unavailableVendorForChecks(vendor as VendorCatalog, nodes, checks, models)).map(({ id }) => id)
+
+  assert.deepEqual(available(['tdx']), ['nvidia', 'intel'])
+  assert.deepEqual(available(['snp']), ['nvidia', 'amd'])
+  assert.deepEqual(available(['se']), ['ibm'])
+  assert.deepEqual(available(['gpu']), ['nvidia'])
+  assert.deepEqual(available(['tdx', 'gpu'], ['H100']), ['nvidia'])
+  assert.deepEqual(available(['se', 'gpu']), [])
+  assert.deepEqual(available(['tdx', 'snp']), [])
+  assert.match(unavailableVendorForChecks(vendors.nvidia, [], ['tdx', 'gpu'], ['GB200'])!, /No NVIDIA GPU path/)
+
+  const node = report()
+  node.checks.tdx = probe('yes')
+  assert.deepEqual(available(['tdx', 'gpu'], ['H100'], [node]), ['nvidia'])
+  assert.deepEqual(available(['tdx', 'gpu'], ['H200'], [node]), [])
+  node.checks.tdx = probe('no')
+  assert.deepEqual(available(['tdx', 'gpu'], ['H100'], [node]), [])
+})
+
+test('NVIDIA GPU families and modes follow the selected checks', () => {
+  const nvidia = catalog.vendors.find(({ id }) => id === 'nvidia')!
+  const hopper = nvidia.hardwareFamilies.find(({ id }) => id === 'hopper') as HardwareFamilyCatalog
+  const blackwell = nvidia.hardwareFamilies.find(({ id }) => id === 'blackwell') as HardwareFamilyCatalog
+  const hopperOff = hopper.modes.find(({ id }) => id === 'off')!
+  const hopperPpcie = hopper.modes.find(({ id }) => id === 'ppcie')!
+  const blackwellOn = blackwell.modes.find(({ id }) => id === 'on')!
+
+  assert.equal(unavailableFamilyForChecks(hopper, [], ['tdx', 'gpu'], ['H100']), null)
+  assert.match(unavailableFamilyForChecks(blackwell, [], ['tdx', 'gpu'], ['H100'])!, /models/)
+  assert.match(unavailableModeForChecks(hopperOff, hopper, [], ['tdx', 'gpu'], ['H100'])!, /CPU TEE/)
+  assert.equal(unavailableModeForChecks(hopperPpcie, hopper, [], ['tdx', 'gpu'], ['H100']), null)
+  assert.equal(unavailableModeForChecks(blackwellOn, blackwell, [], ['snp', 'gpu'], ['B200']), null)
 })
 
 test('pre-check chart reuses the pinned dispatcher and aggregates all node reports', async () => {

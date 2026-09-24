@@ -1,6 +1,7 @@
 import type { HardwareFamilyCatalog, VendorCatalog } from './artifacts'
 
 export type ProbeStatus = 'yes' | 'no' | 'unknown' | 'review'
+export type RequestedCheck = 'tdx' | 'snp' | 'se' | 'gpu'
 type Probe = { status: ProbeStatus; reason: string }
 
 export type NodePrecheck = {
@@ -142,4 +143,87 @@ export function unavailableVendorReason(vendor: VendorCatalog, reports: NodePrec
   if (vendor.runtime.shims.some((shim) =>
     (vendor.hardwareFamilies.length === 0 || shim.userSelectable) && !unavailableShimReason(shim, reports))) return null
   return 'No uploaded node supports this deployment path.'
+}
+
+function reportsMatchingChecks(reports: NodePrecheck[], checks: RequestedCheck[], gpuModels: string[]) {
+  const tees = checks.filter((check) => check !== 'gpu')
+  const requiredModels = checks.includes('gpu') ? gpuModels : []
+  return reports.filter((report) =>
+    report.checks.kvm.status !== 'no' &&
+    tees.every((tee) => report.checks[tee].status !== 'no') &&
+    (!checks.includes('gpu') || (
+      report.gpus.nvidia.status !== 'no' &&
+      (requiredModels.length === 0 || report.gpus.devices.length === 0 ||
+        requiredModels.some((model) => hasGpuModel(report, model))))))
+}
+
+export function unavailableFamilyForChecks(
+  family: HardwareFamilyCatalog,
+  reports: NodePrecheck[],
+  checks: RequestedCheck[],
+  gpuModels: string[],
+): string | null {
+  const tees = checks.filter((check) => check !== 'gpu')
+  const requiredModels = checks.includes('gpu') ? gpuModels : []
+  if (requiredModels.length > 0 && !family.models.some((model) => requiredModels.includes(model)))
+    return 'This GPU family does not match the selected models.'
+  if (tees.length > 0 && !family.modes.some((mode) => mode.supportedCpuTeeIds.includes(tees[0])))
+    return 'This GPU family does not support the selected CPU TEE.'
+  const candidates = reportsMatchingChecks(reports, checks, gpuModels)
+  if (reports.length > 0 && candidates.length === 0)
+    return 'No uploaded node meets all selected checks.'
+  return unavailableFamilyReason(family, candidates)
+}
+
+export function unavailableModeForChecks(
+  mode: { id: string; supportedCpuTeeIds: string[] },
+  family: HardwareFamilyCatalog,
+  reports: NodePrecheck[],
+  checks: RequestedCheck[],
+  gpuModels: string[],
+): string | null {
+  const tee = checks.find((check) => check !== 'gpu')
+  if (tee && !mode.supportedCpuTeeIds.includes(tee))
+    return 'This mode does not use the selected CPU TEE.'
+  const familyReason = unavailableFamilyForChecks(family, reports, checks, gpuModels)
+  if (familyReason) return familyReason
+  return unavailableModeReason(mode.id, reportsMatchingChecks(reports, checks, gpuModels),
+    tee ? [tee] : mode.supportedCpuTeeIds, family)
+}
+
+export function unavailableVendorForChecks(
+  vendor: VendorCatalog,
+  reports: NodePrecheck[],
+  checks: RequestedCheck[],
+  gpuModels: string[],
+): string | null {
+  if (checks.length === 0) return unavailableVendorReason(vendor, reports)
+  const tees = checks.filter((check) => check !== 'gpu')
+  const requiredModels = checks.includes('gpu') ? gpuModels : []
+  if (tees.length > 1) return 'Selected CPU TEEs cannot run on the same node.'
+  if (checks.includes('gpu') && vendor.id !== 'nvidia')
+    return 'This path does not configure NVIDIA GPUs.'
+  if (tees.length > 0 && vendor.id !== 'nvidia' &&
+      !vendor.runtime.shims.some(({ id }) => id.split('-').includes(tees[0])))
+    return `This path does not configure ${tees[0].toUpperCase()}.`
+
+  const candidates = reportsMatchingChecks(reports, checks, gpuModels)
+  if (reports.length > 0 && candidates.length === 0)
+    return 'No uploaded node meets all selected checks.'
+
+  if (vendor.id === 'nvidia') {
+    const families = vendor.hardwareFamilies.filter((family) =>
+      family.availability === 'available' &&
+      (requiredModels.length === 0 || family.models.some((model) => requiredModels.includes(model))) &&
+      (tees.length === 0 || family.modes.some((mode) => mode.supportedCpuTeeIds.includes(tees[0]))))
+    if (families.length === 0) return 'No NVIDIA GPU path matches the selected checks and models.'
+    if (reports.length > 0 && !families.some((family) =>
+      !unavailableFamilyForChecks(family, candidates, checks, gpuModels) &&
+      (tees.length === 0 || family.modes.some((mode) =>
+        mode.supportedCpuTeeIds.includes(tees[0]) &&
+        !unavailableModeForChecks(mode, family, candidates, checks, gpuModels)))))
+      return 'No uploaded node supports a matching NVIDIA GPU path.'
+    return null
+  }
+  return unavailableVendorReason(vendor, candidates)
 }

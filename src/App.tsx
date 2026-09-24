@@ -23,11 +23,12 @@ import {
   allNodesLack,
   erofsPrecheckStatus,
   parsePrecheckUpload,
-  unavailableFamilyReason,
-  unavailableModeReason,
+  unavailableFamilyForChecks,
+  unavailableModeForChecks,
   unavailableShimReason,
-  unavailableVendorReason,
+  unavailableVendorForChecks,
   type NodePrecheck,
+  type RequestedCheck,
 } from './lib/precheck'
 import {
   buildCustomRuntimeClass,
@@ -290,7 +291,17 @@ function App() {
   const [step, setStep] = useState<1 | 2>(1)
   const [nodeReports, setNodeReports] = useState<Array<{ name: string; report: NodePrecheck }>>([])
   const [precheckError, setPrecheckError] = useState('')
+  const [selectedChecks, setSelectedChecks] = useState<RequestedCheck[]>([])
+  const [selectedGpuModels, setSelectedGpuModels] = useState<string[]>([])
   const reports = nodeReports.map(({ report }) => report)
+  const vendorPrecheckReason = (vendor: VendorCatalog) =>
+    unavailableVendorForChecks(vendor, reports, selectedChecks, selectedGpuModels)
+  const familyPrecheckReason = (family: VendorCatalog['hardwareFamilies'][number]) =>
+    unavailableFamilyForChecks(family, reports, selectedChecks, selectedGpuModels)
+  const modePrecheckReason = (
+    mode: VendorCatalog['hardwareFamilies'][number]['modes'][number],
+    family: VendorCatalog['hardwareFamilies'][number],
+  ) => unavailableModeForChecks(mode, family, reports, selectedChecks, selectedGpuModels)
   const [selectedVendorId, setSelectedVendorId] = useState(catalog.vendors[0]?.id ?? '')
   const selectedVendor = catalog.vendors.find(({ id }) => id === selectedVendorId) ??
     catalog.vendors[0]
@@ -355,10 +366,12 @@ function App() {
   )
   const unsupportedSelection = selectedVendor.hardwareFamilies.some((family) => {
     const selection = selections[family.id]
+    const mode = family.modes.find(({ id }) => id === selection?.modeId)
     return Boolean(selection?.modeId && (
-      unavailableFamilyReason(family, reports) ||
-      unavailableModeReason(selection.modeId, reports, family.modes.find(({ id }) => id === selection.modeId)?.supportedCpuTeeIds, family) ||
-      selection.cpuTeeIds.some((id) => allNodesLack(reports, id))
+      familyPrecheckReason(family) ||
+      (mode && modePrecheckReason(mode, family)) ||
+      selection.cpuTeeIds.some((id) => allNodesLack(reports, id) ||
+        selectedChecks.some((check) => check !== 'gpu' && check !== id))
     ))
   }) || runtime.selectedShimIds.some((id) => {
     const shim = selectedVendor.runtime.shims.find((item) => item.id === id)
@@ -474,7 +487,7 @@ function App() {
       : hasHardwareSelection || hasStandaloneRuntimeSelection)
 
   const selectVendor = (vendor: VendorCatalog) => {
-    if (unavailableVendorReason(vendor, reports)) return
+    if (vendorPrecheckReason(vendor)) return
     setImportMessage(null)
     setSelectedVendorId(vendor.id)
     setSelections(initialSelections(vendor))
@@ -520,7 +533,8 @@ function App() {
   const selectMode = (familyId: string, modeId: string | null) => {
     const family = selectedVendor.hardwareFamilies.find(({ id }) => id === familyId)
     if (!family || family.availability !== 'available') return
-    if (unavailableFamilyReason(family, reports) || (modeId && unavailableModeReason(modeId, reports, family.modes.find(({ id }) => id === modeId)?.supportedCpuTeeIds, family))) return
+    if (familyPrecheckReason(family) || (modeId && family.modes.some((mode) =>
+      mode.id === modeId && Boolean(modePrecheckReason(mode, family))))) return
     const mode = family.modes.find(({ id }) => id === modeId)
     const supportedCpuTeeIds = mode?.supportedCpuTeeIds ?? []
     setSelections((current) => ({
@@ -543,7 +557,7 @@ function App() {
   const toggleFamily = (familyId: string, enabled: boolean) => {
     const family = selectedVendor.hardwareFamilies.find(({ id }) => id === familyId)
     if (!family || family.availability !== 'available') return
-    if (enabled && unavailableFamilyReason(family, reports)) return
+    if (enabled && familyPrecheckReason(family)) return
     setSelections((current) => ({
       ...current,
       [familyId]: enabled
@@ -557,6 +571,7 @@ function App() {
   }
 
   const toggleCpuTee = (familyId: string, cpuTeeId: string) => {
+    if (selectedChecks.some((check) => check !== 'gpu' && check !== cpuTeeId)) return
     if (allNodesLack(reports, cpuTeeId) && !selections[familyId]?.cpuTeeIds.includes(cpuTeeId)) return
     setSelections((current) => ({
       ...current,
@@ -829,6 +844,10 @@ function App() {
               <NodePrecheckPanel
                 nodeReports={nodeReports}
                 error={precheckError}
+                selectedChecks={selectedChecks}
+                setSelectedChecks={setSelectedChecks}
+                selectedGpuModels={selectedGpuModels}
+                setSelectedGpuModels={setSelectedGpuModels}
                 onFiles={(files) => void loadNodeReports(files)}
                 onClear={() => {
                   setNodeReports([])
@@ -847,8 +866,8 @@ function App() {
                       <button
                         className="platform-row"
                         key={vendor.id}
-                        disabled={Boolean(unavailableVendorReason(vendor, reports))}
-                        title={unavailableVendorReason(vendor, reports) ?? undefined}
+                        disabled={Boolean(vendorPrecheckReason(vendor))}
+                        title={vendorPrecheckReason(vendor) ?? undefined}
                         onClick={() => selectVendor(vendor)}
                       >
                         <span className={`platform-row-brand vendor-${vendor.id}`}>
@@ -856,7 +875,7 @@ function App() {
                           <strong>{vendor.displayName}</strong>
                         </span>
                         <span className="platform-row-description">{vendor.description}
-                          {unavailableVendorReason(vendor, reports) && <small className="platform-row-precheck">{unavailableVendorReason(vendor, reports)}</small>}
+                          {vendorPrecheckReason(vendor) && <small className="platform-row-precheck">{vendorPrecheckReason(vendor)}</small>}
                         </span>
                         <span className="platform-row-capabilities">
                           {vendor.capabilities.map(({ id }) => capabilityName(id)).join(' · ')}
@@ -879,15 +898,15 @@ function App() {
                   <button
                     className="platform-row"
                     key={vendor.id}
-                    disabled={Boolean(unavailableVendorReason(vendor, reports))}
-                    title={unavailableVendorReason(vendor, reports) ?? undefined}
+                    disabled={Boolean(vendorPrecheckReason(vendor))}
+                    title={vendorPrecheckReason(vendor) ?? undefined}
                     onClick={() => selectVendor(vendor)}
                   >
                     <span className={`platform-row-brand vendor-${vendor.id}`}>
                       <img src={logoFor(vendor, theme)} alt={vendor.displayName} />
                     </span>
                     <span className="platform-row-description">{vendor.description}
-                      {unavailableVendorReason(vendor, reports) && <small className="platform-row-precheck">{unavailableVendorReason(vendor, reports)}</small>}
+                      {vendorPrecheckReason(vendor) && <small className="platform-row-precheck">{vendorPrecheckReason(vendor)}</small>}
                     </span>
                     <span className="platform-row-capabilities">
                       {vendor.capabilities.map(({ id }) => capabilityName(id)).join(' · ')}
@@ -2184,13 +2203,13 @@ function App() {
                   {selectedVendor.hardwareFamilies.map((family) => (
                     <details
                       className={`profile-card ${
-                        family.availability === 'pending' || unavailableFamilyReason(family, reports) ? 'pending' : ''
+                        family.availability === 'pending' || familyPrecheckReason(family) ? 'pending' : ''
                       }`}
                       key={family.id}
                     >
                       <summary
                         onClick={(event) => {
-                          if (family.availability === 'available' && !unavailableFamilyReason(family, reports)) {
+                          if (family.availability === 'available' && !familyPrecheckReason(family)) {
                             event.preventDefault()
                             const enabled = isFamilyEnabled(
                               selections[family.id],
@@ -2211,7 +2230,7 @@ function App() {
                             <input
                               type="checkbox"
                               aria-label={`Enable ${family.displayName}`}
-                              disabled={family.availability !== 'available' || Boolean(unavailableFamilyReason(family, reports) && !isFamilyEnabled(selections[family.id]))}
+                              disabled={family.availability !== 'available' || Boolean(familyPrecheckReason(family) && !isFamilyEnabled(selections[family.id]))}
                               checked={isFamilyEnabled(
                                 selections[family.id],
                               )}
@@ -2235,11 +2254,11 @@ function App() {
                           </div>
                         </div>
                         <div className="profile-summary-status">
-                          {(family.availabilityReason || unavailableFamilyReason(family, reports) ||
+                          {(family.availabilityReason || familyPrecheckReason(family) ||
                             isFamilyEnabled(selections[family.id])) && (
                             <span
                               className={
-                                family.availability === 'pending' || unavailableFamilyReason(family, reports)
+                                family.availability === 'pending' || familyPrecheckReason(family)
                                   ? 'pending'
                                   : !selections[family.id]?.modeId ||
                                       needsCpuSelection(selections[family.id])
@@ -2247,7 +2266,7 @@ function App() {
                                   : ''
                               }
                             >
-                              {family.availabilityReason ?? unavailableFamilyReason(family, reports) ??
+                              {family.availabilityReason ?? familyPrecheckReason(family) ??
                                 profileSummary(
                                   selectedVendor,
                                   selections[family.id],
@@ -2259,14 +2278,14 @@ function App() {
                           )}
                         </div>
                       </summary>
-                      {(family.availability === 'pending' || unavailableFamilyReason(family, reports) ||
+                      {(family.availability === 'pending' || familyPrecheckReason(family) ||
                         isFamilyEnabled(selections[family.id])) && (
                         <div className="profile-options">
-                        {family.availability === 'pending' || unavailableFamilyReason(family, reports) ? (
+                        {family.availability === 'pending' || familyPrecheckReason(family) ? (
                           <div className="profile-unavailable">
                             <AlertTriangle size={17} />
                             <div>
-                              <strong>{family.availabilityReason ?? unavailableFamilyReason(family, reports)}</strong>
+                              <strong>{family.availabilityReason ?? familyPrecheckReason(family)}</strong>
                               <span>
                                 Architecture: {family.supportedArches.join(' · ')}
                               </span>
@@ -2280,10 +2299,10 @@ function App() {
                         ) : (
                           <>
                             {family.modes.map((mode) => (
-                              <label className="mode-option" key={mode.id} title={unavailableModeReason(mode.id, reports, mode.supportedCpuTeeIds, family) ?? undefined}>
+                              <label className="mode-option" key={mode.id} title={modePrecheckReason(mode, family) ?? undefined}>
                                 <input
                                   type="radio"
-                                  disabled={Boolean(unavailableModeReason(mode.id, reports, mode.supportedCpuTeeIds, family))}
+                                  disabled={Boolean(modePrecheckReason(mode, family))}
                                   name={`${family.id}-mode`}
                                   checked={selections[family.id]?.modeId === mode.id}
                                   onChange={() => selectMode(family.id, mode.id)}
@@ -2293,7 +2312,7 @@ function App() {
                                     {mode.displayName}
                                     {mode.badge && <em>{mode.badge}</em>}
                                   </strong>
-                                  {unavailableModeReason(mode.id, reports, mode.supportedCpuTeeIds, family) && <small>{unavailableModeReason(mode.id, reports, mode.supportedCpuTeeIds, family)}</small>}
+                                  {modePrecheckReason(mode, family) && <small>{modePrecheckReason(mode, family)}</small>}
                                 </span>
                               </label>
                             ))}
@@ -2341,7 +2360,8 @@ function App() {
                                       >
                                         <input
                                           type="checkbox"
-                                          disabled={allNodesLack(reports, tee.id) && !selections[family.id]?.cpuTeeIds.includes(tee.id)}
+                                          disabled={selectedChecks.some((check) => check !== 'gpu' && check !== tee.id) ||
+                                            (allNodesLack(reports, tee.id) && !selections[family.id]?.cpuTeeIds.includes(tee.id))}
                                           checked={
                                             selections[family.id]?.cpuTeeIds.includes(
                                               tee.id,
@@ -2353,7 +2373,9 @@ function App() {
                                         />
                                         <span>
                                           <strong>{tee.displayName}</strong>
-                                          {allNodesLack(reports, tee.id) && <small>Unavailable on uploaded nodes</small>}
+                                          {selectedChecks.some((check) => check !== 'gpu' && check !== tee.id)
+                                            ? <small>Outside the selected checks</small>
+                                            : allNodesLack(reports, tee.id) && <small>Unavailable on uploaded nodes</small>}
                                         </span>
                                       </label>
                                       ))}

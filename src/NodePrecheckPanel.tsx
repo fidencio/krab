@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, type Dispatch, type SetStateAction } from 'react'
 import { Check, Copy, Upload } from 'lucide-react'
 import packageData from '../package.json'
-import { hasGpuModel, type NodePrecheck } from './lib/precheck'
+import { hasGpuModel, type NodePrecheck, type RequestedCheck } from './lib/precheck'
 
 const readinessChecks = [
   { id: 'tdx', label: 'Intel TDX' },
@@ -9,7 +9,6 @@ const readinessChecks = [
   { id: 'se', label: 'IBM SEL' },
   { id: 'gpu', label: 'NVIDIA GPU' },
 ] as const
-type ReadinessCheck = typeof readinessChecks[number]['id']
 const gpuModels = ['H100', 'H200', 'H800', 'H20', 'B200', 'B300', 'GB200', 'GB300'] as const
 const pageSize = 10
 
@@ -24,7 +23,7 @@ function shortReason(label: string, status: string, reason: string) {
   return reason
 }
 
-function readinessResult(report: NodePrecheck, check: ReadinessCheck, selectedGpuModels: string[]) {
+function readinessResult(report: NodePrecheck, check: RequestedCheck, selectedGpuModels: string[]) {
   const probes = check === 'gpu'
     ? [
       { label: 'KVM', probe: report.checks.kvm },
@@ -52,15 +51,21 @@ export function NodePrecheckPanel({
   error,
   onFiles,
   onClear,
+  selectedChecks,
+  setSelectedChecks,
+  selectedGpuModels,
+  setSelectedGpuModels,
 }: {
   nodeReports: Array<{ name: string; report: NodePrecheck }>
   error: string
   onFiles: (files: FileList | null) => void
   onClear: () => void
+  selectedChecks: RequestedCheck[]
+  setSelectedChecks: Dispatch<SetStateAction<RequestedCheck[]>>
+  selectedGpuModels: string[]
+  setSelectedGpuModels: Dispatch<SetStateAction<string[]>>
 }) {
   const [copied, setCopied] = useState(false)
-  const [selectedChecks, setSelectedChecks] = useState<ReadinessCheck[]>([])
-  const [selectedGpuModels, setSelectedGpuModels] = useState<string[]>([])
   const [nodeQuery, setNodeQuery] = useState('')
   const [page, setPage] = useState(0)
   const chartVersion = import.meta.env.BASE_URL.includes('/dev/')
