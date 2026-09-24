@@ -1,0 +1,64 @@
+{{- $name := include "krab-precheck.name" . -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}-dispatcher
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "0"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 1200
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ $name }}-dispatcher
+      containers:
+        - name: dispatcher
+          image: {{ .Values.dispatcherImage | quote }}
+          args:
+            - --job-template=/etc/krab/node-job.yaml
+            - --name-prefix={{ $name }}
+            - --namespace={{ .Release.Namespace }}
+            - --parallelism={{ .Values.parallelism }}
+            - --owner-job-name={{ $name }}-dispatcher
+            - --tracking-label-prefix={{ $name }}
+            - --node-selector=krab/preflight=true,kubernetes.io/os=linux
+            - --wait-for-nodes-secs=0
+          volumeMounts:
+            - {name: scripts, mountPath: /etc/krab, readOnly: true}
+      volumes:
+        - name: scripts
+          configMap: {name: {{ $name }}-files}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}-results
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 600
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ $name }}-collector
+      containers:
+        - name: collector
+          image: {{ printf "%s:%s" .Values.probeImage.repository .Chart.Version | quote }}
+          command: [/bin/bash, /etc/krab/collect.sh]
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef: {fieldPath: metadata.namespace}
+            - {name: OWNER_LABEL, value: {{ $name | quote }}}
+            - {name: NODE_SELECTOR, value: "krab/preflight=true,kubernetes.io/os=linux"}
+          volumeMounts:
+            - {name: scripts, mountPath: /etc/krab, readOnly: true}
+      volumes:
+        - name: scripts
+          configMap: {name: {{ $name }}-files}

@@ -1,0 +1,26 @@
+# Build KRAB's host checks for the target architecture.
+FROM --platform=$TARGETPLATFORM rust:1.95-slim AS preflight-builder
+WORKDIR /build
+COPY preflight/Cargo.toml preflight/Cargo.lock ./
+COPY preflight/src ./src
+RUN cargo build --release --locked
+
+# Use the released read-only inventory command; do not rebuild its Rust sources.
+FROM --platform=linux/amd64 ghcr.io/kata-containers/kata-device-provisioner:0.1.0-alpha.1@sha256:a3d9206ad05ed667eb8cd4fc0bb066d2a402ced0ffb3226fc8b18dfb49f422ff AS provisioner-amd64
+FROM --platform=linux/arm64 ghcr.io/kata-containers/kata-device-provisioner:0.1.0-alpha.1@sha256:a3d9206ad05ed667eb8cd4fc0bb066d2a402ced0ffb3226fc8b18dfb49f422ff AS provisioner-arm64
+
+FROM debian:trixie-slim
+
+LABEL org.opencontainers.image.source="https://github.com/fidencio/krab"
+LABEL org.opencontainers.image.description="KRAB read-only node capability pre-check"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends bash jq pciutils util-linux curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=provisioner-amd64 /kata-device-provisioner /opt/krab/kata-device-provisioner-amd64
+COPY --from=provisioner-arm64 /kata-device-provisioner /opt/krab/kata-device-provisioner-arm64
+COPY --from=preflight-builder /build/target/release/krab-preflight /usr/local/bin/krab-preflight
+COPY public/node-precheck.sh /usr/local/bin/node-precheck
+ENV KRAB_HOST_ROOT=/host KRAB_PREFLIGHT_HOST_ROOT=/host
+ENTRYPOINT ["/bin/bash", "/usr/local/bin/node-precheck"]

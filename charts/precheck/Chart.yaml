@@ -1,0 +1,11 @@
+apiVersion: v2
+name: krab-precheck
+description: Per-node KRAB capability pre-check and aggregated report
+type: application
+version: 0.1.0-alpha.4
+appVersion: 0.1.0-alpha.4
+home: https://github.com/fidencio/krab
+sources:
+  - https://github.com/fidencio/krab
+annotations:
+  org.opencontainers.image.source: https://github.com/fidencio/krab

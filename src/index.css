@@ -17,6 +17,8 @@
   --surface-raised: #f6f7f8;
   --line: #d5d5d5;
   --muted: #6b6b6b;
+  --status-error: #b42342;
+  --status-success: #157347;
 }
 
 :root[data-theme='dark'] {
@@ -32,6 +34,8 @@
   --surface-raised: #121c2c;
   --line: #2c3a4d;
   --muted: #a8b3c2;
+  --status-error: #ff718e;
+  --status-success: #69d9a3;
 }
 
 * {

@@ -1,0 +1,5 @@
+[package]
+name = "krab-preflight"
+version = "0.1.0"
+edition = "2021"
+description = "Read-only checks for Linux virtualization host capabilities"

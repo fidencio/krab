@@ -1,0 +1,44 @@
+{{- $name := include "krab-precheck.name" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-files
+data:
+  collect.sh: |
+{{ .Files.Get "files/collect.sh" | indent 4 }}
+  node-job.yaml: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: krab-precheck-template
+    spec:
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 3600
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          hostPID: true
+          tolerations:
+            - operator: Exists
+          containers:
+            - name: precheck
+              image: {{ printf "%s:%s" .Values.probeImage.repository .Chart.Version | quote }}
+              securityContext:
+                privileged: true
+              volumeMounts:
+                - {name: host, mountPath: /host, readOnly: true}
+                - {name: host-proc, mountPath: /host/proc, readOnly: true}
+                - {name: host-sys, mountPath: /host/sys, readOnly: true}
+                - {name: host-dev, mountPath: /host/dev, readOnly: true}
+                - {name: host-sys, mountPath: /sys, readOnly: true}
+          volumes:
+            - name: host
+              hostPath: {path: /, type: Directory}
+            - name: host-proc
+              hostPath: {path: /proc, type: Directory}
+            - name: host-sys
+              hostPath: {path: /sys, type: Directory}
+            - name: host-dev
+              hostPath: {path: /dev, type: Directory}

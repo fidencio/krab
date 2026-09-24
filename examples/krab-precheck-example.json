@@ -1,0 +1,66 @@
+{
+  "kind": "krab-cluster-precheck",
+  "schemaVersion": 1,
+  "nodes": [
+    {
+      "nodeName": "worker-h100",
+      "report": {
+        "schemaVersion": 1,
+        "kind": "krab-node-precheck",
+        "node": { "architecture": "amd64", "kernel": "6.12.0" },
+        "checks": {
+          "kvm": { "status": "yes", "reason": "/dev/kvm is present" },
+          "tdx": { "status": "yes", "reason": "TDX module sysfs and KVM are present" },
+          "snp": { "status": "no", "reason": "SEV-SNP requires an AMD CPU" },
+          "se": { "status": "no", "reason": "IBM Z Secure Execution requires s390x" },
+          "iommufd": { "status": "yes", "reason": "/dev/iommu is present" },
+          "erofs": { "status": "yes", "reason": "mkfs.erofs 1.9.3 meets 1.8.2" }
+        },
+        "erofsVersion": "1.9.3",
+        "gpus": {
+          "present": { "status": "yes", "reason": "Kata device provisioner found a GPU" },
+          "nvidia": { "status": "yes", "reason": "Kata device provisioner found an NVIDIA GPU" },
+          "cc": { "status": "yes", "reason": "Kata device provisioner identifies CC-capable hardware" },
+          "ppcie": { "status": "yes", "reason": "Kata device provisioner identifies PPCIE-capable hardware" },
+          "nvswitch": { "status": "yes", "reason": "Kata device provisioner found an NVSwitch" },
+          "devices": [
+            { "pciBusId": "0000:0a:00.0", "name": "GH100 [H100 SXM5 80GB]" }
+          ]
+        },
+        "runtime": {
+          "detected": ["rke2"],
+          "layout": { "status": "yes", "reason": "rke2 uses the containerd directory and socket expected by kata-deploy" }
+        }
+      }
+    },
+    {
+      "nodeName": "worker-amd",
+      "report": {
+        "schemaVersion": 1,
+        "kind": "krab-node-precheck",
+        "node": { "architecture": "amd64", "kernel": "6.8.0" },
+        "checks": {
+          "kvm": { "status": "yes", "reason": "/dev/kvm is present" },
+          "tdx": { "status": "no", "reason": "TDX requires an Intel CPU" },
+          "snp": { "status": "yes", "reason": "kvm_amd SEV-SNP is enabled and /dev/sev is present" },
+          "se": { "status": "no", "reason": "IBM Z Secure Execution requires s390x" },
+          "iommufd": { "status": "yes", "reason": "/dev/iommu is present" },
+          "erofs": { "status": "no", "reason": "A usable host mkfs.erofs was not found" }
+        },
+        "erofsVersion": null,
+        "gpus": {
+          "present": { "status": "no", "reason": "No display or compute PCI device was found" },
+          "nvidia": { "status": "no", "reason": "No NVIDIA GPU was found in PCI inventory" },
+          "cc": { "status": "unknown", "reason": "Provisioner inventory unavailable" },
+          "ppcie": { "status": "unknown", "reason": "Provisioner inventory unavailable" },
+          "nvswitch": { "status": "no", "reason": "No NVSwitch in provisioner inventory" },
+          "devices": []
+        },
+        "runtime": {
+          "detected": ["rke2"],
+          "layout": { "status": "review", "reason": "rke2 detected; check kata-deploy containerd.configDir and containerd.runtimeSocket" }
+        }
+      }
+    }
+  ]
+}

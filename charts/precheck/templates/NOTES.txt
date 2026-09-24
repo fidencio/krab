@@ -1,0 +1,7 @@
+Pre-flight checks completed for every Linux node labeled krab/preflight=true.
+
+Fetch the complete JSON report:
+
+  kubectl -n {{ .Release.Namespace }} logs job/{{ include "krab-precheck.name" . }}-results > krab-precheck.json
+
+Upload krab-precheck.json on the first page of KRAB.

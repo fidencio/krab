@@ -62,6 +62,62 @@ until the kata-device-plugin chart is available from its planned upstream OCI
 repository. The multi-profile kata-device-provisioner chart is a published
 alpha dependency.
 
+## Node pre-check
+
+Label the Linux nodes to check, then install the published pre-check chart:
+
+```sh
+kubectl label nodes NODE_1 NODE_2 krab/preflight=true
+helm install krab-precheck \
+  oci://ghcr.io/fidencio/krab-precheck \
+  --version 0.1.0-alpha.4 \
+  --timeout 35m \
+  --namespace krab-precheck --create-namespace &&
+kubectl --namespace krab-precheck logs \
+  job/krab-precheck-results > krab-precheck.json
+```
+
+The Helm install waits for the existing job dispatcher to run one privileged,
+node-pinned probe Job on every labeled Linux node, and for a collector Job to assemble
+their logs into one versioned JSON document. The collector fails if any node
+Job fails or no labeled nodes are covered. The aggregate remains available as the
+`krab-precheck-results` Job log. Upload `krab-precheck.json` on the first page
+of the builder. To check one node, label only that node. Helm creates the
+`krab-precheck` namespace if needed; to use another namespace, change both
+`--namespace` flags. The probe image builds
+the dependency-free Rust checker in [`preflight/`](preflight/) for amd64, arm64,
+ppc64le, and s390x. It uses pinned, published kata-device-provisioner binaries
+for NVIDIA capability and device inventory on amd64 and arm64; no provisioner
+source build, GPU mode change, or NFD installation is involved. On ppc64le and
+s390x the GPU capability fields remain unknown. The Rust checker probes KVM,
+TDX, SNP, IBM Secure Execution, IOMMUFD, and host `mkfs.erofs` options. The
+node report also includes GPU inventory. The
+dispatcher records result metadata on Nodes, so its ServiceAccount has node
+patch permission. Review the JSON before sharing it; it includes GPU names,
+PCI addresses, and kernel version.
+
+The browser reads reports locally. Definite incompatibilities disable matching
+choices, while unknown probes remain selectable and require operator review.
+An uploaded report is a snapshot, not a launch or attestation test. Add reports
+from every target node, particularly for clusters with mixed hardware. Select
+the Kubernetes distribution separately in the builder.
+Select one or more Intel TDX, AMD SEV-SNP, IBM SEL, or NVIDIA GPU checks before
+uploading a report. Top-level checks use AND: all selected checks must pass on
+the same node. GPU model choices use OR: any selected model qualifies. The
+results show which selected models were found and list only nodes with failed
+checks, with name search and ten nodes per page. NVIDIA GPU readiness includes
+KVM, IOMMUFD, an NVIDIA GPU, and EROFS utilities. The report still records CC and
+PPCIE capability for deployment choices. NO means a host check did not pass or
+could not be confirmed. It does not establish whether the hardware lacks a
+feature or the host needs firmware, BIOS, or kernel setup.
+For the NVIDIA check, optionally select one or more H100, H200, H800, H20,
+B200, B300, GB200, or GB300 models. A node passes the model filter when its
+provisioner inventory identifies any selected model. The node report records
+the provisioner's `chip=` field and readable device name; older reports can
+still match a complete model name in the device name.
+The generated deployment installs EROFS utilities when a checked node does not
+confirm a suitable host version.
+
 ## Development
 
 Development changes land on the `dev` branch. GitHub Pages publishes the

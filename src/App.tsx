@@ -18,6 +18,17 @@ import {
 import catalogData from './generated/catalog.json'
 import krabLogoDark from './assets/brands/krab-kata-hybrid.png'
 import krabLogoLight from './assets/brands/krab-kata-hybrid-light.png'
+import { NodePrecheckPanel } from './NodePrecheckPanel'
+import {
+  allNodesLack,
+  erofsPrecheckStatus,
+  parsePrecheckUpload,
+  unavailableFamilyReason,
+  unavailableModeReason,
+  unavailableShimReason,
+  unavailableVendorReason,
+  type NodePrecheck,
+} from './lib/precheck'
 import {
   buildCustomRuntimeClass,
   buildInstallScript,
@@ -277,6 +288,9 @@ function App() {
   })
   const theme = themePreference === 'system' ? systemTheme : themePreference
   const [step, setStep] = useState<1 | 2>(1)
+  const [nodeReports, setNodeReports] = useState<Array<{ name: string; report: NodePrecheck }>>([])
+  const [precheckError, setPrecheckError] = useState('')
+  const reports = nodeReports.map(({ report }) => report)
   const [selectedVendorId, setSelectedVendorId] = useState(catalog.vendors[0]?.id ?? '')
   const selectedVendor = catalog.vendors.find(({ id }) => id === selectedVendorId) ??
     catalog.vendors[0]
@@ -303,6 +317,9 @@ function App() {
   const [advanced, setAdvanced] = useState<AdvancedConfiguration>(
     createAdvancedConfiguration,
   )
+  const erofsStatus = erofsPrecheckStatus(reports)
+  const erofsInstallFromPrecheck = erofsStatus === 'provision'
+  const installErofsUtils = advanced.installErofsUtils || erofsInstallFromPrecheck
   useEffect(() => {
     document.documentElement.dataset.theme = theme
   }, [theme])
@@ -321,10 +338,10 @@ function App() {
       selections,
       cluster,
       runtime,
-      advanced,
+      { ...advanced, installErofsUtils },
     ),
     install: buildInstallScript(catalog, deploymentName),
-  }), [advanced, cluster, deploymentName, runtime, selectedVendor, selections])
+  }), [advanced, cluster, deploymentName, installErofsUtils, runtime, selectedVendor, selections])
   const valuesFileName = buildValuesFileName(catalog, deploymentName)
   const effectiveDeploymentName = normalizeDeploymentName(
     deploymentName,
@@ -336,6 +353,17 @@ function App() {
     (!selections[family.id]?.modeId ||
       needsCpuSelection(selections[family.id])),
   )
+  const unsupportedSelection = selectedVendor.hardwareFamilies.some((family) => {
+    const selection = selections[family.id]
+    return Boolean(selection?.modeId && (
+      unavailableFamilyReason(family, reports) ||
+      unavailableModeReason(selection.modeId, reports, family.modes.find(({ id }) => id === selection.modeId)?.supportedCpuTeeIds, family) ||
+      selection.cpuTeeIds.some((id) => allNodesLack(reports, id))
+    ))
+  }) || runtime.selectedShimIds.some((id) => {
+    const shim = selectedVendor.runtime.shims.find((item) => item.id === id)
+    return shim && Boolean(unavailableShimReason(shim, reports))
+  })
   const selectedDistribution =
     catalog.plannedArchitecture.cluster.distributions.find(
       ({ id }) => id === cluster.distributionId,
@@ -439,12 +467,14 @@ function App() {
     cluster.distributionId !== null &&
     incompleteFamilies.length === 0 &&
     !erofsDiskSizeMissing &&
+    !unsupportedSelection &&
     customRuntimeErrors.length === 0 &&
     (runtimeOnlyVendor
       ? hasRuntimeSelection
       : hasHardwareSelection || hasStandaloneRuntimeSelection)
 
   const selectVendor = (vendor: VendorCatalog) => {
+    if (unavailableVendorReason(vendor, reports)) return
     setImportMessage(null)
     setSelectedVendorId(vendor.id)
     setSelections(initialSelections(vendor))
@@ -490,6 +520,7 @@ function App() {
   const selectMode = (familyId: string, modeId: string | null) => {
     const family = selectedVendor.hardwareFamilies.find(({ id }) => id === familyId)
     if (!family || family.availability !== 'available') return
+    if (unavailableFamilyReason(family, reports) || (modeId && unavailableModeReason(modeId, reports, family.modes.find(({ id }) => id === modeId)?.supportedCpuTeeIds, family))) return
     const mode = family.modes.find(({ id }) => id === modeId)
     const supportedCpuTeeIds = mode?.supportedCpuTeeIds ?? []
     setSelections((current) => ({
@@ -512,6 +543,7 @@ function App() {
   const toggleFamily = (familyId: string, enabled: boolean) => {
     const family = selectedVendor.hardwareFamilies.find(({ id }) => id === familyId)
     if (!family || family.availability !== 'available') return
+    if (enabled && unavailableFamilyReason(family, reports)) return
     setSelections((current) => ({
       ...current,
       [familyId]: enabled
@@ -525,6 +557,7 @@ function App() {
   }
 
   const toggleCpuTee = (familyId: string, cpuTeeId: string) => {
+    if (allNodesLack(reports, cpuTeeId) && !selections[familyId]?.cpuTeeIds.includes(cpuTeeId)) return
     setSelections((current) => ({
       ...current,
       [familyId]: {
@@ -538,6 +571,8 @@ function App() {
   }
 
   const toggleRuntimeShim = (shimId: string) => {
+    const shim = selectedVendor.runtime.shims.find(({ id }) => id === shimId)
+    if (shim && unavailableShimReason(shim, reports) && !runtime.selectedShimIds.includes(shimId)) return
     setRuntime((current) => ({
       ...current,
       selectedShimIds: current.selectedShimIds.includes(shimId)
@@ -688,6 +723,20 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const loadNodeReports = async (files: FileList | null) => {
+    if (!files?.length) return
+    try {
+      const loaded = (await Promise.all(Array.from(files, async (file) => {
+        if (file.size > 10_000_000) throw new Error('Report exceeds the 10 MB upload limit.')
+        return parsePrecheckUpload(await file.text(), file.name)
+      }))).flat()
+      setNodeReports(loaded)
+      setPrecheckError('')
+    } catch (error) {
+      setPrecheckError(error instanceof Error ? error.message : 'Could not read node report.')
+    }
+  }
+
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -777,6 +826,16 @@ function App() {
                 </p>
               )}
 
+              <NodePrecheckPanel
+                nodeReports={nodeReports}
+                error={precheckError}
+                onFiles={(files) => void loadNodeReports(files)}
+                onClear={() => {
+                  setNodeReports([])
+                  setPrecheckError('')
+                }}
+              />
+
               <div className="platform-directory">
                 <section className="platform-group">
                   <header>
@@ -788,13 +847,17 @@ function App() {
                       <button
                         className="platform-row"
                         key={vendor.id}
+                        disabled={Boolean(unavailableVendorReason(vendor, reports))}
+                        title={unavailableVendorReason(vendor, reports) ?? undefined}
                         onClick={() => selectVendor(vendor)}
                       >
                         <span className={`platform-row-brand vendor-${vendor.id}`}>
                           <img src={logoFor(vendor, theme)} alt={vendor.displayName} />
                           <strong>{vendor.displayName}</strong>
                         </span>
-                        <span className="platform-row-description">{vendor.description}</span>
+                        <span className="platform-row-description">{vendor.description}
+                          {unavailableVendorReason(vendor, reports) && <small className="platform-row-precheck">{unavailableVendorReason(vendor, reports)}</small>}
+                        </span>
                         <span className="platform-row-capabilities">
                           {vendor.capabilities.map(({ id }) => capabilityName(id)).join(' · ')}
                         </span>
@@ -816,12 +879,16 @@ function App() {
                   <button
                     className="platform-row"
                     key={vendor.id}
+                    disabled={Boolean(unavailableVendorReason(vendor, reports))}
+                    title={unavailableVendorReason(vendor, reports) ?? undefined}
                     onClick={() => selectVendor(vendor)}
                   >
                     <span className={`platform-row-brand vendor-${vendor.id}`}>
                       <img src={logoFor(vendor, theme)} alt={vendor.displayName} />
                     </span>
-                    <span className="platform-row-description">{vendor.description}</span>
+                    <span className="platform-row-description">{vendor.description}
+                      {unavailableVendorReason(vendor, reports) && <small className="platform-row-precheck">{unavailableVendorReason(vendor, reports)}</small>}
+                    </span>
                     <span className="platform-row-capabilities">
                       {vendor.capabilities.map(({ id }) => capabilityName(id)).join(' · ')}
                     </span>
@@ -916,6 +983,11 @@ function App() {
                 </p>
               )}
 
+              {nodeReports.length > 0 && <p className="builder-precheck-summary">
+                {nodeReports.length} node {nodeReports.length === 1 ? 'report' : 'reports'} loaded.
+                {unsupportedSelection && ' The current selection conflicts with those reports; remove unavailable choices to generate values.yaml.'}
+              </p>}
+
               <section
                 className={`cluster-config cluster-config-wide ${
                   cluster.distributionId ? '' : 'incomplete'
@@ -974,21 +1046,26 @@ function App() {
                 )}
               </section>
 
-              {requiresErofs && (
+              {requiresErofs && erofsStatus !== 'confirmed' && (
                 <div
                   className={`runtime-prerequisite ${
-                    advanced.installErofsUtils ? 'managed' : ''
+                    installErofsUtils && !erofsInstallFromPrecheck ? 'managed' : ''
                   }`}
                   role="note"
                 >
-                  {advanced.installErofsUtils ? (
+                  {installErofsUtils && !erofsInstallFromPrecheck ? (
                     <Check size={18} />
                   ) : (
                     <AlertTriangle size={18} />
                   )}
                   <div>
-                    <strong>EROFS host prerequisite</strong>
-                    {advanced.installErofsUtils ? (
+                    <strong>{erofsInstallFromPrecheck ? 'EROFS utilities will be installed' : 'EROFS host prerequisite'}</strong>
+                    {erofsInstallFromPrecheck ? (
+                      <p>
+                        At least one checked node did not confirm erofs-utils 1.8.2 or newer.
+                        The generated deployment will stage mkfs.erofs 1.9.3 on targeted nodes.
+                      </p>
+                    ) : installErofsUtils ? (
                       <p>
                         The generated job-mode deployment stages mkfs.erofs 1.9.3
                         on every targeted node before validating the host.
@@ -1409,15 +1486,16 @@ function App() {
                         <label className="selinux-toggle">
                           <span className="toggle-copy">
                             <strong>
-                              {advanced.installErofsUtils
+                              {installErofsUtils
                                 ? 'Managed'
                                 : 'Host provided'}
                             </strong>
-                            <small>Uses the enforced job installation mode.</small>
+                            <small>{erofsInstallFromPrecheck ? 'Selected from the node reports.' : 'Uses the enforced job installation mode.'}</small>
                           </span>
                           <input
                             type="checkbox"
-                            checked={advanced.installErofsUtils}
+                            checked={installErofsUtils}
+                            disabled={erofsInstallFromPrecheck}
                             onChange={(event) =>
                               setAdvanced((current) => ({
                                 ...current,
@@ -1429,7 +1507,7 @@ function App() {
                             <span />
                           </span>
                         </label>
-                        {advanced.installErofsUtils && (
+                        {installErofsUtils && (
                           <label className="erofs-image-field">
                             <span>Utility image override</span>
                             <input
@@ -2021,6 +2099,7 @@ function App() {
                           .map((shim) => (
                             <label
                               key={shim.id}
+                              title={unavailableShimReason(shim, reports) ?? undefined}
                               onClick={(event) => {
                                 if ((event.target as HTMLElement).tagName !== 'INPUT') {
                                   event.preventDefault()
@@ -2030,6 +2109,7 @@ function App() {
                             >
                               <input
                                 type="checkbox"
+                                disabled={Boolean(unavailableShimReason(shim, reports)) && !runtime.selectedShimIds.includes(shim.id)}
                                 checked={runtime.selectedShimIds.includes(shim.id)}
                                 onChange={() => toggleRuntimeShim(shim.id)}
                               />
@@ -2039,6 +2119,7 @@ function App() {
                                 <em>
                                   Architectures: {shim.supportedArches.join(' · ')}
                                 </em>
+                                {unavailableShimReason(shim, reports) && <em>{unavailableShimReason(shim, reports)}</em>}
                               </span>
                             </label>
                           ))}
@@ -2071,6 +2152,7 @@ function App() {
                         {selectedVendor.runtime.shims.map((shim) => (
                           <label
                             key={shim.id}
+                            title={unavailableShimReason(shim, reports) ?? undefined}
                             onClick={(event) => {
                               if ((event.target as HTMLElement).tagName !== 'INPUT') {
                                 event.preventDefault()
@@ -2080,6 +2162,7 @@ function App() {
                           >
                             <input
                               type="checkbox"
+                              disabled={Boolean(unavailableShimReason(shim, reports)) && !runtime.selectedShimIds.includes(shim.id)}
                               checked={runtime.selectedShimIds.includes(shim.id)}
                               onChange={() => toggleRuntimeShim(shim.id)}
                             />
@@ -2091,6 +2174,7 @@ function App() {
                                   ? `Architecture: ${shim.supportedArches[0]}`
                                   : `Architectures: ${shim.supportedArches.join(' · ')}`}
                               </em>
+                              {unavailableShimReason(shim, reports) && <em>{unavailableShimReason(shim, reports)}</em>}
                             </span>
                           </label>
                         ))}
@@ -2100,13 +2184,13 @@ function App() {
                   {selectedVendor.hardwareFamilies.map((family) => (
                     <details
                       className={`profile-card ${
-                        family.availability === 'pending' ? 'pending' : ''
+                        family.availability === 'pending' || unavailableFamilyReason(family, reports) ? 'pending' : ''
                       }`}
                       key={family.id}
                     >
                       <summary
                         onClick={(event) => {
-                          if (family.availability === 'available') {
+                          if (family.availability === 'available' && !unavailableFamilyReason(family, reports)) {
                             event.preventDefault()
                             const enabled = isFamilyEnabled(
                               selections[family.id],
@@ -2127,7 +2211,7 @@ function App() {
                             <input
                               type="checkbox"
                               aria-label={`Enable ${family.displayName}`}
-                              disabled={family.availability !== 'available'}
+                              disabled={family.availability !== 'available' || Boolean(unavailableFamilyReason(family, reports) && !isFamilyEnabled(selections[family.id]))}
                               checked={isFamilyEnabled(
                                 selections[family.id],
                               )}
@@ -2151,11 +2235,11 @@ function App() {
                           </div>
                         </div>
                         <div className="profile-summary-status">
-                          {(family.availabilityReason ||
+                          {(family.availabilityReason || unavailableFamilyReason(family, reports) ||
                             isFamilyEnabled(selections[family.id])) && (
                             <span
                               className={
-                                family.availability === 'pending'
+                                family.availability === 'pending' || unavailableFamilyReason(family, reports)
                                   ? 'pending'
                                   : !selections[family.id]?.modeId ||
                                       needsCpuSelection(selections[family.id])
@@ -2163,7 +2247,7 @@ function App() {
                                   : ''
                               }
                             >
-                              {family.availabilityReason ??
+                              {family.availabilityReason ?? unavailableFamilyReason(family, reports) ??
                                 profileSummary(
                                   selectedVendor,
                                   selections[family.id],
@@ -2175,29 +2259,31 @@ function App() {
                           )}
                         </div>
                       </summary>
-                      {(family.availability === 'pending' ||
+                      {(family.availability === 'pending' || unavailableFamilyReason(family, reports) ||
                         isFamilyEnabled(selections[family.id])) && (
                         <div className="profile-options">
-                        {family.availability === 'pending' ? (
+                        {family.availability === 'pending' || unavailableFamilyReason(family, reports) ? (
                           <div className="profile-unavailable">
                             <AlertTriangle size={17} />
                             <div>
-                              <strong>{family.availabilityReason}</strong>
+                              <strong>{family.availabilityReason ?? unavailableFamilyReason(family, reports)}</strong>
                               <span>
                                 Architecture: {family.supportedArches.join(' · ')}
                               </span>
                               <p>
-                                KRAB does not generate deployment artifacts for
-                                this hardware family yet.
+                                {family.availability === 'pending'
+                                  ? 'KRAB does not generate deployment artifacts for this hardware family yet.'
+                                  : 'This hardware family is unavailable on the uploaded nodes.'}
                               </p>
                             </div>
                           </div>
                         ) : (
                           <>
                             {family.modes.map((mode) => (
-                              <label className="mode-option" key={mode.id}>
+                              <label className="mode-option" key={mode.id} title={unavailableModeReason(mode.id, reports, mode.supportedCpuTeeIds, family) ?? undefined}>
                                 <input
                                   type="radio"
+                                  disabled={Boolean(unavailableModeReason(mode.id, reports, mode.supportedCpuTeeIds, family))}
                                   name={`${family.id}-mode`}
                                   checked={selections[family.id]?.modeId === mode.id}
                                   onChange={() => selectMode(family.id, mode.id)}
@@ -2207,6 +2293,7 @@ function App() {
                                     {mode.displayName}
                                     {mode.badge && <em>{mode.badge}</em>}
                                   </strong>
+                                  {unavailableModeReason(mode.id, reports, mode.supportedCpuTeeIds, family) && <small>{unavailableModeReason(mode.id, reports, mode.supportedCpuTeeIds, family)}</small>}
                                 </span>
                               </label>
                             ))}
@@ -2254,6 +2341,7 @@ function App() {
                                       >
                                         <input
                                           type="checkbox"
+                                          disabled={allNodesLack(reports, tee.id) && !selections[family.id]?.cpuTeeIds.includes(tee.id)}
                                           checked={
                                             selections[family.id]?.cpuTeeIds.includes(
                                               tee.id,
@@ -2265,6 +2353,7 @@ function App() {
                                         />
                                         <span>
                                           <strong>{tee.displayName}</strong>
+                                          {allNodesLack(reports, tee.id) && <small>Unavailable on uploaded nodes</small>}
                                         </span>
                                       </label>
                                       ))}
