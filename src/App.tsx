@@ -494,7 +494,7 @@ function App() {
     setCluster({ distributionId: null, selinuxEnabled: false })
     setRuntime({
       selectedShimIds:
-        isRuntimeOnlyVendor(vendor) && vendor.id !== 'local'
+        isRuntimeOnlyVendor(vendor) && vendor.id !== 'custom'
           ? vendor.runtime.shims.map(({ id }) => id)
           : [],
       runtimeHttpsProxy: '',
@@ -862,7 +862,7 @@ function App() {
                     <p>Upstream Kata for general-purpose workloads.</p>
                   </header>
                   <div className="platform-list">
-                    {catalog.vendors.filter(({ id }) => id === 'local').map((vendor) => (
+                    {catalog.vendors.filter(({ id }) => id === 'custom').map((vendor) => (
                       <button
                         className="platform-row"
                         key={vendor.id}
@@ -871,7 +871,7 @@ function App() {
                         onClick={() => selectVendor(vendor)}
                       >
                         <span className={`platform-row-brand vendor-${vendor.id}`}>
-                          <img src={logoFor(vendor, theme)} alt={vendor.displayName} />
+                          {vendor.logo && <img src={logoFor(vendor, theme)} alt={vendor.displayName} />}
                           <strong>{vendor.displayName}</strong>
                         </span>
                         <span className="platform-row-description">{vendor.description}
@@ -894,7 +894,7 @@ function App() {
                     <p>Vendor-specific runtime and confidential-computing paths.</p>
                   </header>
                   <div className="platform-list">
-                    {catalog.vendors.filter(({ id }) => id !== 'local').map((vendor) => (
+                    {catalog.vendors.filter(({ id }) => id !== 'custom').map((vendor) => (
                   <button
                     className="platform-row"
                     key={vendor.id}
@@ -980,8 +980,8 @@ function App() {
                 <button className="back-link" onClick={restart}>← Back to vendors</button>
                 <span className="builder-vendor-context">
                   <span className={`builder-vendor-logo vendor-${selectedVendor.id}`}>
-                    <img src={logoFor(selectedVendor, theme)} alt="" />
-                    {selectedVendor.id === 'local' && (
+                    {selectedVendor.logo && <img src={logoFor(selectedVendor, theme)} alt="" />}
+                    {selectedVendor.id === 'custom' && (
                       <strong>{selectedVendor.displayName}</strong>
                     )}
                   </span>

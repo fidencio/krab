@@ -3786,10 +3786,6 @@ nav a:hover,
   font-size: 17px;
 }
 
-.platform-row-brand.vendor-local img {
-  width: 38px;
-}
-
 .platform-row-brand.vendor-amd img {
   width: 90px;
 }

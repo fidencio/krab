@@ -24,11 +24,11 @@ const loadJson = async <T>(path: string) =>
 test('generated catalog carries accurate upstream chart data', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
   const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
-  const local = catalog.vendors.find(({ id }) => id === 'local')!
+  const local = catalog.vendors.find(({ id }) => id === 'custom')!
 
   assert.deepEqual(
     catalog.vendors.map(({ id }) => id),
-    ['nvidia', 'local', 'amd', 'ibm', 'intel'],
+    ['nvidia', 'custom', 'amd', 'ibm', 'intel'],
   )
   assert.equal(vendor.displayName, 'NVIDIA')
   assert.deepEqual(
@@ -46,7 +46,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
   assert.equal(vendorCpuRuntime.selectionGroup, 'cpu')
   assert.deepEqual(vendorCpuRuntime.supportedArches, ['amd64', 'arm64'])
   assert.equal(vendorCpuRuntime.snapshotter, 'erofs')
-  assert.equal(local.displayName, 'Local')
+  assert.equal(local.displayName, 'Custom')
   assert.equal(local.hardwareFamilies.length, 0)
   assert.deepEqual(
     local.runtime.shims.map(({ id }) => id),
@@ -183,7 +183,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
 test('attestation guidance follows confidential runtime selections', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
   const nvidia = catalog.vendors.find(({ id }) => id === 'nvidia')!
-  const local = catalog.vendors.find(({ id }) => id === 'local')!
+  const local = catalog.vendors.find(({ id }) => id === 'custom')!
   const amd = catalog.vendors.find(({ id }) => id === 'amd')!
   const runtime = (selectedShimIds: string[]) => ({
     selectedShimIds,
@@ -232,7 +232,7 @@ test('attestation guidance follows confidential runtime selections', async () =>
 
 test('local artifacts install only the selected upstream RuntimeClasses', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
-  const local = catalog.vendors.find(({ id }) => id === 'local')!
+  const local = catalog.vendors.find(({ id }) => id === 'custom')!
   const defaultAdvanced = createAdvancedConfiguration()
   assert.equal(defaultAdvanced.erofsDiskSize, '256M')
   assert.equal(defaultAdvanced.scheduledReconcileEnabled, false)
@@ -355,7 +355,7 @@ test('local artifacts install only the selected upstream RuntimeClasses', async 
     stringify(configuredValues),
     'local-lab-0.1.0-alpha.6-values.yaml',
   )
-  assert.equal(importedValues.vendorId, 'local')
+  assert.equal(importedValues.vendorId, 'custom')
   assert.equal(importedValues.deploymentName, 'local-lab')
   assert.deepEqual(importedValues.runtime.selectedShimIds, [
     'qemu-nvidia-cpu-runtime-rs',
@@ -532,7 +532,7 @@ test('NVIDIA artifacts pin every component image version', async () => {
 
 test('custom runtimes generate independent RuntimeClasses and snapshotters', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
-  const local = catalog.vendors.find(({ id }) => id === 'local')!
+  const local = catalog.vendors.find(({ id }) => id === 'custom')!
   const runtimeClass = buildCustomRuntimeClass('my-runtime')
   const customRuntime = {
     name: 'my-runtime',

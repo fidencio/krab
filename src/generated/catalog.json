@@ -769,11 +769,11 @@
       }
     },
     {
-      "id": "local",
-      "displayName": "Local",
-      "tagline": "Standard Kata deployment",
-      "description": "Run general-purpose Kata workloads with your choice of upstream hypervisor.",
-      "logo": "local.svg",
+      "id": "custom",
+      "displayName": "Custom",
+      "tagline": "Custom Kata deployment",
+      "description": "Combine Kata runtimes for different node types in one deployment.",
+      "logo": "",
       "capabilities": [
         {
           "id": "general-purpose"
@@ -791,7 +791,7 @@
           "appVersion": "4.2.0",
           "ociReference": "oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy",
           "namespace": "kata-system",
-          "valuesFileName": "kata-local.values.yaml",
+          "valuesFileName": "kata-custom.values.yaml",
           "values": {
             "debug": false,
             "deploymentMode": "daemonset",

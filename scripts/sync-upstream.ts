@@ -856,12 +856,12 @@ async function main() {
     plannedArchitecture,
     vendors: [
       {
-        id: 'local',
-        displayName: 'Local',
-        tagline: 'Standard Kata deployment',
+        id: 'custom',
+        displayName: 'Custom',
+        tagline: 'Custom Kata deployment',
         description:
-          'Run general-purpose Kata workloads with your choice of upstream hypervisor.',
-        logo: 'local.svg',
+          'Combine Kata runtimes for different node types in one deployment.',
+        logo: '',
         capabilities: [
           { id: 'general-purpose' },
           { id: 'multiple-hypervisors' },
@@ -875,7 +875,7 @@ async function main() {
             appVersion: String(kataChart.appVersion),
             ociReference: kataChartReference,
             namespace: plannedArchitecture.namespace,
-            valuesFileName: 'kata-local.values.yaml',
+            valuesFileName: 'kata-custom.values.yaml',
             values: localRuntimeValues,
             sourceUrl: sourceLink('kata-chart'),
           },
@@ -997,7 +997,7 @@ async function main() {
       ...teeVendors,
     ],
   }
-  const vendorOrder = ['nvidia', 'local', 'amd', 'ibm', 'intel']
+  const vendorOrder = ['nvidia', 'custom', 'amd', 'ibm', 'intel']
   catalog.vendors.sort(
     (left, right) =>
       vendorOrder.indexOf(left.id) - vendorOrder.indexOf(right.id),
