@@ -907,8 +907,8 @@ function App() {
               <div className="platform-directory">
                 <section className="platform-group">
                   <header>
-                    <span>Standard deployment</span>
-                    <p>Upstream Kata for general-purpose workloads.</p>
+                    <span>Build your own</span>
+                    <p>Combine runtimes and hardware paths across node types.</p>
                   </header>
                   <div className="platform-list">
                     {catalog.vendors.filter(({ id }) => id === 'custom').map((vendor) => (
@@ -939,8 +939,8 @@ function App() {
 
                 <section className="platform-group">
                   <header>
-                    <span>Optimized hardware</span>
-                    <p>Vendor-specific runtime and confidential-computing paths.</p>
+                    <span>Vendor paths</span>
+                    <p>Start with a focused CPU or GPU configuration.</p>
                   </header>
                   <div className="platform-list">
                     {catalog.vendors.filter(({ id }) => id !== 'custom').map((vendor) => (
