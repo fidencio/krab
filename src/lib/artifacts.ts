@@ -218,6 +218,7 @@ export type FamilySelections = Record<
 export type ClusterConfiguration = {
   distributionId: string | null
   selinuxEnabled: boolean
+  architectures?: string[]
 }
 
 export type RuntimeConfiguration = {
@@ -600,6 +601,13 @@ export function importValuesBundle(
     cluster: {
       distributionId: distribution?.id ?? null,
       selinuxEnabled: asRecord(runtimeValues.selinux).enabled === true,
+      ...(vendor.id === 'custom'
+        ? { architectures: Object.keys(asRecord(runtimeValues.defaultShim)).length > 0
+          ? Object.keys(asRecord(runtimeValues.defaultShim))
+          : [...new Set(vendor.runtime.shims
+            .filter(({ id }) => enabledShimIds.includes(id))
+            .flatMap(({ supportedArches }) => supportedArches))] }
+        : {}),
     },
     runtime,
     advanced,
@@ -901,7 +909,9 @@ export function buildValuesBundle(
       (shim): shim is VendorCatalog['runtime']['shims'][number] => Boolean(shim),
     )
   const supportedArchitectures = new Set(
-    selectedShimCatalog.flatMap(({ supportedArches }) => supportedArches),
+    vendor.id === 'custom' && cluster.architectures
+      ? cluster.architectures
+      : selectedShimCatalog.flatMap(({ supportedArches }) => supportedArches),
   )
   const defaultShims = Object.fromEntries(
     [...supportedArchitectures].map((architecture) => {
@@ -909,10 +919,13 @@ export function buildValuesBundle(
         supportedArches.includes(architecture),
       )
       const configuredDefault = sourceDefaultShims[architecture]
+      const generalCandidates = vendor.id === 'custom'
+        ? candidates.filter(({ id }) => !/(?:^|-)(?:snp|tdx|se)(?:-|$)/.test(id) && !id.includes('nvidia-gpu'))
+        : candidates
       const selectedDefault =
-        candidates.find(({ id }) => id === configuredDefault) ?? candidates[0]
-      return [architecture, selectedDefault.id]
-    }),
+        generalCandidates.find(({ id }) => id === configuredDefault) ?? generalCandidates[0]
+      return selectedDefault ? [architecture, selectedDefault.id] : null
+    }).filter((entry): entry is string[] => entry !== null),
   )
   if (Object.keys(defaultShims).length > 0) {
     runtimeValues.defaultShim = defaultShims

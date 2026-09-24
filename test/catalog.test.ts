@@ -230,7 +230,24 @@ test('attestation guidance follows confidential runtime selections', async () =>
   )
 })
 
-test('local artifacts install only the selected upstream RuntimeClasses', async () => {
+test('Custom limits default runtimes to chosen architectures and restores that choice', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const values = buildValuesBundle(
+    catalog,
+    custom,
+    {},
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+    { selectedShimIds: ['qemu-runtime-rs'], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    createAdvancedConfiguration(),
+  )
+  assert.deepEqual(parse(values)['kata-deploy'].defaultShim, { amd64: 'qemu-runtime-rs' })
+  const imported = importValuesBundle(catalog, values, 'krab-0.1.0-alpha.6-values.yaml')
+  assert.equal(imported.vendorId, 'custom')
+  assert.deepEqual(imported.cluster.architectures, ['amd64'])
+})
+
+test('Custom artifacts install only the selected upstream RuntimeClasses', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
   const local = catalog.vendors.find(({ id }) => id === 'custom')!
   const defaultAdvanced = createAdvancedConfiguration()

@@ -910,18 +910,13 @@ button.vendor-card {
   width: 60px;
 }
 
-.builder-vendor-logo.vendor-local img {
-  width: 26px;
-  height: 26px;
-}
-
 .builder-vendor-logo strong {
   color: #f1f4f2;
   font: 800 12px 'Roboto', sans-serif;
   letter-spacing: -0.02em;
 }
 
-.builder-vendor-logo.vendor-local strong {
+.builder-vendor-logo.vendor-custom strong {
   font-size: 13px;
 }
 
@@ -1651,6 +1646,48 @@ button.vendor-card {
 .cluster-config-wide {
   order: 3;
   margin-bottom: 24px;
+}
+
+.custom-architectures {
+  order: 2;
+  margin: 0 0 20px;
+  padding: 16px 0 18px;
+  border-block: 1px solid var(--line);
+}
+
+.custom-architectures h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.custom-architectures p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.custom-architecture-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 12px;
+}
+
+.custom-architecture-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.custom-architecture-options input { accent-color: var(--kata-primary); }
+
+.custom-architectures .custom-architecture-help {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .runtime-prerequisite {

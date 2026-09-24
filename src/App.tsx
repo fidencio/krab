@@ -317,6 +317,7 @@ function App() {
   const [cluster, setCluster] = useState<ClusterConfiguration>({
     distributionId: null,
     selinuxEnabled: false,
+    architectures: [],
   })
   const [deploymentName, setDeploymentName] = useState('')
   const [runtime, setRuntime] = useState<RuntimeConfiguration>({
@@ -458,6 +459,11 @@ function App() {
   ).length
   const installedRuntimeClassCount =
     installedRuntimeClasses.length + advanced.customRuntimes.length
+  const customArchitectures = cluster.architectures ?? []
+  const uncoveredArchitectures = selectedVendor.id === 'custom'
+    ? customArchitectures.filter((architecture) =>
+      !installedRuntimeClasses.some((shim) => shim.supportedArches.includes(architecture)))
+    : []
   const requiresErofs =
     selectedVendor.hardwareFamilies.some(
       (family) =>
@@ -478,6 +484,8 @@ function App() {
     advanced.erofsDiskSize.trim().length === 0
   const valuesReady =
     cluster.distributionId !== null &&
+    (selectedVendor.id !== 'custom' ||
+      (customArchitectures.length > 0 && uncoveredArchitectures.length === 0)) &&
     incompleteFamilies.length === 0 &&
     !erofsDiskSizeMissing &&
     !unsupportedSelection &&
@@ -491,7 +499,7 @@ function App() {
     setImportMessage(null)
     setSelectedVendorId(vendor.id)
     setSelections(initialSelections(vendor))
-    setCluster({ distributionId: null, selinuxEnabled: false })
+    setCluster({ distributionId: null, selinuxEnabled: false, architectures: [] })
     setRuntime({
       selectedShimIds:
         isRuntimeOnlyVendor(vendor) && vendor.id !== 'custom'
@@ -588,6 +596,8 @@ function App() {
   const toggleRuntimeShim = (shimId: string) => {
     const shim = selectedVendor.runtime.shims.find(({ id }) => id === shimId)
     if (shim && unavailableShimReason(shim, reports) && !runtime.selectedShimIds.includes(shimId)) return
+    if (selectedVendor.id === 'custom' && shim &&
+      !shim.supportedArches.some((architecture) => customArchitectures.includes(architecture))) return
     setRuntime((current) => ({
       ...current,
       selectedShimIds: current.selectedShimIds.includes(shimId)
@@ -1006,6 +1016,25 @@ function App() {
                 {nodeReports.length} node {nodeReports.length === 1 ? 'report' : 'reports'} loaded.
                 {unsupportedSelection && ' The current selection conflicts with those reports; remove unavailable choices to generate values.yaml.'}
               </p>}
+
+              {selectedVendor.id === 'custom' && <section className="custom-architectures" aria-label="Target architectures">
+                <header><h2>Target architectures</h2><p>Select all that apply to your nodes.</p></header>
+                <div className="custom-architecture-options">
+                  {['amd64', 'arm64', 'ppc64le', 's390x'].map((architecture) => <label key={architecture}>
+                    <input type="checkbox" checked={customArchitectures.includes(architecture)} onChange={() =>
+                      setCluster((current) => ({
+                        ...current,
+                        architectures: customArchitectures.includes(architecture)
+                          ? customArchitectures.filter((item) => item !== architecture)
+                          : [...customArchitectures, architecture],
+                      }))
+                    } />
+                    {architecture.toUpperCase()}
+                  </label>)}
+                </div>
+                {customArchitectures.length === 0 && <p className="custom-architecture-help">Select an architecture to choose runtimes.</p>}
+                {uncoveredArchitectures.length > 0 && <p className="custom-architecture-help">Select a runtime for {uncoveredArchitectures.join(', ')}.</p>}
+              </section>}
 
               <section
                 className={`cluster-config cluster-config-wide ${
@@ -2181,7 +2210,9 @@ function App() {
                           >
                             <input
                               type="checkbox"
-                              disabled={Boolean(unavailableShimReason(shim, reports)) && !runtime.selectedShimIds.includes(shim.id)}
+                              disabled={(Boolean(unavailableShimReason(shim, reports)) && !runtime.selectedShimIds.includes(shim.id)) ||
+                                (selectedVendor.id === 'custom' && !shim.supportedArches.some((architecture) =>
+                                  customArchitectures.includes(architecture)))}
                               checked={runtime.selectedShimIds.includes(shim.id)}
                               onChange={() => toggleRuntimeShim(shim.id)}
                             />
