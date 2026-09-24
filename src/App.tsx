@@ -920,7 +920,7 @@ function App() {
                         onClick={() => selectVendor(vendor)}
                       >
                         <span className={`platform-row-brand vendor-${vendor.id}`}>
-                          {vendor.logo && <img src={logoFor(vendor, theme)} alt={vendor.displayName} />}
+                          {vendor.logo && <img src={logoFor(vendor, theme)} alt="" />}
                           <strong>{vendor.displayName}</strong>
                         </span>
                         <span className="platform-row-description">{vendor.description}

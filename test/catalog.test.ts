@@ -47,6 +47,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
   assert.deepEqual(vendorCpuRuntime.supportedArches, ['amd64', 'arm64'])
   assert.equal(vendorCpuRuntime.snapshotter, 'erofs')
   assert.equal(local.displayName, 'Custom')
+  assert.equal(local.logo, 'custom.svg')
   assert.equal(local.hardwareFamilies.length, 4)
   assert.deepEqual(
     local.runtime.shims.map(({ id }) => id),

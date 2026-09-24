@@ -920,6 +920,11 @@ button.vendor-card {
   font-size: 13px;
 }
 
+.builder-vendor-logo.vendor-custom img {
+  width: 24px;
+  height: 24px;
+}
+
 .builder-vendor-context .builder-vendor-logo {
   justify-content: flex-end;
 }
@@ -3821,6 +3826,11 @@ nav a:hover,
 .platform-row-brand strong {
   color: #2a394e;
   font-size: 17px;
+}
+
+.platform-row-brand.vendor-custom img {
+  width: 34px;
+  height: 34px;
 }
 
 .platform-row-brand.vendor-amd img {

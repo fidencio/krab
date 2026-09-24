@@ -889,7 +889,7 @@ async function main() {
         tagline: 'Custom Kata deployment',
         description:
           'Combine Kata runtimes for different node types in one deployment.',
-        logo: '',
+        logo: 'custom.svg',
         capabilities: [
           { id: 'general-purpose' },
           { id: 'multiple-hypervisors' },
