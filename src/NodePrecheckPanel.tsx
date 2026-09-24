@@ -130,8 +130,7 @@ export function NodePrecheckPanel({
   const modelSelector = selectedChecks.includes('gpu') &&
     <details className="precheck-model-details">
       <summary>GPU models (any match) <strong>{selectedGpuModels.length > 0 ? selectedGpuModels.join(', ') : 'Any model'}</strong></summary>
-      <fieldset className="precheck-model-choice">
-        <legend>Select models</legend>
+      <fieldset className="precheck-model-choice" aria-label="NVIDIA GPU models">
         {gpuModels.map((model) => <label key={model}>
           <input type="checkbox" checked={selectedGpuModels.includes(model)} onChange={(event) => {
             setSelectedGpuModels((current) => event.target.checked

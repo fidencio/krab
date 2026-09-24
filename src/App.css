@@ -255,14 +255,13 @@ nav a:hover {
 .precheck-tee-choice legend { margin-bottom: 2px; padding: 0; }
 .precheck-tee-choice label { display: inline-flex; align-items: center; gap: 5px; margin: 0 14px 2px 0; cursor: pointer; }
 .precheck-tee-choice input { width: 15px; height: 15px; margin: 0; accent-color: var(--kata-orange); }
-.precheck-model-details { margin-top: 0; }
-.node-precheck .precheck-model-details > summary { position: relative; display: inline-flex; gap: 7px; padding: 2px 0; color: var(--muted); font-size: 12px; }
+.precheck-model-details { margin-top: 10px; }
+.node-precheck .precheck-model-details > summary { position: relative; display: inline-flex; gap: 7px; padding: 0; color: var(--muted); font-size: 12px; }
 .node-precheck .precheck-model-details > summary::before { position: absolute; left: -17px; font-size: 16px; }
 .precheck-model-details[open] > summary::before { transform: rotate(90deg); }
 .node-precheck .precheck-model-details > summary strong { color: var(--ink); font-size: 12px; font-weight: 500; }
-.precheck-model-choice { margin: 6px 0 0; padding: 0; border: 0; color: var(--muted); font-size: 12px; }
-.precheck-model-choice legend { margin-bottom: 6px; padding: 0; }
-.precheck-model-choice label { display: inline-flex; align-items: center; gap: 5px; margin: 0 14px 6px 0; cursor: pointer; }
+.precheck-model-choice { margin: 2px 0 0; padding: 0; border: 0; color: var(--muted); font-size: 12px; }
+.precheck-model-choice label { display: inline-flex; align-items: center; gap: 5px; margin: 0 14px 2px 0; cursor: pointer; }
 .precheck-model-choice input { width: 15px; height: 15px; margin: 0; accent-color: var(--kata-orange); }
 .precheck-model-coverage { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 4px 0 10px; color: var(--muted); font-size: 12px; }
 .precheck-model-coverage strong { color: var(--ink); }
