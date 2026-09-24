@@ -117,29 +117,33 @@ export function NodePrecheckPanel({
   }))
   const checkSelector = <fieldset className="precheck-tee-choice">
     <legend>Checks (all required on each node)</legend>
-    {readinessChecks.map(({ id, label }) => <label key={id}>
-      <input type="checkbox" checked={selectedChecks.includes(id)} onChange={(event) => {
-        setSelectedChecks((current) => event.target.checked
-          ? [...current, id]
-          : current.filter((selected) => selected !== id))
-        setPage(0)
-      }} />
-      {label}
-    </label>)}
+    <div className="precheck-choice-options">
+      {readinessChecks.map(({ id, label }) => <label key={id}>
+        <input type="checkbox" checked={selectedChecks.includes(id)} onChange={(event) => {
+          setSelectedChecks((current) => event.target.checked
+            ? [...current, id]
+            : current.filter((selected) => selected !== id))
+          setPage(0)
+        }} />
+        {label}
+      </label>)}
+    </div>
   </fieldset>
   const modelSelector = selectedChecks.includes('gpu') &&
     <details className="precheck-model-details">
       <summary>GPU models (any match) <strong>{selectedGpuModels.length > 0 ? selectedGpuModels.join(', ') : 'Any model'}</strong></summary>
       <fieldset className="precheck-model-choice" aria-label="NVIDIA GPU models">
-        {gpuModels.map((model) => <label key={model}>
-          <input type="checkbox" checked={selectedGpuModels.includes(model)} onChange={(event) => {
-            setSelectedGpuModels((current) => event.target.checked
-              ? [...current, model]
-              : current.filter((selected) => selected !== model))
-            setPage(0)
-          }} />
-          {model}
-        </label>)}
+        <div className="precheck-choice-options">
+          {gpuModels.map((model) => <label key={model}>
+            <input type="checkbox" checked={selectedGpuModels.includes(model)} onChange={(event) => {
+              setSelectedGpuModels((current) => event.target.checked
+                ? [...current, model]
+                : current.filter((selected) => selected !== model))
+              setPage(0)
+            }} />
+            {model}
+          </label>)}
+        </div>
       </fieldset>
     </details>
 
