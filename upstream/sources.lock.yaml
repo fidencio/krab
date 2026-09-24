@@ -133,10 +133,3 @@ sources:
     path: deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml
     cache: kata-device-provisioner/GBx00.values.yaml
     sha256: b06fe38375fe2a2196f33c6e6a4ef8bd945c965a5399476677f314d39fc68c87
-  - id: nvidia-operator-values
-    repository: NVIDIA/gpu-operator
-    ref: 10ee5b3638b89e11e949412aafa5ba99279c3721
-    release: v26.7.0
-    path: deployments/gpu-operator/values.yaml
-    cache: nvidia-gpu-operator/values.yaml
-    sha256: 21ebfaa82dbfb6ad92b3c0ff33d7c891c7e66c9a0b008ce1c60a1897bae34418

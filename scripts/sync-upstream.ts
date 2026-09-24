@@ -167,7 +167,6 @@ async function main() {
   const provisionerReadme = await readFile(cachePath('provisioner-profiles'), 'utf8')
   const pluginCode = await readFile(cachePath('device-plugin-code'), 'utf8')
   const pluginValues = await readYaml(cachePath('device-plugin-values'))
-  const nvidiaValues = await readYaml(cachePath('nvidia-operator-values'))
   const kataChartReference = requireValue(
     kataProfileRaw.match(/helm install \S+ (oci:\/\/\S+)/)?.[1],
     'Unable to derive the Kata chart OCI reference',
@@ -727,11 +726,6 @@ async function main() {
         resourceNaming: '',
         sourceUrl: sourceLink('kata-values'),
       },
-      integration: {
-        sandboxWorkloads: {},
-        defaultCcMode: '',
-        sourceUrl: sourceLink('kata-values'),
-      },
     }
   })
 
@@ -978,15 +972,10 @@ async function main() {
           resourceNaming: pluginValues.resourceNaming,
           sourceUrl: sourceLink('device-plugin-code'),
         },
-        integration: {
-          sandboxWorkloads: nvidiaValues.sandboxWorkloads,
-          defaultCcMode: nvidiaValues.ccManager?.defaultMode,
-          sourceUrl: sourceLink('nvidia-operator-values'),
-        },
       },
       {
         id: 'nvidia',
-        displayName: source('nvidia-operator-values').repository.split('/')[0],
+        displayName: 'NVIDIA',
         tagline: 'GPU and confidential computing',
         description:
           'Run GPU-accelerated workloads with Kata, from standard workloads to confidential ones.',
@@ -1054,11 +1043,6 @@ async function main() {
           nvSwitchResourceName: nvSwitchResource,
           resourceNaming: pluginValues.resourceNaming,
           sourceUrl: sourceLink('device-plugin-code'),
-        },
-        integration: {
-          sandboxWorkloads: nvidiaValues.sandboxWorkloads,
-          defaultCcMode: nvidiaValues.ccManager?.defaultMode,
-          sourceUrl: sourceLink('nvidia-operator-values'),
         },
       },
       ...teeVendors,

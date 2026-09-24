@@ -760,15 +760,6 @@
         "nvSwitchResourceName": "nvidia.com/nvswitch",
         "resourceNaming": "alias",
         "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/a73df34f399a888d7e733fc280b1b30567aaac2c/src/vfio.rs"
-      },
-      "integration": {
-        "sandboxWorkloads": {
-          "enabled": false,
-          "defaultWorkload": "container",
-          "mode": "kubevirt"
-        },
-        "defaultCcMode": "on",
-        "sourceUrl": "https://github.com/NVIDIA/gpu-operator/blob/10ee5b3638b89e11e949412aafa5ba99279c3721/deployments/gpu-operator/values.yaml"
       }
     },
     {
@@ -1581,15 +1572,6 @@
         "nvSwitchResourceName": "nvidia.com/nvswitch",
         "resourceNaming": "alias",
         "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/a73df34f399a888d7e733fc280b1b30567aaac2c/src/vfio.rs"
-      },
-      "integration": {
-        "sandboxWorkloads": {
-          "enabled": false,
-          "defaultWorkload": "container",
-          "mode": "kubevirt"
-        },
-        "defaultCcMode": "on",
-        "sourceUrl": "https://github.com/NVIDIA/gpu-operator/blob/10ee5b3638b89e11e949412aafa5ba99279c3721/deployments/gpu-operator/values.yaml"
       }
     },
     {
@@ -1731,11 +1713,6 @@
         "resourceName": "",
         "nvSwitchResourceName": "",
         "resourceNaming": "",
-        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
-      },
-      "integration": {
-        "sandboxWorkloads": {},
-        "defaultCcMode": "",
         "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
       }
     },
@@ -1879,11 +1856,6 @@
         "nvSwitchResourceName": "",
         "resourceNaming": "",
         "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
-      },
-      "integration": {
-        "sandboxWorkloads": {},
-        "defaultCcMode": "",
-        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
       }
     },
     {
@@ -2025,11 +1997,6 @@
         "resourceName": "",
         "nvSwitchResourceName": "",
         "resourceNaming": "",
-        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
-      },
-      "integration": {
-        "sandboxWorkloads": {},
-        "defaultCcMode": "",
         "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
       }
     }

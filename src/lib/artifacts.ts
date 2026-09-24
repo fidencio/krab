@@ -113,11 +113,6 @@ export type VendorCatalog = {
     resourceNaming: string
     sourceUrl: string
   }
-  integration: {
-    sandboxWorkloads: Record<string, unknown>
-    defaultCcMode: string
-    sourceUrl: string
-  }
 }
 
 export type ExplorerCatalog = {
