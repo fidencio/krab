@@ -1,5 +1,5 @@
 import { useState, type Dispatch, type SetStateAction } from 'react'
-import { Check, Copy, Upload } from 'lucide-react'
+import { Check, CircleAlert, Copy, Upload } from 'lucide-react'
 import packageData from '../package.json'
 import { hasGpuModel, type NodePrecheck, type RequestedCheck } from './lib/precheck'
 
@@ -105,6 +105,7 @@ export function NodePrecheckPanel({
     }
   })
   const attentionCount = evaluatedNodes.filter(({ needsAttention }) => needsAttention).length
+  const hasFailures = selectedChecks.length > 0 ? attentionCount > 0 : unsupportedCount > 0
   const matchingNodes = evaluatedNodes.filter(({ name, needsAttention }) =>
     needsAttention && name.toLowerCase().includes(nodeQuery.trim().toLowerCase()))
   const pageCount = Math.max(1, Math.ceil(matchingNodes.length / pageSize))
@@ -147,9 +148,9 @@ export function NodePrecheckPanel({
       </fieldset>
     </details>
 
-  if (nodeReports.length > 0) return <section className={`node-precheck node-precheck-loaded${selectedChecks.length > 0 && attentionCount === 0 ? ' precheck-all-pass' : ''}`} aria-label="Pre-flight results">
+  if (nodeReports.length > 0) return <section className={`node-precheck node-precheck-loaded${hasFailures ? ' precheck-has-failures' : selectedChecks.length > 0 ? ' precheck-all-pass' : ''}`} aria-label="Pre-flight results">
     <div className="precheck-loaded-main">
-      <Check size={16} aria-hidden="true" />
+      {hasFailures ? <CircleAlert size={16} aria-hidden="true" /> : selectedChecks.length > 0 && <Check size={16} aria-hidden="true" />}
       <strong>Pre-flight results</strong>
       <span>{nodeReports.length} {nodeReports.length === 1 ? 'node' : 'nodes'} checked</span>
       {selectedChecks.length > 0

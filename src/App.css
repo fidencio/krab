@@ -238,6 +238,7 @@ nav a:hover {
 .precheck-loaded-main > strong { font-size: 14px; }
 .precheck-loaded-main > svg { color: var(--kata-orange); }
 .precheck-all-pass .precheck-loaded-main > svg { color: var(--status-success); }
+.precheck-has-failures .precheck-loaded-main > svg { color: var(--status-error); }
 .precheck-loaded-main > span { color: var(--muted); }
 .precheck-loaded-main > .precheck-unsupported-count { color: var(--status-error); font-weight: 700; }
 .precheck-loaded-main > .precheck-passed-count { color: var(--status-success); font-weight: 700; }
