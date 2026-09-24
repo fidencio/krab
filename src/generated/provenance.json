@@ -49,22 +49,22 @@
     {
       "id": "nfd-chart",
       "repository": "kubernetes-sigs/node-feature-discovery",
-      "ref": "v0.19.0",
+      "ref": "45d276ed9d3f0f67fb642aa78969721df3034451",
       "release": "v0.19.0",
       "draft": false,
       "path": "deployment/helm/node-feature-discovery/Chart.yaml",
       "sha256": "9b6e096649071b901d6d1aa2560701fa393864a5a58efe0e319c2414ee151300",
-      "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/v0.19.0/deployment/helm/node-feature-discovery/Chart.yaml"
+      "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/45d276ed9d3f0f67fb642aa78969721df3034451/deployment/helm/node-feature-discovery/Chart.yaml"
     },
     {
       "id": "nfd-values",
       "repository": "kubernetes-sigs/node-feature-discovery",
-      "ref": "v0.19.0",
+      "ref": "45d276ed9d3f0f67fb642aa78969721df3034451",
       "release": "v0.19.0",
       "draft": false,
       "path": "deployment/helm/node-feature-discovery/values.yaml",
       "sha256": "84c6277dd7934c1ba54c0707c307e6b206400ac51179af0674b1de300e8fcb8b",
-      "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/v0.19.0/deployment/helm/node-feature-discovery/values.yaml"
+      "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/45d276ed9d3f0f67fb642aa78969721df3034451/deployment/helm/node-feature-discovery/values.yaml"
     },
     {
       "id": "device-plugin-code",

@@ -149,19 +149,24 @@ npm run sync:upstream
 This command also resolves the precheck provisioner image digest and requires
 the ORAS CLI.
 
-Updating an upstream version is a reviewed change: update the ref and checksum
-in the lock file, run the sync command, and review the generated-data diff.
+Updating an upstream version is a reviewed change. For example, run
+`npm run refresh:upstream -- --group kata` to discover the newest Kata release,
+resolve its tag to a commit, and update its locked checksums. The other groups
+are `nfd`, `device-plugin`, and `provisioner`. Then run
+`npm run sync:upstream` and review the generated diff.
+
 The generator updates the chart dependencies in `charts/krab/Chart.yaml` and
 the image pins in `charts/krab/values.yaml`. KRAB installs NFD directly from
-its latest reviewed upstream release. The weekly workflow checks for a newer
-NFD release and proposes a PR with the new source checksums and generated
-files. NFD's published chart version follows its release tag, since the source
+its latest reviewed upstream release. The weekly workflow also verifies the
+current pins, then checks each upstream group separately and proposes a PR only
+when its source files, generated data, and published chart pass validation.
+A blocked group leaves the others free to update. NFD's published chart version
+follows its release tag, since the source
 `Chart.yaml` at that tag has a different version. KRAB's deployment settings
 stay in the values file; the kubectl image pin and device plugin tag choice
 remain in `upstream/architecture.yaml`.
 
-To check NFD manually, run `npm run refresh:nfd` followed by
-`npm run sync:upstream` and review the resulting diff.
+`npm run refresh:nfd` remains a shortcut for the NFD group.
 
 ## Releases
 

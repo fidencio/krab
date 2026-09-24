@@ -95,7 +95,7 @@
           "pullPolicy": "IfNotPresent",
           "tag": "v0.19.0"
         },
-        "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/v0.19.0/deployment/helm/node-feature-discovery/Chart.yaml"
+        "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/45d276ed9d3f0f67fb642aa78969721df3034451/deployment/helm/node-feature-discovery/Chart.yaml"
       },
       "kataDeploy": {
         "chartName": "kata-deploy",
