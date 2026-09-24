@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import test from 'node:test'
 import { parse } from 'yaml'
@@ -35,4 +35,14 @@ test('chart releases require synchronized main and dev trees', async () => {
     source,
     /git diff --quiet HEAD refs\/remotes\/origin\/dev -- \./,
   )
+  assert.match(source, /precheck\.version/)
+  assert.match(source, /cargo test --manifest-path preflight\/Cargo\.toml --locked/)
+  assert.match(source, /file: Dockerfile\.precheck/)
+  assert.match(source, /helm package "\$\{PRECHECK_CHART_PATH\}"/)
+  assert.match(source, /helm push "\$\{precheck_package\}"/)
+  assert.match(source, /dist-precheck\/krab-precheck-\*\.tgz/)
+  assert.match(source, /PRECHECK_IMAGE=ghcr\.io\/fidencio\/krab-preflight:\$\{chart_version\}/)
+  assert.match(source, /Verify anonymous pre-flight image access/)
+  const workflows = await readdir(resolve(root, '.github/workflows'))
+  assert.ok(!workflows.includes('release-precheck.yml'))
 })

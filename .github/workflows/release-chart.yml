@@ -18,6 +18,8 @@ env:
   CHART_PATH: charts/krab
   CHART_REGISTRY: oci://ghcr.io/fidencio
   CHART_REFERENCE: oci://ghcr.io/fidencio/krab
+  PRECHECK_CHART_PATH: charts/precheck
+  PRECHECK_CHART_REFERENCE: oci://ghcr.io/fidencio/krab-precheck
 
 jobs:
   release:
@@ -33,6 +35,10 @@ jobs:
           cache: npm
 
       - uses: azure/setup-helm@v5
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
 
       - run: npm ci
 
@@ -60,6 +66,7 @@ jobs:
           import { parse } from 'yaml'
 
           const chart = parse(readFileSync('charts/krab/Chart.yaml', 'utf8'))
+          const precheck = parse(readFileSync('charts/precheck/Chart.yaml', 'utf8'))
           const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
           const match = chart.version.match(
             /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/,
@@ -71,6 +78,8 @@ jobs:
             chart.version,
             chart.appVersion,
             pkg.version,
+            precheck.version,
+            precheck.appVersion,
             String(match[1] !== undefined),
             chart.annotations?.['artifacthub.io/prerelease'],
           ].join('\t'))
@@ -80,11 +89,14 @@ jobs:
             chart_version \
             app_version \
             package_version \
+            precheck_version \
+            precheck_app_version \
             is_prerelease \
             artifacthub_prerelease <<<"${metadata}"
 
-          if [[ "${chart_version}" != "${app_version}" || "${chart_version}" != "${package_version}" ]]; then
-            echo "::error::Chart version (${chart_version}), appVersion (${app_version}), and package version (${package_version}) must match"
+          if [[ "${chart_version}" != "${app_version}" || "${chart_version}" != "${package_version}" || \
+                "${chart_version}" != "${precheck_version}" || "${chart_version}" != "${precheck_app_version}" ]]; then
+            echo "::error::KRAB chart, pre-check chart, and package versions must all match"
             exit 1
           fi
 
@@ -96,6 +108,7 @@ jobs:
           echo "CHART_VERSION=${chart_version}" >> "${GITHUB_ENV}"
           echo "RELEASE_TAG=chart-v${chart_version}" >> "${GITHUB_ENV}"
           echo "IS_PRERELEASE=${is_prerelease}" >> "${GITHUB_ENV}"
+          echo "PRECHECK_IMAGE=ghcr.io/fidencio/krab-preflight:${chart_version}" >> "${GITHUB_ENV}"
 
       - name: Regenerate and verify committed catalog
         run: |
@@ -141,7 +154,12 @@ jobs:
             exit 1
           fi
 
-      - name: Build, lint, and render chart
+      - name: Validate pre-flight collector and probe
+        run: |
+          bash -n public/node-precheck.sh charts/precheck/files/collect.sh
+          cargo test --manifest-path preflight/Cargo.toml --locked
+
+      - name: Build, lint, and render charts
         shell: bash
         run: |
           set -euo pipefail
@@ -163,9 +181,12 @@ jobs:
             --namespace kata-system \
             --values "${RUNNER_TEMP}/nvidia-values.yaml" >/dev/null
 
-          mkdir -p dist-chart
+          helm lint "${PRECHECK_CHART_PATH}"
+          helm template krab-precheck "${PRECHECK_CHART_PATH}" --namespace krab-precheck >/dev/null
+
+          mkdir -p dist-chart dist-precheck
           helm package "${CHART_PATH}" --destination dist-chart
-          (cd dist-chart && sha256sum -- krab-*.tgz > SHA256SUMS)
+          helm package "${PRECHECK_CHART_PATH}" --destination dist-precheck
 
       - name: Reconcile existing published chart
         shell: bash
@@ -197,18 +218,104 @@ jobs:
               exit 1
             fi
             cp "${published_package}" "${chart_package}"
-            (cd dist-chart && sha256sum -- krab-*.tgz > SHA256SUMS)
             echo "PUBLISH_CHART=false" >> "${GITHUB_ENV}"
             echo "Chart ${CHART_VERSION} is already published with identical content"
           else
             echo "PUBLISH_CHART=true" >> "${GITHUB_ENV}"
           fi
 
+      - name: Reconcile existing published pre-flight chart
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          chart_package="dist-precheck/krab-precheck-${CHART_VERSION}.tgz"
+          published_dir="${RUNNER_TEMP}/published-precheck-chart"
+          local_tree="${RUNNER_TEMP}/local-precheck-chart"
+          published_tree="${RUNNER_TEMP}/published-precheck-chart-tree"
+          mkdir -p "${published_dir}" "${local_tree}" "${published_tree}"
+
+          if helm pull "${PRECHECK_CHART_REFERENCE}" \
+            --version "${CHART_VERSION}" \
+            --destination "${published_dir}" >/dev/null 2>&1; then
+            published_package="${published_dir}/krab-precheck-${CHART_VERSION}.tgz"
+            tar -xzf "${chart_package}" -C "${local_tree}"
+            tar -xzf "${published_package}" -C "${published_tree}"
+            if ! diff --recursive --brief \
+              "${local_tree}/krab-precheck" \
+              "${published_tree}/krab-precheck"; then
+              echo "::error::Published pre-flight chart ${CHART_VERSION} differs from this build"
+              exit 1
+            fi
+            cp "${published_package}" "${chart_package}"
+            echo "PUBLISH_PRECHECK_CHART=false" >> "${GITHUB_ENV}"
+            echo "Pre-flight chart ${CHART_VERSION} is already published with identical content"
+          else
+            echo "PUBLISH_PRECHECK_CHART=true" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Prepare release checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum "dist-chart/krab-${CHART_VERSION}.tgz" "dist-precheck/krab-precheck-${CHART_VERSION}.tgz" \
+            | sed 's#dist-chart/##; s#dist-precheck/##' > dist-chart/SHA256SUMS
+
+      - name: Check existing pre-flight image
+        shell: bash
+        run: |
+          set -euo pipefail
+          if docker pull --platform linux/amd64 "${PRECHECK_IMAGE}" >/dev/null 2>&1; then
+            revision="$(docker image inspect "${PRECHECK_IMAGE}" \
+              --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+            if [[ "${revision}" != "${GITHUB_SHA}" ]]; then
+              echo "::error::Existing pre-flight image ${PRECHECK_IMAGE} was built from ${revision}, not ${GITHUB_SHA}"
+              exit 1
+            fi
+            echo "PUBLISH_PRECHECK_IMAGE=false" >> "${GITHUB_ENV}"
+          else
+            echo "PUBLISH_PRECHECK_IMAGE=true" >> "${GITHUB_ENV}"
+          fi
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish pre-flight image
+        if: env.PUBLISH_PRECHECK_IMAGE == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.precheck
+          push: true
+          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          tags: ${{ env.PRECHECK_IMAGE }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/fidencio/krab
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Verify anonymous pre-flight image access
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker logout ghcr.io
+          for attempt in {1..6}; do
+            if docker buildx imagetools inspect "${PRECHECK_IMAGE}" >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Pre-flight image is not anonymously pullable"
+          exit 1
+
       - uses: actions/upload-artifact@v5
         with:
           name: krab-chart-${{ env.CHART_VERSION }}
           path: |
             dist-chart/krab-*.tgz
+            dist-precheck/krab-precheck-*.tgz
             dist-chart/SHA256SUMS
           if-no-files-found: error
 
@@ -217,31 +324,43 @@ jobs:
         with:
           subject-path: dist-chart/krab-*.tgz
 
-      - name: Publish and verify chart
+      - name: Attest pre-flight chart package
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist-precheck/krab-precheck-*.tgz
+
+      - name: Publish and verify charts
         shell: bash
         run: |
           set -euo pipefail
 
           chart_package="dist-chart/krab-${CHART_VERSION}.tgz"
-          if [[ "${PUBLISH_CHART}" == "true" ]]; then
+          precheck_package="dist-precheck/krab-precheck-${CHART_VERSION}.tgz"
+          if [[ "${PUBLISH_CHART}" == "true" || "${PUBLISH_PRECHECK_CHART}" == "true" ]]; then
             echo "${{ secrets.GITHUB_TOKEN }}" |
               helm registry login ghcr.io \
                 --username "${{ github.actor }}" \
                 --password-stdin
+          fi
+          if [[ "${PUBLISH_PRECHECK_CHART}" == "true" ]]; then
+            helm push "${precheck_package}" "${CHART_REGISTRY}"
+          fi
+          if [[ "${PUBLISH_CHART}" == "true" ]]; then
             helm push "${chart_package}" "${CHART_REGISTRY}"
+          fi
+          if [[ "${PUBLISH_CHART}" == "true" || "${PUBLISH_PRECHECK_CHART}" == "true" ]]; then
             helm registry logout ghcr.io
-          else
-            echo "Skipping push for existing chart ${CHART_VERSION}"
           fi
 
           for attempt in {1..6}; do
-            if helm show chart "${CHART_REFERENCE}" --version "${CHART_VERSION}" >/dev/null; then
+            if helm show chart "${CHART_REFERENCE}" --version "${CHART_VERSION}" >/dev/null 2>&1 && \
+               helm show chart "${PRECHECK_CHART_REFERENCE}" --version "${CHART_VERSION}" >/dev/null 2>&1; then
               exit 0
             fi
             sleep 10
           done
 
-          echo "::error::Published chart is not anonymously pullable"
+          echo "::error::Published charts are not anonymously pullable"
           exit 1
 
       - name: Create GitHub prerelease
@@ -260,6 +379,7 @@ jobs:
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release upload "${RELEASE_TAG}" \
               dist-chart/krab-*.tgz \
+              dist-precheck/krab-precheck-*.tgz \
               dist-chart/SHA256SUMS \
               --clobber
             gh release edit "${RELEASE_TAG}" \
@@ -268,6 +388,7 @@ jobs:
           else
             gh release create "${RELEASE_TAG}" \
               dist-chart/krab-*.tgz \
+              dist-precheck/krab-precheck-*.tgz \
               dist-chart/SHA256SUMS \
               --target "${GITHUB_SHA}" \
               --title "KRAB ${CHART_VERSION}" \

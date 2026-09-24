@@ -68,9 +68,7 @@ export function NodePrecheckPanel({
   const [copied, setCopied] = useState(false)
   const [nodeQuery, setNodeQuery] = useState('')
   const [page, setPage] = useState(0)
-  const chartVersion = import.meta.env.BASE_URL.includes('/dev/')
-    ? `${packageData.version}-dev`
-    : packageData.version
+  const chartVersion = packageData.version
   const command = [
     'helm install krab-precheck \\',
     '  oci://ghcr.io/fidencio/krab-precheck \\',

@@ -184,7 +184,7 @@ test('pre-check chart reuses the pinned dispatcher and aggregates all node repor
   const configmap = await readFile(resolve(root, 'charts/precheck/templates/configmap.yaml'), 'utf8')
   const collector = await readFile(resolve(root, 'charts/precheck/files/collect.sh'), 'utf8')
   const dockerfile = await readFile(resolve(root, 'Dockerfile.precheck'), 'utf8')
-  const workflow = await readFile(resolve(root, '.github/workflows/release-precheck.yml'), 'utf8')
+  const workflow = await readFile(resolve(root, '.github/workflows/release-chart.yml'), 'utf8')
   assert.equal(values.dispatcherImage, 'ghcr.io/kata-containers/k8s-job-dispatcher:0.4.0')
   assert.equal(values.nodeSelector, undefined)
   assert.match(jobs, /--job-template=\/etc\/krab\/node-job\.yaml/)
