@@ -162,6 +162,7 @@ export function NodePrecheckPanel({
     </div>
     <details className="precheck-report-details">
       <summary>Nodes</summary>
+      <div className="precheck-report-content">
       {checkSelector}
       {modelSelector}
       {selectedChecks.includes('gpu') && modelCoverage.length > 0 && <div className="precheck-model-coverage" aria-label="Selected NVIDIA GPU model coverage">
@@ -206,6 +207,7 @@ export function NodePrecheckPanel({
           <button type="button" disabled={page + 1 >= pageCount} onClick={() => setPage((current) => current + 1)}>Next</button>
         </nav>}
       </>}
+      </div>
     </details>
     {error && <p className="precheck-error" role="alert">{error}</p>}
   </section>
@@ -213,7 +215,6 @@ export function NodePrecheckPanel({
   return <details className="node-precheck">
     <summary><strong>Unsure what to choose or what your nodes support?</strong></summary>
     <div className="node-precheck-content">
-      <div className="precheck-check-setup">{checkSelector}{modelSelector}</div>
       <div className="precheck-step">
         <span className="precheck-step-number" aria-hidden="true">1</span>
         <div>
