@@ -19,8 +19,15 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Find the latest NFD release
+        run: npm run refresh:nfd
       - name: Fetch and validate pinned files
         run: npm run sync:upstream
+      - name: Check published chart dependencies
+        run: |
+          helm dependency update charts/krab
+          helm lint charts/krab
+          helm template krab charts/krab --namespace kata-system >/dev/null
       - run: npm test
       - run: npm run test:chart
       - uses: peter-evans/create-pull-request@v7
@@ -30,7 +37,7 @@ jobs:
           commit-message: "chore: refresh pinned upstream data"
           title: "chore: refresh pinned upstream data"
           body: |
-            Regenerates the explorer catalog from the reviewed refs in
-            `upstream/sources.lock.yaml`.
+            Proposes the latest published NFD release and regenerates KRAB
+            from the refs in `upstream/sources.lock.yaml`.
 
             All fetched files are checksum-validated before generation.

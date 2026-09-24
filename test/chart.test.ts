@@ -58,6 +58,20 @@ test('front-page component versions match the packaged charts', async () => {
   assert.equal(precheck.version, packageData.version)
 })
 
+test('KRAB pins NFD from its own release', async () => {
+  const chart = await readYaml('charts/krab/Chart.yaml')
+  const lock = await readYaml('upstream/sources.lock.yaml')
+  const nfd = lock.sources.find((source: { id: string }) => source.id === 'nfd-chart')
+  const dependency = chart.dependencies.find(
+    (item: { name: string }) => item.name === 'node-feature-discovery',
+  )
+
+  assert.ok(nfd?.release?.startsWith('v'))
+  assert.equal(dependency.version, nfd.release.slice(1))
+  assert.equal(dependency.repository, 'oci://registry.k8s.io/nfd/charts')
+  assert.equal(catalog.plannedArchitecture.charts.nfd.version, dependency.version)
+})
+
 test('chart prerelease annotation matches its semantic version', async () => {
   const chart = await readYaml('charts/krab/Chart.yaml')
   const match = chart.version.match(

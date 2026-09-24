@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "generate": "tsx scripts/sync-upstream.ts",
     "sync:upstream": "tsx scripts/sync-upstream.ts --fetch",
+    "refresh:nfd": "tsx scripts/refresh-nfd.ts",
     "test": "tsx --test test/*.test.ts",
     "test:chart": "tsx --test test/chart.test.ts",
     "lint": "oxlint",

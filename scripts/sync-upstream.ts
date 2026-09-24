@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 import { parse } from 'yaml'
+import { syncChartDependencies } from './sync-chart-dependencies.ts'
 import { syncChartImages } from './sync-chart-images.ts'
 import { syncReleaseVersion } from './sync-release-version.ts'
 
@@ -34,6 +35,11 @@ const krabValuesPath = resolve(root, 'charts/krab/values.yaml')
 const krabSchemaPath = resolve(root, 'charts/krab/values.schema.json')
 const generatedRoot = resolve(root, 'src/generated')
 const shouldFetch = process.argv.includes('--fetch')
+const chartRepositories = {
+  nfd: 'oci://registry.k8s.io/nfd/charts',
+  devicePlugin: 'oci://ghcr.io/kata-containers/kata-device-plugin-charts',
+  provisioner: 'oci://ghcr.io/kata-containers/kata-device-provisioner-charts',
+}
 
 const sha256 = (content: string) =>
   createHash('sha256').update(content).digest('hex')
@@ -274,18 +280,51 @@ async function main() {
     distribution.sourceUrl = sourceLink('kata-values')
   }
   plannedArchitecture.cluster.selinuxSourceUrl = sourceLink('kata-values')
-  const nfdDependency = requireValue(
-    kataChart.dependencies?.find(
-      (dependency: { name?: string }) =>
-        dependency.name === plannedArchitecture.charts.krab.dependencies.nfdValuesKey,
-    ),
-    'Unable to derive the required NFD dependency from the Kata chart',
+  const nfdRelease = requireValue(source('nfd-chart').release, 'NFD release is missing')
+  if (
+    !/^v\d+\.\d+\.\d+$/.test(nfdRelease) ||
+    source('nfd-values').release !== nfdRelease ||
+    source('nfd-values').ref !== source('nfd-chart').ref ||
+    nfdChart.name !== plannedArchitecture.charts.krab.dependencies.nfdValuesKey ||
+    String(nfdChart.appVersion) !== nfdRelease
+  ) {
+    throw new Error('Pinned NFD files must come from the same release')
+  }
+  const nfdVersion = nfdRelease.slice(1)
+  if (
+    kataChart.name !== 'kata-deploy' ||
+    devicePluginChart.name !== 'kata-device-plugin' ||
+    provisionerChart.name !== 'kata-device-provisioner' ||
+    !kataChartReference.endsWith(`/${kataChart.name}`)
+  ) {
+    throw new Error('Pinned chart names do not match KRAB dependencies')
+  }
+  const updatedChart = syncChartDependencies(
+    await readFile(krabChartPath, 'utf8'),
+    {
+      'node-feature-discovery': {
+        version: nfdVersion,
+        repository: chartRepositories.nfd,
+      },
+      'kata-deploy': {
+        version: String(kataChart.version),
+        repository: kataChartReference.slice(0, -`/${kataChart.name}`.length),
+      },
+      'kata-device-plugin': {
+        version: String(requireValue(devicePluginChart.version, 'Device plugin chart version is missing')),
+        repository: chartRepositories.devicePlugin,
+      },
+      'kata-device-provisioner': {
+        version: String(requireValue(provisionerChart.version, 'Provisioner chart version is missing')),
+        repository: chartRepositories.provisioner,
+      },
+    },
   )
   plannedArchitecture.charts.nfd = {
-    chartName: nfdDependency.name,
-    version: nfdDependency.version,
+    chartName: nfdChart.name,
+    version: nfdVersion,
     appVersion: String(nfdChart.appVersion),
-    repository: nfdDependency.repository,
+    repository: chartRepositories.nfd,
     valuesKey: plannedArchitecture.charts.krab.dependencies.nfdValuesKey,
     required: plannedArchitecture.charts.krab.dependencies.nfdRequired,
     image: resolveImage(
@@ -1020,6 +1059,7 @@ async function main() {
     })),
   }
 
+  await writeFile(krabChartPath, updatedChart)
   await writeFile(krabValuesPath, updatedValues)
   await mkdir(generatedRoot, { recursive: true })
   await writeFile(

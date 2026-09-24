@@ -27,3 +27,13 @@ jobs:
       - run: npm run test:chart
       - run: npm run lint
       - run: npm run build
+      - name: Validate published chart dependencies
+        run: |
+          helm dependency update charts/krab
+          helm lint charts/krab
+          helm template krab charts/krab --namespace kata-system >/dev/null
+          helm template krab charts/krab --namespace kata-system \
+            --set nvidia.enabled=true \
+            --set kata-device-provisioner.profiles.release-smoke.enabled=true \
+            --set-string kata-device-provisioner.profiles.release-smoke.ccMode=off \
+            >/dev/null

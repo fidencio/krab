@@ -34,10 +34,11 @@ annotations:
       description: Use the published v0.2.0-rc.0 kata-device-plugin image tag.
     - kind: added
       description: Support optional deployment names and versioned values filenames.
+# Run npm run generate to refresh these dependencies from pinned charts.
 dependencies:
   - name: node-feature-discovery
     version: "0.19.0"
-    repository: https://kubernetes-sigs.github.io/node-feature-discovery/charts
+    repository: oci://registry.k8s.io/nfd/charts
   - name: kata-deploy
     version: "4.2.0"
     repository: oci://ghcr.io/kata-containers/kata-deploy-charts
