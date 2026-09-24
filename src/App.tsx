@@ -2561,7 +2561,7 @@ function App() {
                           </strong>
                           <span>Installs Kata runtimes and RuntimeClasses</span>
                         </div>
-                        {selectedVendor.id === 'nvidia' && hasHardwareSelection && (
+                        {hasHardwareSelection && (
                           <>
                             <div className="architecture-node vendor-specific">
                               <small>NVIDIA dependency</small>

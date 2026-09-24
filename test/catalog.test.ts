@@ -322,6 +322,27 @@ test('Custom GPU-only selection imports as Custom', async () => {
   assert.deepEqual(imported.cluster.architectures, ['amd64'])
 })
 
+test('every configured Custom GPU mode enables both GPU dependencies', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const hopper = custom.hardwareFamilies.find(({ id }) => id === 'hopper')!
+  for (const mode of hopper.modes) {
+    const tee = mode.supportedCpuTeeIds[0]
+    const generated = parse(buildValuesBundle(
+      catalog,
+      custom,
+      { hopper: { enabled: true, modeId: mode.id, cpuTeeIds: tee ? [tee] : [] } },
+      { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+      { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+      createAdvancedConfiguration(),
+    ))
+    assert.equal(generated.nvidia.enabled, true, mode.id)
+    assert.ok(generated['kata-device-plugin'], mode.id)
+    assert.ok(generated['kata-device-provisioner'], mode.id)
+    assert.ok(Object.keys(generated['kata-device-provisioner'].profiles).length > 0, mode.id)
+  }
+})
+
 test('Custom artifacts install only the selected upstream RuntimeClasses', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
   const local = catalog.vendors.find(({ id }) => id === 'custom')!

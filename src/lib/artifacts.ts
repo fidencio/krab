@@ -1158,14 +1158,13 @@ export function buildValuesBundle(
     ...remainingRuntimeValues,
   }
   const dependencies = architecture.charts.krab.dependencies
+  const gpuPlatformSelected = vendor.hardwareFamilies.some((family) =>
+    family.availability === 'available' &&
+    family.modes.some(({ id }) => id === selections[family.id]?.modeId))
   const includeDevicePlugin =
-    dependencies.devicePluginRequired ||
-    ((dependencies.devicePluginRequiredBy.includes(vendor.id) || vendor.id === 'custom') &&
-      Object.keys(profiles).length > 0)
+    dependencies.devicePluginRequired || gpuPlatformSelected
   const includeProvisioner =
-    dependencies.provisionerRequired ||
-    ((dependencies.provisionerRequiredBy.includes(vendor.id) || vendor.id === 'custom') &&
-      Object.keys(profiles).length > 0)
+    dependencies.provisionerRequired || gpuPlatformSelected
   const nfdImages = advanced.images.nfd
   const nfdValues = {
     image: {
