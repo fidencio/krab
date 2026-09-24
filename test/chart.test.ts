@@ -40,6 +40,24 @@ test('KRAB chart declares unconditional and NVIDIA dependencies', async () => {
   )
 })
 
+test('front-page component versions match the packaged charts', async () => {
+  const chart = await readYaml('charts/krab/Chart.yaml')
+  const precheck = await readYaml('charts/precheck/Chart.yaml')
+  const packageData = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
+  const versions = catalog.plannedArchitecture.charts
+  const dependencies = Object.fromEntries(
+    chart.dependencies.map((dependency: { name: string; version: string }) =>
+      [dependency.name, dependency.version]),
+  )
+
+  assert.equal(versions.krab.version, chart.version)
+  assert.equal(versions.kataDeploy.version, dependencies['kata-deploy'])
+  assert.equal(versions.nfd.version, dependencies['node-feature-discovery'])
+  assert.equal(versions.devicePlugin.version, dependencies['kata-device-plugin'])
+  assert.equal(versions.provisioner.version, dependencies['kata-device-provisioner'])
+  assert.equal(precheck.version, packageData.version)
+})
+
 test('chart prerelease annotation matches its semantic version', async () => {
   const chart = await readYaml('charts/krab/Chart.yaml')
   const match = chart.version.match(

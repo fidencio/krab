@@ -178,6 +178,55 @@ nav a:hover {
   padding-bottom: 54px;
 }
 
+.component-versions {
+  width: min(760px, calc(100% - 48px));
+  margin: 8px auto 0;
+  padding: 16px 0;
+  border-block: 1px solid var(--line);
+}
+
+.component-versions > header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 10px;
+}
+
+.component-versions h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.component-versions > header > span,
+.component-version-row > strong {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.component-version-row {
+  display: grid;
+  grid-template-columns: 145px minmax(0, 1fr);
+  gap: 12px;
+  padding: 5px 0;
+}
+
+.component-version-row > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.component-version-row b {
+  margin-left: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
+}
+
 .node-precheck {
   width: min(760px, calc(100% - 48px));
   margin: 16px auto 28px;
@@ -4496,6 +4545,8 @@ nav a:hover,
 }
 
 @media (max-width: 480px) {
+  .component-versions { width: 100%; }
+  .component-version-row { grid-template-columns: 1fr; gap: 2px; padding: 7px 0; }
   .node-precheck { width: 100%; }
   .node-precheck-content { padding-left: 0; }
   .precheck-upload-step { flex-wrap: wrap; }

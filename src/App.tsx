@@ -16,6 +16,7 @@ import {
   Upload,
 } from 'lucide-react'
 import catalogData from './generated/catalog.json'
+import packageData from '../package.json'
 import krabLogoDark from './assets/brands/krab-kata-hybrid.png'
 import krabLogoLight from './assets/brands/krab-kata-hybrid-light.png'
 import { NodePrecheckPanel } from './NodePrecheckPanel'
@@ -55,6 +56,28 @@ import {
 import './App.css'
 
 const catalog = catalogData as unknown as ExplorerCatalog
+const chartVersions = catalog.plannedArchitecture.charts
+const frontPageVersions = [
+  {
+    label: 'Every deployment',
+    components: [
+      { name: 'KRAB', version: chartVersions.krab.version },
+      { name: 'Kata deploy', version: chartVersions.kataDeploy.version },
+      { name: 'Node Feature Discovery', version: chartVersions.nfd.version },
+    ],
+  },
+  {
+    label: 'With NVIDIA GPUs',
+    components: [
+      { name: 'Device plugin', version: chartVersions.devicePlugin.version },
+      { name: 'Device provisioner', version: chartVersions.provisioner.version },
+    ],
+  },
+  {
+    label: 'Pre-flight check',
+    components: [{ name: 'KRAB precheck', version: packageData.version }],
+  },
+]
 const brandLogos = import.meta.glob('./assets/brands/*.{svg,png}', {
   eager: true,
   import: 'default',
@@ -889,6 +912,21 @@ function App() {
                   <AlertTriangle size={15} /> {importMessage.text}
                 </p>
               )}
+
+              <section className="component-versions" aria-labelledby="component-versions-title">
+                <header>
+                  <h3 id="component-versions-title">Component versions</h3>
+                  <span>Helm charts pinned by this builder</span>
+                </header>
+                {frontPageVersions.map(({ label, components }) => (
+                  <div className="component-version-row" key={label}>
+                    <strong>{label}</strong>
+                    <div>{components.map(({ name, version }) => (
+                      <span key={name}><span>{name}</span> <b>{version}</b></span>
+                    ))}</div>
+                  </div>
+                ))}
+              </section>
 
               <NodePrecheckPanel
                 nodeReports={nodeReports}
