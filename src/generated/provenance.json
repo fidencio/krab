@@ -3,7 +3,7 @@
   "releaseContract": {
     "path": "upstream/architecture.yaml",
     "status": "prerelease",
-    "notice": "KRAB 0.1.0-alpha.4 is prerelease software. Review generated values before deploying."
+    "notice": "KRAB 0.1.0-alpha.5 is prerelease software. Review generated values before deploying."
   },
   "generatedFrom": [
     {

@@ -2,6 +2,14 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.0-alpha.5] - 2026-09-24
+
+### Added
+
+- A labeled-node pre-flight check that collects one report for the cluster and
+  uses selected CPU TEE and GPU requirements to guide deployment choices.
+- Node readiness results with GPU model filters and clear failing-node details.
+
 ## [0.1.0-alpha.4] - 2026-09-23
 
 ### Added
