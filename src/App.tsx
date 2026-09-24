@@ -59,7 +59,7 @@ const catalog = catalogData as unknown as ExplorerCatalog
 const chartVersions = catalog.plannedArchitecture.charts
 const frontPageVersions = [
   {
-    label: 'Every deployment',
+    label: 'Core',
     components: [
       { name: 'KRAB', version: chartVersions.krab.version },
       { name: 'Kata deploy', version: chartVersions.kataDeploy.version },
@@ -67,14 +67,14 @@ const frontPageVersions = [
     ],
   },
   {
-    label: 'With NVIDIA GPUs',
+    label: 'NVIDIA GPU',
     components: [
       { name: 'Device plugin', version: chartVersions.devicePlugin.version },
       { name: 'Device provisioner', version: chartVersions.provisioner.version },
     ],
   },
   {
-    label: 'Pre-flight check',
+    label: 'Pre-flight',
     components: [{ name: 'KRAB precheck', version: packageData.version }],
   },
 ]
@@ -914,18 +914,14 @@ function App() {
               )}
 
               <section className="component-versions" aria-label="Component versions">
-                <table>
-                  <thead><tr><th scope="col">Used for</th><th scope="col">Component</th><th scope="col">Version</th></tr></thead>
-                  {frontPageVersions.map(({ label, components }) => (
-                    <tbody key={label}>{components.map(({ name, version }, index) => (
-                      <tr key={name}>
-                        {index === 0 && <th scope="rowgroup" rowSpan={components.length}>{label}</th>}
-                        <td>{name}</td>
-                        <td><code>{version}</code></td>
-                      </tr>
-                    ))}</tbody>
-                  ))}
-                </table>
+                {frontPageVersions.map(({ label, components }) => (
+                  <p key={label} className="component-version-line">
+                    <strong>{label}</strong>
+                    {components.map(({ name, version }) => (
+                      <span key={name}>{name} <code>{version}</code></span>
+                    ))}
+                  </p>
+                ))}
               </section>
 
               <NodePrecheckPanel
