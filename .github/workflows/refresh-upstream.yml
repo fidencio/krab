@@ -19,6 +19,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - uses: oras-project/setup-oras@v2.0.1
+        with:
+          version: 1.3.3
       - name: Find the latest NFD release
         run: npm run refresh:nfd
       - name: Fetch and validate pinned files
@@ -40,4 +43,5 @@ jobs:
             Proposes the latest published NFD release and regenerates KRAB
             from the refs in `upstream/sources.lock.yaml`.
 
-            All fetched files are checksum-validated before generation.
+            All fetched files are checksum-validated before generation. The
+            precheck provisioner image digest is checked for amd64 and arm64.

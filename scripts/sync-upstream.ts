@@ -5,6 +5,7 @@ import process from 'node:process'
 import { parse } from 'yaml'
 import { syncChartDependencies } from './sync-chart-dependencies.ts'
 import { syncChartImages } from './sync-chart-images.ts'
+import { resolveImageLock, syncPrecheck } from './sync-precheck.ts'
 import { syncReleaseVersion } from './sync-release-version.ts'
 
 type Source = {
@@ -33,6 +34,9 @@ const architecturePath = resolve(root, 'upstream/architecture.yaml')
 const krabChartPath = resolve(root, 'charts/krab/Chart.yaml')
 const krabValuesPath = resolve(root, 'charts/krab/values.yaml')
 const krabSchemaPath = resolve(root, 'charts/krab/values.schema.json')
+const precheckImageLockPath = resolve(root, 'upstream/precheck-image.lock.json')
+const precheckDockerfilePath = resolve(root, 'Dockerfile.precheck')
+const precheckValuesPath = resolve(root, 'charts/precheck/values.yaml')
 const generatedRoot = resolve(root, 'src/generated')
 const shouldFetch = process.argv.includes('--fetch')
 const chartRepositories = {
@@ -394,6 +398,33 @@ async function main() {
     provisionerValues.job?.dispatcherImage,
     '',
     'kata-device-provisioner dispatcher',
+  )
+  const precheckImage = {
+    reference: requireValue(
+      provisionerImage.reference ?? provisionerImage.repository,
+      'Provisioner image reference is missing',
+    ),
+    tag: provisionerImage.tag,
+  }
+  const precheckDispatcher = {
+    reference: requireValue(
+      provisionerDispatcherImage.reference ?? provisionerDispatcherImage.repository,
+      'Provisioner dispatcher reference is missing',
+    ),
+    tag: provisionerDispatcherImage.tag,
+  }
+  if (precheckImage.tag !== String(provisionerChart.appVersion)) {
+    throw new Error('Provisioner image tag and chart appVersion must agree')
+  }
+  const precheckImageLock = shouldFetch
+    ? await resolveImageLock(precheckImage.reference, precheckImage.tag)
+    : JSON.parse(await readFile(precheckImageLockPath, 'utf8'))
+  const updatedPrecheck = syncPrecheck(
+    await readFile(precheckDockerfilePath, 'utf8'),
+    await readFile(precheckValuesPath, 'utf8'),
+    precheckImageLock,
+    precheckImage,
+    precheckDispatcher,
   )
   const updatedValues = syncChartImages(
     await readFile(krabValuesPath, 'utf8'),
@@ -1061,6 +1092,11 @@ async function main() {
 
   await writeFile(krabChartPath, updatedChart)
   await writeFile(krabValuesPath, updatedValues)
+  await writeFile(precheckDockerfilePath, updatedPrecheck.dockerfile)
+  await writeFile(precheckValuesPath, updatedPrecheck.values)
+  if (shouldFetch) {
+    await writeFile(precheckImageLockPath, `${JSON.stringify(precheckImageLock, null, 2)}\n`)
+  }
   await mkdir(generatedRoot, { recursive: true })
   await writeFile(
     resolve(generatedRoot, 'catalog.json'),

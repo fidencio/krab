@@ -3,6 +3,7 @@ mod gpu;
 mod ibm_se;
 mod iommufd;
 mod kvm;
+mod node_report;
 mod output;
 mod platform;
 mod probe;
@@ -79,7 +80,8 @@ struct Options {
 }
 
 fn usage() -> &'static str {
-    "Usage: krab-preflight [--json] [--kvm] [--tdx] [--snp] [--ibm-se] [--iommufd] [--erofs] [--gpu] [--gpu-cc] [--gpu-ppcie]\n\
+    "Usage: krab-preflight --node-report\n\
+     or: krab-preflight [--json] [--kvm] [--tdx] [--snp] [--ibm-se] [--iommufd] [--erofs] [--gpu] [--gpu-cc] [--gpu-ppcie]\n\
      Select one or more host checks. They do not launch a VM or test a VFIO device.\n\
      --kvm       /dev/kvm exists as a character device\n\
      --tdx       /sys/module/kvm_intel/parameters/tdx is enabled\n\
@@ -91,6 +93,7 @@ fn usage() -> &'static str {
      --gpu-cc    A supported NVIDIA GPU is CC capable\n\
      --gpu-ppcie A supported NVIDIA GPU is PPCIE capable\n\
      --json      Write one JSON object to stdout\n\
+     --node-report  Write a complete KRAB node report\n\
      --help      Show this help"
 }
 
@@ -130,6 +133,19 @@ fn main() -> ExitCode {
     if args.len() == 1 && (args[0] == "--help" || args[0] == "-h") {
         println!("{}", usage());
         return ExitCode::SUCCESS;
+    }
+    if args.len() == 1 && args[0] == "--node-report" {
+        let paths = Paths::default();
+        match node_report::render(&paths, platform::architecture()) {
+            Ok(report) => {
+                println!("{report}");
+                return ExitCode::SUCCESS;
+            }
+            Err(error) => {
+                eprintln!("cannot collect node report: {error}");
+                return ExitCode::FAILURE;
+            }
+        }
     }
 
     let options = match parse_args(args.drain(..)) {

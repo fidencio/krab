@@ -43,7 +43,7 @@ pub fn json(architecture: &str, results: &[(Check, Result)]) -> String {
     output
 }
 
-fn json_string(output: &mut String, value: &str) {
+pub(crate) fn json_string(output: &mut String, value: &str) {
     output.push('"');
     for character in value.chars() {
         match character {

@@ -116,7 +116,13 @@ provisioner inventory identifies any selected model. The node report records
 the provisioner's `chip=` field and readable device name; older reports can
 still match a complete model name in the device name.
 The generated deployment installs EROFS utilities when a checked node does not
-confirm a suitable host version.
+confirm suitable host utilities.
+The precheck image runs the Rust probe on a distroless base. Its provisioner
+image digest is kept in `upstream/precheck-image.lock.json`. Run
+`npm run sync:upstream` to refresh it with ORAS, check amd64 and arm64, and
+updates the Dockerfile and the precheck chart's dispatcher image. The probe
+checks the host EROFS binary without executing it, so new reports leave the
+optional `erofsVersion` field empty.
 
 ## Development
 
@@ -139,6 +145,9 @@ To refetch every locked source and verify its checksum:
 ```sh
 npm run sync:upstream
 ```
+
+This command also resolves the precheck provisioner image digest and requires
+the ORAS CLI.
 
 Updating an upstream version is a reviewed change: update the ref and checksum
 in the lock file, run the sync command, and review the generated-data diff.
