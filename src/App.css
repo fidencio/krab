@@ -181,20 +181,8 @@ nav a:hover {
 .component-versions {
   width: min(680px, calc(100% - 48px));
   margin: 8px auto 0;
-  padding: 16px 0;
+  padding: 12px 0;
   border-block: 1px solid var(--line);
-}
-
-.component-versions > header {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 12px;
-}
-
-.component-versions h3 {
-  margin: 0;
-  color: var(--ink);
-  font-size: 15px;
 }
 
 .component-versions table { width: 100%; border-collapse: collapse; table-layout: fixed; text-align: left; }
@@ -219,6 +207,7 @@ nav a:hover {
 .node-precheck-loaded { padding-bottom: 8px; }
 
 .node-precheck summary { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 7px 0; cursor: pointer; list-style: none; }
+.node-precheck:not(.node-precheck-loaded) > summary { justify-content: center; text-align: center; }
 .node-precheck summary::-webkit-details-marker { display: none; }
 .node-precheck summary::before { content: '›'; color: var(--kata-orange); font-size: 21px; line-height: 1; }
 .node-precheck[open] > summary::before { transform: rotate(90deg); }

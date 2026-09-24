@@ -913,10 +913,7 @@ function App() {
                 </p>
               )}
 
-              <section className="component-versions" aria-labelledby="component-versions-title">
-                <header>
-                  <h3 id="component-versions-title">Component versions</h3>
-                </header>
+              <section className="component-versions" aria-label="Component versions">
                 <table>
                   <thead><tr><th scope="col">Used for</th><th scope="col">Component</th><th scope="col">Version</th></tr></thead>
                   {frontPageVersions.map(({ label, components }) => (
