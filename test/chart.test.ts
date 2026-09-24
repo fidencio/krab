@@ -93,6 +93,16 @@ test('chart defaults and generated values satisfy the values schema', async () =
   )
 
   assert.equal(validate(generated), true, JSON.stringify(validate.errors))
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const mixed = parse(buildValuesBundle(
+    catalog,
+    custom,
+    { hopper: { enabled: true, modeId: 'off', cpuTeeIds: [] } },
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+    { selectedShimIds: ['qemu-tdx-runtime-rs', 'qemu-snp-runtime-rs'], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    createAdvancedConfiguration(),
+  ))
+  assert.equal(validate(mixed), true, JSON.stringify(validate.errors))
   assert.equal(generated.nvidia.enabled, true)
   assert.equal(
     generated['kata-device-provisioner']['node-feature-discovery'].enabled,

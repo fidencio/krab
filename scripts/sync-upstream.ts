@@ -430,7 +430,7 @@ async function main() {
   }
   const nvidiaGpuRuntimeRsShims = nvidiaGpuShims.filter(({ id }) =>
     id.endsWith('-runtime-rs'),
-  )
+  ).map((shim) => ({ ...shim, selectionGroup: 'gpu' }))
   const cpuTees = nvidiaGpuRuntimeRsShims.flatMap((shim) => {
     if (shim.id.includes('-snp-')) {
       return [{
@@ -701,6 +701,34 @@ async function main() {
     }
   })
 
+  const customTeeNodeSelectors: Record<string, Record<string, string>> = {
+    'qemu-snp-runtime-rs': { 'amd.feature.node.kubernetes.io/snp': 'true' },
+    'qemu-tdx-runtime-rs': { 'intel.feature.node.kubernetes.io/tdx': 'true' },
+    'qemu-se-runtime-rs': { 'feature.node.kubernetes.io/cpu-security.se.enabled': 'true' },
+  }
+  const customTeeShims = teeVendors.map(({ runtime }) => ({
+    ...runtime.shims[0],
+    nodeSelector: customTeeNodeSelectors[runtime.shims[0].id],
+  }))
+  const customRuntimeShims = [
+    ...localShims,
+    ...customTeeShims,
+    ...nvidiaGpuRuntimeRsShims,
+  ]
+  const customRuntimeValues = {
+    ...localRuntimeValues,
+    shims: {
+      ...localRuntimeValues.shims,
+      ...Object.fromEntries(customTeeShims.map(({ id, nodeSelector }) => [id, {
+        ...structuredClone(kataValues.shims[id]),
+        runtimeClass: { nodeSelector },
+      }])),
+      ...Object.fromEntries(nvidiaGpuRuntimeRsShims.map(({ id }) => [id,
+        structuredClone(kataProfile.shims[id]),
+      ])),
+    },
+  }
+
   const gpuResource = requireValue(
     pluginCode.match(/name:\s*"(nvidia\.com\/gpu)"/)?.[1],
     'Unable to find the NVIDIA GPU resource name',
@@ -865,9 +893,11 @@ async function main() {
         capabilities: [
           { id: 'general-purpose' },
           { id: 'multiple-hypervisors' },
+          { id: 'confidential-computing' },
+          { id: 'gpu', resourceName: gpuResource },
         ],
         sourceUrl: sourceLink('kata-chart'),
-        hardwareFamilies: [],
+        hardwareFamilies: families,
         runtime: {
           chart: {
             name: kataChart.name,
@@ -876,11 +906,11 @@ async function main() {
             ociReference: kataChartReference,
             namespace: plannedArchitecture.namespace,
             valuesFileName: 'kata-custom.values.yaml',
-            values: localRuntimeValues,
+            values: customRuntimeValues,
             sourceUrl: sourceLink('kata-chart'),
           },
-          shims: localShims,
-          cpuTees: [],
+          shims: customRuntimeShims,
+          cpuTees,
         },
         provisioner: {
           chart: {
@@ -902,19 +932,22 @@ async function main() {
         },
         devicePlugin: {
           chart: plannedArchitecture.charts.devicePlugin,
-          values: {},
+          values: {
+            ...pluginValues,
+            image: devicePluginImage,
+          },
           sourceUrl: sourceLink('device-plugin-chart'),
         },
         workload: {
-          resourceName: '',
-          nvSwitchResourceName: '',
-          resourceNaming: '',
-          sourceUrl: sourceLink('kata-values'),
+          resourceName: gpuResource,
+          nvSwitchResourceName: nvSwitchResource,
+          resourceNaming: pluginValues.resourceNaming,
+          sourceUrl: sourceLink('device-plugin-code'),
         },
         integration: {
-          sandboxWorkloads: {},
-          defaultCcMode: '',
-          sourceUrl: sourceLink('kata-values'),
+          sandboxWorkloads: nvidiaValues.sandboxWorkloads,
+          defaultCcMode: nvidiaValues.ccManager?.defaultMode,
+          sourceUrl: sourceLink('nvidia-operator-values'),
         },
       },
       {

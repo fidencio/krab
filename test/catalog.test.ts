@@ -47,7 +47,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
   assert.deepEqual(vendorCpuRuntime.supportedArches, ['amd64', 'arm64'])
   assert.equal(vendorCpuRuntime.snapshotter, 'erofs')
   assert.equal(local.displayName, 'Custom')
-  assert.equal(local.hardwareFamilies.length, 0)
+  assert.equal(local.hardwareFamilies.length, 4)
   assert.deepEqual(
     local.runtime.shims.map(({ id }) => id),
     [
@@ -58,6 +58,12 @@ test('generated catalog carries accurate upstream chart data', async () => {
       'qemu-nvidia-cpu-runtime-rs',
       'qemu-coco-dev-runtime-rs',
       'openvmm-azure-runtime-rs',
+      'qemu-snp-runtime-rs',
+      'qemu-se-runtime-rs',
+      'qemu-tdx-runtime-rs',
+      'qemu-nvidia-gpu-runtime-rs',
+      'qemu-nvidia-gpu-snp-runtime-rs',
+      'qemu-nvidia-gpu-tdx-runtime-rs',
     ],
   )
   const nvidiaCpuRuntime = local.runtime.shims.find(
@@ -244,6 +250,75 @@ test('Custom limits default runtimes to chosen architectures and restores that c
   assert.deepEqual(parse(values)['kata-deploy'].defaultShim, { amd64: 'qemu-runtime-rs' })
   const imported = importValuesBundle(catalog, values, 'krab-0.1.0-alpha.6-values.yaml')
   assert.equal(imported.vendorId, 'custom')
+  assert.deepEqual(imported.cluster.architectures, ['amd64'])
+})
+
+test('Custom combines CPU TEEs and NVIDIA GPU profiles in one deployment', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const hopper = custom.hardwareFamilies.find(({ id }) => id === 'hopper')!
+  const passthrough = hopper.modes.find(({ id }) => id === 'off')!
+  const values = buildValuesBundle(
+    catalog,
+    custom,
+    { hopper: { enabled: true, modeId: 'off', cpuTeeIds: [] } },
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+    { selectedShimIds: ['qemu-tdx-runtime-rs', 'qemu-snp-runtime-rs'], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    createAdvancedConfiguration(),
+  )
+  const generated = parse(values)
+  const shims = generated['kata-deploy'].shims
+  assert.deepEqual(Object.keys(shims), [
+    'disableAll', 'qemu-tdx-runtime-rs', 'qemu-snp-runtime-rs', 'qemu-nvidia-gpu-runtime-rs',
+  ])
+  assert.deepEqual(shims['qemu-tdx-runtime-rs'].runtimeClass.nodeSelector,
+    { 'intel.feature.node.kubernetes.io/tdx': 'true' })
+  assert.deepEqual(shims['qemu-snp-runtime-rs'].runtimeClass.nodeSelector,
+    { 'amd.feature.node.kubernetes.io/snp': 'true' })
+  assert.equal(generated.nvidia.enabled, true)
+  assert.ok(generated['kata-device-plugin'])
+  assert.equal(generated['kata-device-provisioner'].profiles[passthrough.profileName].enabled, true)
+  assert.equal(generated['kata-deploy'].defaultShim, undefined)
+  const imported = importValuesBundle(catalog, values)
+  assert.equal(imported.vendorId, 'custom')
+  assert.deepEqual(imported.runtime.selectedShimIds, ['qemu-tdx-runtime-rs', 'qemu-snp-runtime-rs'])
+  assert.equal(imported.selections.hopper.modeId, 'off')
+})
+
+test('Custom installs CPU TEEs without GPU dependencies', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const values = buildValuesBundle(
+    catalog,
+    custom,
+    {},
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64', 's390x'] },
+    { selectedShimIds: ['qemu-tdx-runtime-rs', 'qemu-snp-runtime-rs', 'qemu-se-runtime-rs'], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    createAdvancedConfiguration(),
+  )
+  const generated = parse(values)
+  assert.equal(generated.nvidia.enabled, false)
+  assert.equal(generated['kata-device-plugin'], undefined)
+  assert.equal(generated['kata-device-provisioner'], undefined)
+  assert.deepEqual(generated['kata-deploy'].shims['qemu-se-runtime-rs'].runtimeClass.nodeSelector,
+    { 'feature.node.kubernetes.io/cpu-security.se.enabled': 'true' })
+  assert.deepEqual(importValuesBundle(catalog, values).cluster.architectures, ['amd64', 's390x'])
+})
+
+test('Custom GPU-only selection imports as Custom', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const values = buildValuesBundle(
+    catalog,
+    custom,
+    { hopper: { enabled: true, modeId: 'off', cpuTeeIds: [] } },
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+    { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    createAdvancedConfiguration(),
+  )
+  const imported = importValuesBundle(catalog, values)
+  assert.equal(imported.vendorId, 'custom')
+  assert.equal(imported.selections.hopper.modeId, 'off')
   assert.deepEqual(imported.cluster.architectures, ['amd64'])
 })
 

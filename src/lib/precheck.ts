@@ -196,9 +196,9 @@ export function unavailableVendorForChecks(
   const tees = checks.filter((check) => check !== 'gpu')
   const requiredModels = checks.includes('gpu') ? gpuModels : []
   if (tees.length > 1) return 'Selected CPU TEEs cannot run on the same node.'
-  if (checks.includes('gpu') && vendor.id !== 'nvidia')
+  if (checks.includes('gpu') && vendor.hardwareFamilies.length === 0)
     return 'This path does not configure NVIDIA GPUs.'
-  if (tees.length > 0 && vendor.id !== 'nvidia' &&
+  if (tees.length > 0 && !checks.includes('gpu') && vendor.id !== 'nvidia' &&
       !vendor.runtime.shims.some(({ id }) => id.split('-').includes(tees[0])))
     return `This path does not configure ${tees[0].toUpperCase()}.`
 
@@ -206,7 +206,7 @@ export function unavailableVendorForChecks(
   if (reports.length > 0 && candidates.length === 0)
     return 'No uploaded node meets all selected checks.'
 
-  if (vendor.id === 'nvidia') {
+  if (vendor.id === 'nvidia' || (checks.includes('gpu') && vendor.hardwareFamilies.length > 0)) {
     const families = vendor.hardwareFamilies.filter((family) =>
       family.availability === 'available' &&
       (requiredModels.length === 0 || family.models.some((model) => requiredModels.includes(model))) &&

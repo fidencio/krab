@@ -55,7 +55,7 @@ export type VendorCatalog = {
       id: string
       runtimeClass: string
       userSelectable?: boolean
-      selectionGroup?: 'cpu'
+      selectionGroup?: 'cpu' | 'gpu'
       snapshotter: string
       snapshotterConfiguration?: {
         erofsSnapshotterMode: 'memory' | 'disk'
@@ -407,6 +407,8 @@ export function importValuesBundle(
   const provisionerValues = asRecord(root[dependencies.provisionerValuesKey])
   const configuredProfiles = asRecord(provisionerValues.profiles)
   const nvidiaEnabled = asRecord(root[dependencies.nvidiaValuesKey]).enabled === true
+  const embeddedSelection = source.match(/^# KRAB selection: ([a-z0-9-]+)$/m)?.[1]
+  const selectedVendor = catalog.vendors.find(({ id }) => id === embeddedSelection)
   const detectedVendor = catalog.vendors
         .filter(({ id }) => id !== 'nvidia')
         .map((candidate) => ({
@@ -416,18 +418,25 @@ export function importValuesBundle(
           ).length,
         }))
         .sort((left, right) => right.score - left.score)[0]
-  const vendor = nvidiaEnabled
+  const customVendor = catalog.vendors.find(({ id }) => id === 'custom')
+  const hasCustomOnlyShim = customVendor?.runtime.shims.some(({ id }) =>
+    enabledShimIds.includes(id) &&
+    !catalog.vendors.find(({ id: vendorId }) => vendorId === 'nvidia')?.runtime.shims.some((shim) => shim.id === id),
+  )
+  const vendor = selectedVendor ?? (nvidiaEnabled && hasCustomOnlyShim
+    ? customVendor
+    : nvidiaEnabled
     ? catalog.vendors.find(({ id }) => id === 'nvidia')
     : detectedVendor?.score
       ? detectedVendor.candidate
-      : undefined
+      : undefined)
 
   if (!vendor || enabledShimIds.length === 0) {
     throw new Error('KRAB could not identify a supported vendor or RuntimeClass.')
   }
 
   const selections = initialFamilySelections(vendor)
-  if (vendor.id === 'nvidia') {
+  if (vendor.hardwareFamilies.length > 0) {
     for (const family of vendor.hardwareFamilies) {
       for (const mode of family.modes) {
         if (mode.id === 'off' && asRecord(configuredProfiles[mode.profileName]).enabled) {
@@ -462,9 +471,9 @@ export function importValuesBundle(
     .find((agent) => Object.keys(agent).length > 0) ?? {}
   const runtime: RuntimeConfiguration = {
     selectedShimIds:
-      vendor.hardwareFamilies.length === 0
+      vendor.hardwareFamilies.length === 0 || vendor.id === 'custom'
         ? enabledShimIds.filter((id) =>
-            vendor.runtime.shims.some((shim) => shim.id === id),
+            vendor.runtime.shims.some((shim) => shim.id === id && !id.includes('nvidia-gpu')),
           )
         : enabledShimIds.filter((id) =>
             vendor.runtime.shims.some(
@@ -717,7 +726,8 @@ export function resolveRuntimeShimIds(
       vendor.runtime.shims.some(({ id }) => id === shimId),
     ),
   )
-  const baseRuntimeShim = vendor.runtime.shims.find(
+  const baseRuntimeShim = vendor.runtime.shims.find(({ id }) =>
+    id === 'qemu-nvidia-gpu-runtime-rs') ?? vendor.runtime.shims.find(
     ({ id }) => !id.includes('-snp-') && !id.includes('-tdx-'),
   )
 
@@ -891,7 +901,7 @@ export function buildValuesBundle(
           noProxy: runtime.runtimeNoProxy.trim(),
         }
       }
-      if (vendor.id === 'nvidia') {
+      if (shimId.includes('nvidia-')) {
         selectedShim.nvrc = {
           ...(selectedShim.nvrc ?? {}),
           enableDCGM: runtime.nvidiaDcgmEnabled,
@@ -1150,11 +1160,11 @@ export function buildValuesBundle(
   const dependencies = architecture.charts.krab.dependencies
   const includeDevicePlugin =
     dependencies.devicePluginRequired ||
-    (dependencies.devicePluginRequiredBy.includes(vendor.id) &&
+    ((dependencies.devicePluginRequiredBy.includes(vendor.id) || vendor.id === 'custom') &&
       Object.keys(profiles).length > 0)
   const includeProvisioner =
     dependencies.provisionerRequired ||
-    (dependencies.provisionerRequiredBy.includes(vendor.id) &&
+    ((dependencies.provisionerRequiredBy.includes(vendor.id) || vendor.id === 'custom') &&
       Object.keys(profiles).length > 0)
   const nfdImages = advanced.images.nfd
   const nfdValues = {
@@ -1212,7 +1222,7 @@ export function buildValuesBundle(
     provisionerImages.dispatcherTag,
   )
 
-  return `# ${architecture.notice}\n${yaml({
+  return `# ${architecture.notice}\n# KRAB selection: ${vendor.id}\n${yaml({
     [dependencies.nvidiaValuesKey]: {
       enabled: includeDevicePlugin || includeProvisioner,
     },

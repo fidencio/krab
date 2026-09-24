@@ -297,7 +297,16 @@ function App() {
   const vendorPrecheckReason = (vendor: VendorCatalog) =>
     unavailableVendorForChecks(vendor, reports, selectedChecks, selectedGpuModels)
   const familyPrecheckReason = (family: VendorCatalog['hardwareFamilies'][number]) =>
-    unavailableFamilyForChecks(family, reports, selectedChecks, selectedGpuModels)
+    selectedVendorId === 'custom' &&
+    !(cluster.architectures ?? []).some((architecture) => family.supportedArches.includes(architecture))
+      ? `Requires ${family.supportedArches.map((arch) => arch.toUpperCase()).join(' or ')}`
+      : selectedVendorId === 'custom' &&
+        !selectedVendor.runtime.shims.some(({ selectionGroup, supportedArches }) =>
+          selectionGroup === 'gpu' && supportedArches.some((architecture) =>
+            family.supportedArches.includes(architecture) &&
+            (cluster.architectures ?? []).includes(architecture)))
+      ? 'No compatible GPU RuntimeClass for the selected architecture'
+      : unavailableFamilyForChecks(family, reports, selectedChecks, selectedGpuModels)
   const modePrecheckReason = (
     mode: VendorCatalog['hardwareFamilies'][number]['modes'][number],
     family: VendorCatalog['hardwareFamilies'][number],
@@ -388,7 +397,8 @@ function App() {
       selections,
       runtime,
     )
-    const baseShim = selectedVendor.runtime.shims.find(
+    const baseShim = selectedVendor.runtime.shims.find(({ id, selectionGroup }) =>
+      selectionGroup === 'gpu' && !/(?:snp|tdx)/.test(id)) ?? selectedVendor.runtime.shims.find(
       ({ id }) => !id.includes('-snp-') && !id.includes('-tdx-'),
     )
 
@@ -414,7 +424,7 @@ function App() {
         return []
       })
       const purpose =
-        selectedVendor.id === 'nvidia'
+        shim.selectionGroup === 'gpu' || selectedVendor.id === 'nvidia'
           ? shim.userSelectable
             ? 'CPU-only Kata pod sandboxes using the NVIDIA-optimized runtime.'
             : tee
@@ -490,7 +500,7 @@ function App() {
     !erofsDiskSizeMissing &&
     !unsupportedSelection &&
     customRuntimeErrors.length === 0 &&
-    (runtimeOnlyVendor
+    (runtimeOnlyVendor || selectedVendor.id === 'custom'
       ? hasRuntimeSelection
       : hasHardwareSelection || hasStandaloneRuntimeSelection)
 
@@ -1018,7 +1028,7 @@ function App() {
               </p>}
 
               {selectedVendor.id === 'custom' && <section className="custom-architectures" aria-label="Target architectures">
-                <header><h2>Target architectures</h2><p>Select all that apply to your nodes.</p></header>
+                <header><h2>Target architectures</h2><p>Every selected architecture must have a runtime.</p></header>
                 <div className="custom-architecture-options">
                   {['amd64', 'arm64', 'ppc64le', 's390x'].map((architecture) => <label key={architecture}>
                     <input type="checkbox" checked={customArchitectures.includes(architecture)} onChange={() =>
@@ -2174,7 +2184,7 @@ function App() {
                       </div>
                     </section>
                   )}
-                  {runtimeOnlyVendor && (
+                  {(runtimeOnlyVendor || selectedVendor.id === 'custom') && (
                     <section
                       className={`local-runtime-selection ${
                         !hasRuntimeSelection ? 'incomplete' : ''
@@ -2197,7 +2207,8 @@ function App() {
                         )}
                       </header>
                       <div className="local-runtime-grid">
-                        {selectedVendor.runtime.shims.map((shim) => (
+                        {selectedVendor.runtime.shims.filter(({ selectionGroup }) =>
+                          selectedVendor.id !== 'custom' || selectionGroup !== 'gpu').map((shim) => (
                           <label
                             key={shim.id}
                             title={unavailableShimReason(shim, reports) ?? undefined}
@@ -2323,7 +2334,9 @@ function App() {
                               <p>
                                 {family.availability === 'pending'
                                   ? 'KRAB does not generate deployment artifacts for this hardware family yet.'
-                                  : 'This hardware family is unavailable on the uploaded nodes.'}
+                                  : selectedVendor.id === 'custom'
+                                    ? 'This GPU family needs a compatible selected architecture and RuntimeClass.'
+                                    : 'This hardware family is unavailable on the uploaded nodes.'}
                               </p>
                             </div>
                           </div>
@@ -2662,11 +2675,17 @@ function App() {
                         {!cluster.distributionId && (
                           <li>Kubernetes distribution</li>
                         )}
-                        {runtimeOnlyVendor &&
+                        {selectedVendor.id === 'custom' && customArchitectures.length === 0 && (
+                          <li>At least one target architecture</li>
+                        )}
+                        {uncoveredArchitectures.map((architecture) => (
+                          <li key={architecture}>A RuntimeClass for {architecture.toUpperCase()}</li>
+                        ))}
+                        {(runtimeOnlyVendor || selectedVendor.id === 'custom') &&
                           !hasRuntimeSelection && (
                             <li>At least one Kata RuntimeClass</li>
                           )}
-                        {!runtimeOnlyVendor &&
+                        {!runtimeOnlyVendor && selectedVendor.id !== 'custom' &&
                           !hasHardwareSelection &&
                           !hasStandaloneRuntimeSelection && (
                           <li>At least one CPU runtime or GPU platform</li>
