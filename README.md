@@ -110,9 +110,9 @@ KVM, IOMMUFD, an NVIDIA GPU, and EROFS utilities. The report still records CC an
 PPCIE capability for deployment choices. NO means a host check did not pass or
 could not be confirmed. It does not establish whether the hardware lacks a
 feature or the host needs firmware, BIOS, or kernel setup.
-For the NVIDIA check, optionally select one or more H100, H200, H800, H20,
-B200, B300, GB200, or GB300 models. A node passes the model filter when its
-provisioner inventory identifies any selected model. The node report records
+For the NVIDIA check, optionally select one or more GPU models. The choices
+come from the pinned provisioner profiles. A node passes the model filter when
+its provisioner inventory identifies any selected model. The node report records
 the provisioner's `chip=` field and readable device name; older reports can
 still match a complete model name in the device name.
 The generated deployment installs EROFS utilities when a checked node does not

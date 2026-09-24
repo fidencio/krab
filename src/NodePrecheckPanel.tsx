@@ -1,7 +1,8 @@
 import { useState, type Dispatch, type SetStateAction } from 'react'
 import { Check, CircleAlert, Copy, Upload } from 'lucide-react'
 import packageData from '../package.json'
-import { hasGpuModel, type NodePrecheck, type RequestedCheck } from './lib/precheck'
+import catalog from './generated/catalog.json' with { type: 'json' }
+import { gpuModelChoices, hasGpuModel, type NodePrecheck, type RequestedCheck } from './lib/precheck'
 
 const readinessChecks = [
   { id: 'tdx', label: 'Intel TDX' },
@@ -9,7 +10,9 @@ const readinessChecks = [
   { id: 'se', label: 'IBM SEL' },
   { id: 'gpu', label: 'NVIDIA GPU' },
 ] as const
-const gpuModels = ['H100', 'H200', 'H800', 'H20', 'B200', 'B300', 'GB200', 'GB300'] as const
+const nvidia = catalog.vendors.find((vendor) => vendor.id === 'nvidia')
+if (!nvidia) throw new Error('Generated catalog has no NVIDIA vendor')
+const gpuModels = gpuModelChoices(nvidia.hardwareFamilies)
 const pageSize = 10
 
 function shortReason(label: string, status: string, reason: string) {

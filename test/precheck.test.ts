@@ -7,6 +7,7 @@ import catalog from '../src/generated/catalog.json' with { type: 'json' }
 import {
   allNodesLack,
   erofsPrecheckStatus,
+  gpuModelChoices,
   hasGpuModel,
   parseNodePrecheck,
   parsePrecheckUpload,
@@ -83,6 +84,16 @@ test('GPU model matching uses complete model names', () => {
   assert.equal(hasGpuModel(node, 'GB200'), false)
   node.gpus.devices = []
   assert.equal(hasGpuModel(node, 'GB200'), false)
+})
+
+test('precheck model choices follow profiles, including pending families', () => {
+  const families = catalog.vendors.find((vendor) => vendor.id === 'nvidia')!.hardwareFamilies
+  const choices = gpuModelChoices(families)
+  assert.deepEqual(choices, [...new Set(families.flatMap(({ models }) => models))])
+  assert.ok(families.some((family) => family.availability === 'pending' &&
+    family.models.some((model) => choices.includes(model))))
+  assert.deepEqual(gpuModelChoices([{ models: [' H100 ', 'H200'] }, { models: ['h100', 'B200', ''] }]),
+    ['H100', 'H200', 'B200'])
 })
 
 test('EROFS is confirmed only when every checked node has it', () => {

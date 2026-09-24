@@ -19,6 +19,17 @@ export type NodePrecheck = {
   }
 }
 
+export function gpuModelChoices(families: ReadonlyArray<{ models: readonly string[] }>): string[] {
+  const models = new Map<string, string>()
+  for (const family of families) {
+    for (const model of family.models) {
+      const name = model.trim()
+      if (name && !models.has(name.toUpperCase())) models.set(name.toUpperCase(), name)
+    }
+  }
+  return [...models.values()]
+}
+
 const probeStatuses: ProbeStatus[] = ['yes', 'no', 'unknown', 'review']
 const isProbe = (value: unknown): value is Probe =>
   typeof value === 'object' && value !== null &&
