@@ -1,3 +1,4 @@
+# Run npm run generate to refresh the image pins below from locked sources.
 # Vendor feature gates. NVIDIA dependencies are disabled unless selected.
 nvidia:
   enabled: false

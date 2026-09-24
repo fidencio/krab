@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 import { parse } from 'yaml'
+import { syncChartImages } from './sync-chart-images.ts'
 import { syncReleaseVersion } from './sync-release-version.ts'
 
 type Source = {
@@ -71,23 +72,6 @@ const resolveImage = <T extends ImageValues>(
     throw new Error(`${label} image must not use the moving latest tag`)
   }
   return { ...image, tag }
-}
-
-const requireImagePin = (
-  actual: ImageValues | null | undefined,
-  expected: ImageValues,
-  label: string,
-) => {
-  const actualReference = actual?.reference ?? actual?.repository
-  const expectedReference = expected.reference ?? expected.repository
-  if (
-    actualReference !== expectedReference ||
-    actual?.tag !== expected.tag
-  ) {
-    throw new Error(
-      `${label} image pin must be ${expectedReference}:${expected.tag}`,
-    )
-  }
 }
 
 const readYaml = async (path: string) => parse(await readFile(path, 'utf8'))
@@ -372,40 +356,17 @@ async function main() {
     '',
     'kata-device-provisioner dispatcher',
   )
-  requireImagePin(
-    krabValues['node-feature-discovery']?.image,
-    plannedArchitecture.charts.nfd.image,
-    'KRAB node-feature-discovery',
-  )
-  requireImagePin(
-    krabValues['kata-deploy']?.image,
-    kataDeployImage,
-    'KRAB kata-deploy',
-  )
-  requireImagePin(
-    krabValues['kata-deploy']?.kubectlImage,
-    kataKubectlImage,
-    'KRAB kata-deploy kubectl',
-  )
-  requireImagePin(
-    krabValues['kata-deploy']?.job?.dispatcherImage,
-    kataDispatcherImage,
-    'KRAB kata-deploy dispatcher',
-  )
-  requireImagePin(
-    krabValues['kata-device-plugin']?.image,
-    devicePluginImage,
-    'KRAB kata-device-plugin',
-  )
-  requireImagePin(
-    krabValues['kata-device-provisioner']?.image,
-    provisionerImage,
-    'KRAB kata-device-provisioner',
-  )
-  requireImagePin(
-    krabValues['kata-device-provisioner']?.job?.dispatcherImage,
-    provisionerDispatcherImage,
-    'KRAB kata-device-provisioner dispatcher',
+  const updatedValues = syncChartImages(
+    await readFile(krabValuesPath, 'utf8'),
+    {
+      nfd: plannedArchitecture.charts.nfd.image,
+      kataDeploy: kataDeployImage,
+      kubectl: kataKubectlImage,
+      kataDispatcher: kataDispatcherImage,
+      devicePlugin: devicePluginImage,
+      provisioner: provisionerImage,
+      provisionerDispatcher: provisionerDispatcherImage,
+    },
   )
   const nvidiaGpuShims = Object.entries(kataProfile.shims)
     .filter(([name, config]) =>
@@ -1059,6 +1020,7 @@ async function main() {
     })),
   }
 
+  await writeFile(krabValuesPath, updatedValues)
   await mkdir(generatedRoot, { recursive: true })
   await writeFile(
     resolve(generatedRoot, 'catalog.json'),

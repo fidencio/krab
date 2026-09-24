@@ -142,6 +142,10 @@ npm run sync:upstream
 
 Updating an upstream version is a reviewed change: update the ref and checksum
 in the lock file, run the sync command, and review the generated-data diff.
+The generator also updates upstream image references and tags in
+`charts/krab/values.yaml`. KRAB's deployment settings stay in that file;
+the kubectl image pin and device plugin tag choice remain in
+`upstream/architecture.yaml`.
 
 ## Releases
 

@@ -114,7 +114,8 @@ jobs:
         run: |
           npm run generate
           git diff --exit-code -- \
-            package-lock.json charts/krab/Chart.yaml charts/precheck/Chart.yaml \
+            package-lock.json charts/krab/Chart.yaml charts/krab/values.yaml \
+            charts/precheck/Chart.yaml \
             upstream/architecture.yaml README.md charts/krab/README.md \
             CHANGELOG.md src/generated
 
