@@ -110,10 +110,13 @@ jobs:
           echo "IS_PRERELEASE=${is_prerelease}" >> "${GITHUB_ENV}"
           echo "PRECHECK_IMAGE=ghcr.io/fidencio/krab-preflight:${chart_version}" >> "${GITHUB_ENV}"
 
-      - name: Regenerate and verify committed catalog
+      - name: Regenerate and verify committed release data
         run: |
           npm run generate
-          git diff --exit-code -- src/generated
+          git diff --exit-code -- \
+            package-lock.json charts/krab/Chart.yaml charts/precheck/Chart.yaml \
+            upstream/architecture.yaml README.md charts/krab/README.md \
+            CHANGELOG.md src/generated
 
       - name: Validate application and chart contracts
         run: |

@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'
 import { parse } from 'yaml'
+import { syncReleaseVersion } from './sync-release-version.ts'
 
 type Source = {
   id: string
@@ -144,6 +145,8 @@ async function main() {
     }
   }
 
+  const release = await syncReleaseVersion(root)
+
   const source = (id: string) =>
     requireValue(sourceById.get(id), `Missing locked source: ${id}`)
   const cachePath = (id: string) => resolve(cacheRoot, source(id).cache)
@@ -268,8 +271,8 @@ async function main() {
   }
   plannedArchitecture.charts.krab.version = String(krabChart.version)
   plannedArchitecture.charts.krab.appVersion = String(krabChart.appVersion)
-  if (plannedArchitecture.status !== 'prerelease') {
-    throw new Error('KRAB architecture must remain explicitly marked as prerelease')
+  if (plannedArchitecture.status !== (release.prerelease ? 'prerelease' : 'stable')) {
+    throw new Error('KRAB architecture status does not match package.json version')
   }
   requireValue(plannedArchitecture.charts?.krab?.ociReference, 'Missing KRAB chart OCI reference')
   const upstreamDistributions = requireValue(

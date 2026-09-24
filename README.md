@@ -11,8 +11,8 @@ builds the site.
 1. `upstream/sources.lock.yaml` pins repository commits, paths, and checksums.
 2. `npm run generate` downloads any missing files into an ignored local cache
    and validates every file against its pinned checksum.
-3. Generation creates
-   `src/generated/catalog.json` plus `provenance.json`.
+3. Generation synchronizes the KRAB release version from `package.json`, then
+   creates `src/generated/catalog.json` plus `provenance.json`.
 4. The React UI renders that generated catalog and creates artifacts from the
    upstream chart values.
 
@@ -149,18 +149,23 @@ KRAB chart, pre-flight chart, pre-flight image, and application versions are
 kept identical. Alpha releases use a `chart-vX.Y.Z-alpha.N` Git tag; for
 example, the first release is tagged `chart-v0.1.0-alpha.0`.
 
+To bump the KRAB release version, edit only `version` in `package.json` and run
+`npm run generate`. It updates `package-lock.json`, both chart versions, the
+release notice, installation examples, and the generated catalog. It also
+starts a new changelog section; add the release notes and date there. CI checks
+that the generated copies are committed.
+
 Dispatch the chart release workflow from `main`. It runs the application and
 pre-flight checks, publishes the pre-flight image to
 `ghcr.io/fidencio/krab-preflight`, packages and attests both charts, and
 publishes them to `oci://ghcr.io/fidencio/krab` and
 `oci://ghcr.io/fidencio/krab-precheck`. It verifies anonymous access to all
 three artifacts before creating the matching `chart-vX.Y.Z-alpha.N` tag and
-GitHub prerelease with both chart packages. Reruns verify existing artifacts
+GitHub release with both chart packages. Reruns verify existing artifacts
 before replacing release assets. Publication is refused while any pinned
 upstream OCI dependency is unavailable.
 
-Because Helm does not select prereleases implicitly, install this alpha with an
-explicit version:
+For a prerelease, specify its version explicitly when installing with Helm:
 
 ```sh
 helm upgrade --install krab oci://ghcr.io/fidencio/krab \

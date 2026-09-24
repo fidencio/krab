@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import test from 'node:test'
 import { parse, stringify } from 'yaml'
+import packageData from '../package.json'
 import {
   buildCustomRuntimeClass,
   buildInstallScript,
@@ -17,6 +18,7 @@ import {
 } from '../src/lib/artifacts.ts'
 
 const root = resolve(import.meta.dirname, '..')
+const krabVersion = packageData.version
 
 const loadJson = async <T>(path: string) =>
   JSON.parse(await readFile(resolve(root, path), 'utf8')) as T
@@ -133,7 +135,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
   )
   assert.equal(
     catalog.plannedArchitecture.charts.krab.version,
-    '0.1.0-alpha.7',
+    krabVersion,
   )
   assert.deepEqual(catalog.plannedArchitecture.attestation.trustee, {
     displayName: 'Trustee',
@@ -249,7 +251,7 @@ test('Custom limits default runtimes to chosen architectures and restores that c
     createAdvancedConfiguration(),
   )
   assert.deepEqual(parse(values)['kata-deploy'].defaultShim, { amd64: 'qemu-runtime-rs' })
-  const imported = importValuesBundle(catalog, values, 'krab-0.1.0-alpha.7-values.yaml')
+  const imported = importValuesBundle(catalog, values, `krab-${krabVersion}-values.yaml`)
   assert.equal(imported.vendorId, 'custom')
   assert.deepEqual(imported.cluster.architectures, ['amd64'])
 })
@@ -467,7 +469,7 @@ test('Custom artifacts install only the selected upstream RuntimeClasses', async
   const importedValues = importValuesBundle(
     catalog,
     stringify(configuredValues),
-    'local-lab-0.1.0-alpha.7-values.yaml',
+    `local-lab-${krabVersion}-values.yaml`,
   )
   assert.equal(importedValues.vendorId, 'custom')
   assert.equal(importedValues.deploymentName, 'local-lab')
@@ -931,21 +933,21 @@ test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
   assert.equal(generatedValues['kata-deploy'].containerd?.userDropIn, undefined)
   assert.equal(
     install,
-    'helm upgrade --install krab oci://ghcr.io/fidencio/krab --version 0.1.0-alpha.7 --namespace kata-system --create-namespace --values krab-0.1.0-alpha.7-values.yaml',
+    `helm upgrade --install krab oci://ghcr.io/fidencio/krab --version ${krabVersion} --namespace kata-system --create-namespace --values krab-${krabVersion}-values.yaml`,
   )
   assert.equal(
     buildInstallScript(catalog, 'My production/Kata'),
-    'helm upgrade --install my-production-kata oci://ghcr.io/fidencio/krab --version 0.1.0-alpha.7 --namespace kata-system --create-namespace --values my-production-kata-0.1.0-alpha.7-values.yaml',
+    `helm upgrade --install my-production-kata oci://ghcr.io/fidencio/krab --version ${krabVersion} --namespace kata-system --create-namespace --values my-production-kata-${krabVersion}-values.yaml`,
   )
   assert.equal(
     buildValuesFileName(catalog, ''),
-    'krab-0.1.0-alpha.7-values.yaml',
+    `krab-${krabVersion}-values.yaml`,
   )
 
   const imported = importValuesBundle(
     catalog,
     values,
-    'production-kata-0.1.0-alpha.7-values.yaml',
+    `production-kata-${krabVersion}-values.yaml`,
   )
   assert.equal(imported.vendorId, 'nvidia')
   assert.equal(imported.deploymentName, 'production-kata')
