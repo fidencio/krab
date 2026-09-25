@@ -3,7 +3,7 @@
   "plannedArchitecture": {
     "schemaVersion": 1,
     "status": "stable",
-    "notice": "KRAB 0.1.1. Review generated values before deploying.",
+    "notice": "KRAB 0.1.2. Review generated values before deploying.",
     "namespace": "kata-system",
     "images": {
       "kubectl": {
@@ -80,8 +80,8 @@
           "nfdValuesKey": "node-feature-discovery",
           "nfdRequired": true
         },
-        "version": "0.1.1",
-        "appVersion": "0.1.1"
+        "version": "0.1.2",
+        "appVersion": "0.1.2"
       },
       "nfd": {
         "chartName": "node-feature-discovery",

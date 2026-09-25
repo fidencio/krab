@@ -2,6 +2,18 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.2] - 2026-09-25
+
+### Changed
+
+- The pre-flight GPU selector offers profile families or any NVIDIA model,
+  including discrete PCIe cards.
+
+### Fixed
+
+- GPU readiness waits for a type selection before reporting that nodes passed.
+- Next stays at the end of the version menu, including on the Next builder.
+
 ## [0.1.1] - 2026-09-25
 
 ## [0.1.0] - 2026-09-25
