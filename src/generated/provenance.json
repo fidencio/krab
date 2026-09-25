@@ -3,7 +3,7 @@
   "releaseContract": {
     "path": "upstream/architecture.yaml",
     "status": "stable",
-    "notice": "KRAB 0.1.0. Review generated values before deploying."
+    "notice": "KRAB 0.1.1. Review generated values before deploying."
   },
   "generatedFrom": [
     {
