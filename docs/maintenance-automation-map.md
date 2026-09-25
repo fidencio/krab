@@ -76,7 +76,8 @@ independently, but its output becomes the input to the following stages.
 
 - `scripts/upstream/OWNERS.md` maps generated catalog fields, chart defaults,
   and the precheck image to pinned upstream files, KRAB release metadata, or
-  KRAB policy. Keep it beside the generator as new fields are added.
+  KRAB policy. `catalog-owners.json` now gives CI a field-by-field coverage
+  check, so new catalog fields require an owner in the same PR.
 - Split `sync-upstream.ts` into source acquisition, upstream parsing, policy
   application, and output rendering (done). CI regenerates and compares the
   committed output, so changes to deployment values remain visible in the PR.

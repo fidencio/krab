@@ -1,5 +1,9 @@
 # Generated data owners
 
+`catalog-owners.json` is the machine-checked index for this map. The test
+fails when a generated catalog field has no matching owner, so add a new field
+there and explain its source here in the same change.
+
 This map describes the inputs to `npm run generate`. A path ending in `.*`
 includes every field below it. `[]` means each array item; a profile or shim
 name is a dynamic key. `[nvidia,custom]` selects those vendor IDs. When a row
