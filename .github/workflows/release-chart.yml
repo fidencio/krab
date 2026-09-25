@@ -308,6 +308,11 @@ jobs:
             "dist-sbom/krab-precheck-${CHART_VERSION}.spdx.json" \
             "${RUNNER_TEMP}/krab-precheck-render.yaml"
 
+      - name: Check main before publishing attestations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/verify-release-head.sh
+
       - name: Attest KRAB chart SBOM
         uses: actions/attest@v4
         with:
@@ -341,6 +346,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check main before publishing the pre-flight image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/verify-release-head.sh
 
       - name: Publish pre-flight image
         if: env.PUBLISH_PRECHECK_IMAGE == 'true'
@@ -409,6 +419,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check main before publishing image SBOM attestations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/verify-release-head.sh
+
       - name: Attest amd64 pre-flight image SBOM
         uses: actions/attest@v4
         with:
@@ -463,6 +478,11 @@ jobs:
             dist-chart/SHA256SUMS
           if-no-files-found: error
 
+      - name: Check main before publishing build attestations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/verify-release-head.sh
+
       - name: Attest chart package
         uses: actions/attest-build-provenance@v4
         with:
@@ -480,8 +500,11 @@ jobs:
 
       - name: Publish and verify charts
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          bash scripts/verify-release-head.sh
 
           chart_package="dist-chart/krab-${CHART_VERSION}.tgz"
           precheck_package="dist-precheck/krab-precheck-${CHART_VERSION}.tgz"
@@ -518,6 +541,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          bash scripts/verify-release-head.sh
 
           if [[ "${IS_PRERELEASE}" == "true" ]]; then
             release_type_flags=(--prerelease --latest=false)
@@ -526,16 +550,23 @@ jobs:
           fi
 
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-            gh release upload "${RELEASE_TAG}" \
-              dist-chart/krab-*.tgz \
-              dist-precheck/krab-precheck-*.tgz \
-              dist-builder/krab-builder-*.tar.gz \
-              dist-sbom/*.spdx.json \
-              dist-chart/SHA256SUMS \
-              --clobber
-            gh release edit "${RELEASE_TAG}" \
-              --title "KRAB ${CHART_VERSION}" \
-              "${release_type_flags[@]}"
+            release_info="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" \
+              --jq '[.draft, .target_commitish] | @tsv')"
+            IFS=$'\t' read -r is_draft release_sha <<<"${release_info}"
+            if [[ "${is_draft}" == "true" ]]; then
+              echo "::error::Release ${RELEASE_TAG} is still a draft; resolve it before rerunning"
+              exit 1
+            fi
+            if [[ "${release_sha}" != "${GITHUB_SHA}" ]]; then
+              echo "::error::Release ${RELEASE_TAG} points to ${release_sha}, not ${GITHUB_SHA}"
+              exit 1
+            fi
+            published_dir="${RUNNER_TEMP}/published-release"
+            mkdir -p "${published_dir}"
+            gh release download "${RELEASE_TAG}" --dir "${published_dir}"
+            diff -u dist-chart/SHA256SUMS "${published_dir}/SHA256SUMS"
+            (cd "${published_dir}" && sha256sum --check SHA256SUMS)
+            echo "Release ${RELEASE_TAG} is already published with identical assets"
           else
             gh release create "${RELEASE_TAG}" \
               dist-chart/krab-*.tgz \

@@ -25,12 +25,9 @@ which profile and CPU TEE combinations the builder offers. Generation checks
 that policy against the pinned Kata runtimes, provisioner profiles, and node
 label definitions. Profile publication alone does not enable a new path.
 
-The KRAB umbrella chart always installs Node Feature Discovery and kata-deploy.
-NVIDIA configurations additionally install kata-device-plugin and a
-multi-profile kata-device-provisioner release. Existing dependency versions are
-derived from pinned chart metadata. The provisioner chart is consumed from its
-published upstream OCI repository; the device-plugin OCI chart remains planned
-until that upstream project publishes it.
+The KRAB umbrella chart's dependencies come from pinned upstream chart
+metadata. PR validation downloads them and renders both default and NVIDIA
+installations.
 
 ## Helm chart
 
@@ -44,15 +41,18 @@ scripts/sync-upstream.ts     Catalog and chart-contract generator
 test/                        UI, artifact, and chart contract tests
 ```
 
-The chart dependency model is:
+The dependency table is generated from [`Chart.yaml`](charts/krab/Chart.yaml):
 
-```text
-krab
-├── node-feature-discovery   always installed
-├── kata-deploy              always installed
-├── kata-device-plugin       NVIDIA only
-└── kata-device-provisioner  NVIDIA only, multiple profiles in one release
-```
+<!-- chart-dependencies:start -->
+
+| Chart | Version | OCI repository | Enabled when |
+| --- | --- | --- | --- |
+| node-feature-discovery | 0.19.0 | `oci://registry.k8s.io/nfd/charts` | Always |
+| kata-deploy | 4.2.0 | `oci://ghcr.io/kata-containers/kata-deploy-charts` | Always |
+| kata-device-plugin | 0.2.0-rc.0 | `oci://ghcr.io/kata-containers/kata-device-plugin-charts` | `nvidia.enabled` |
+| kata-device-provisioner | 0.1.0-alpha.1 | `oci://ghcr.io/kata-containers/kata-device-provisioner-charts` | `nvidia.enabled` |
+
+<!-- chart-dependencies:end -->
 
 KRAB installs NFD directly and disables kata-deploy's nested NFD dependency.
 Generated NVIDIA values set `nvidia.enabled=true` and configure
@@ -68,10 +68,8 @@ and warn if a field's value changes when regenerated. Older files without
 version comments can still load after the same checks, with a warning to
 review the new output before deploying.
 
-The chart is structurally complete, but publication is intentionally blocked
-until the kata-device-plugin chart is available from its planned upstream OCI
-repository. The multi-profile kata-device-provisioner chart is a published
-alpha dependency.
+The release workflow verifies that every upstream chart dependency is
+available before publishing KRAB.
 
 ## Node pre-check
 
@@ -256,9 +254,9 @@ publishes them to `oci://ghcr.io/fidencio/krab` and
 `oci://ghcr.io/fidencio/krab-precheck`. It verifies anonymous access to all
 three artifacts before creating the matching `chart-vX.Y.Z` tag and
 GitHub release with both chart packages and a versioned builder archive.
-Reruns verify existing artifacts before replacing release assets. Publication
-is refused while any pinned
-upstream OCI dependency is unavailable.
+Reruns verify existing artifacts without changing a published release. A run
+started from an older `main` commit stops before publication. Publication is
+refused while any pinned upstream OCI dependency is unavailable.
 
 The home page uses the newest published stable release's builder and chart
 contract. Its version menu links to older stable releases and to Next,
