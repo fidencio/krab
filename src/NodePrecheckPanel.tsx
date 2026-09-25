@@ -2,7 +2,7 @@ import { useState, type Dispatch, type SetStateAction } from 'react'
 import { Check, CircleAlert, Copy, Upload } from 'lucide-react'
 import packageData from '../package.json'
 import catalog from './generated/catalog.json' with { type: 'json' }
-import { gpuModelChoices, hasGpuModel, type NodePrecheck, type RequestedCheck } from './lib/precheck'
+import { ANY_GPU_MODEL, hasGpuModel, needsGpuType, type NodePrecheck, type RequestedCheck } from './lib/precheck'
 import { precheckCommand } from './lib/precheck-command'
 
 const readinessChecks = [
@@ -13,7 +13,8 @@ const readinessChecks = [
 ] as const
 const nvidia = catalog.vendors.find((vendor) => vendor.id === 'nvidia')
 if (!nvidia) throw new Error('Generated catalog has no NVIDIA vendor')
-const gpuModels = gpuModelChoices(nvidia.hardwareFamilies)
+const gpuFamilies = nvidia.hardwareFamilies.filter((family) => family.models.length > 0)
+const gpuFamilyName = (name: string) => name.replace(/^NVIDIA /, '')
 const pageSize = 10
 
 function shortReason(label: string, status: string, reason: string) {
@@ -39,7 +40,7 @@ function readinessResult(report: NodePrecheck, check: RequestedCheck, selectedGp
     : [{ label: check.toUpperCase(), probe: report.checks[check] }]
   const unmet = probes.filter(({ probe }) => probe.status !== 'yes')
   const modelNeeded = check === 'gpu' &&
-    selectedGpuModels.length > 0 && report.gpus.nvidia.status === 'yes' &&
+    selectedGpuModels.some((model) => model !== ANY_GPU_MODEL) && report.gpus.nvidia.status === 'yes' &&
     !selectedGpuModels.some((model) => hasGpuModel(report, model))
   const reasons = unmet.map(({ label, probe }) =>
     check === 'se' && report.node.architecture !== 's390x'
@@ -47,7 +48,8 @@ function readinessResult(report: NodePrecheck, check: RequestedCheck, selectedGp
       : shortReason(label, probe.status, probe.reason))
   if (modelNeeded) reasons.push(report.gpus.devices.length === 0
     ? 'GPU model unconfirmed'
-    : `${selectedGpuModels.join(' or ')} not found`)
+    : `${gpuFamilies.filter((family) => family.models.some((model) =>
+      selectedGpuModels.includes(model))).map((family) => gpuFamilyName(family.displayName)).join(' or ')} not found`)
   return {
     ready: unmet.length === 0 && !modelNeeded,
     reason: reasons.join(' · '),
@@ -87,7 +89,9 @@ export function NodePrecheckPanel({
     }} />
   </label>
   const unsupportedCount = nodeReports.filter(({ report }) => report.checks.kvm.status === 'no').length
-  const activeChecks = readinessChecks.filter(({ id }) => selectedChecks.includes(id))
+  const awaitingGpuType = needsGpuType(selectedChecks, selectedGpuModels)
+  const activeChecks = readinessChecks.filter(({ id }) => selectedChecks.includes(id) &&
+    !(id === 'gpu' && awaitingGpuType))
   const evaluatedNodes = nodeReports.map(({ name, report }) => {
     const failedChecks = activeChecks.flatMap(({ id, label }) => {
       const result = readinessResult(report, id, selectedGpuModels)
@@ -106,9 +110,11 @@ export function NodePrecheckPanel({
     needsAttention && name.toLowerCase().includes(nodeQuery.trim().toLowerCase()))
   const pageCount = Math.max(1, Math.ceil(matchingNodes.length / pageSize))
   const visibleNodes = matchingNodes.slice(page * pageSize, (page + 1) * pageSize)
-  const modelCoverage = selectedGpuModels.map((model) => ({
-    model,
-    found: nodeReports.filter(({ report }) => hasGpuModel(report, model)).length,
+  const modelCoverage = gpuFamilies.filter((family) => family.models.some((model) =>
+    selectedGpuModels.includes(model))).map((family) => ({
+    name: gpuFamilyName(family.displayName),
+    found: nodeReports.filter(({ report }) => family.models.some((model) =>
+      hasGpuModel(report, model))).length,
     unconfirmed: nodeReports.some(({ report }) =>
       report.gpus.nvidia.status !== 'no' && report.gpus.devices.length === 0),
   }))
@@ -128,32 +134,45 @@ export function NodePrecheckPanel({
   </fieldset>
   const modelSelector = selectedChecks.includes('gpu') &&
     <details className="precheck-model-details">
-      <summary>GPU models (any match) <strong>{selectedGpuModels.length > 0 ? selectedGpuModels.join(', ') : 'Any model'}</strong></summary>
-      <fieldset className="precheck-model-choice" aria-label="NVIDIA GPU models">
+      <summary>GPU families (any match) <strong>{selectedGpuModels.includes(ANY_GPU_MODEL)
+        ? 'Any model (PCIe GPUs included)'
+        : selectedGpuModels.length > 0
+          ? gpuFamilies.filter((family) => family.models.some((model) =>
+            selectedGpuModels.includes(model))).map((family) => gpuFamilyName(family.displayName)).join(', ')
+          : 'Select a family'}</strong></summary>
+      <fieldset className="precheck-model-choice" aria-label="NVIDIA GPU families">
         <div className="precheck-choice-options">
-          {gpuModels.map((model) => <label key={model}>
-            <input type="checkbox" checked={selectedGpuModels.includes(model)} onChange={(event) => {
+          {gpuFamilies.map((family) => <label key={family.id}>
+            <input type="checkbox" checked={family.models.every((model) => selectedGpuModels.includes(model))} onChange={(event) => {
               setSelectedGpuModels((current) => event.target.checked
-                ? [...current, model]
-                : current.filter((selected) => selected !== model))
+                ? [...new Set([...current.filter((model) => model !== ANY_GPU_MODEL), ...family.models])]
+                : current.filter((model) => !family.models.some((familyModel) => familyModel === model)))
               setPage(0)
             }} />
-            {model}
+            {gpuFamilyName(family.displayName)}
           </label>)}
+          <label>
+            <input type="checkbox" checked={selectedGpuModels.includes(ANY_GPU_MODEL)} onChange={(event) => {
+              setSelectedGpuModels(event.target.checked ? [ANY_GPU_MODEL] : [])
+              setPage(0)
+            }} />
+            Any model (PCIe GPUs included)
+          </label>
         </div>
       </fieldset>
     </details>
 
-  if (nodeReports.length > 0) return <section className={`node-precheck node-precheck-loaded${hasFailures ? ' precheck-has-failures' : selectedChecks.length > 0 ? ' precheck-all-pass' : ''}`} aria-label="Pre-flight results">
+  if (nodeReports.length > 0) return <section className={`node-precheck node-precheck-loaded${hasFailures ? ' precheck-has-failures' : selectedChecks.length > 0 && !awaitingGpuType ? ' precheck-all-pass' : ''}`} aria-label="Pre-flight results">
     <div className="precheck-loaded-main">
-      {hasFailures ? <CircleAlert size={16} aria-hidden="true" /> : selectedChecks.length > 0 && <Check size={16} aria-hidden="true" />}
+      {hasFailures ? <CircleAlert size={16} aria-hidden="true" /> : selectedChecks.length > 0 && !awaitingGpuType && <Check size={16} aria-hidden="true" />}
       <strong>Pre-flight results</strong>
       <span>{nodeReports.length} {nodeReports.length === 1 ? 'node' : 'nodes'} checked</span>
       {selectedChecks.length > 0
         ? attentionCount > 0
           ? <span className="precheck-unsupported-count">· {attentionCount} failing</span>
-          : <span className="precheck-passed-count">· All nodes passed</span>
+          : !awaitingGpuType && <span className="precheck-passed-count">· All nodes passed</span>
         : unsupportedCount > 0 && <span className="precheck-unsupported-count">· {unsupportedCount} UNSUPPORTED</span>}
+      {awaitingGpuType && <span>· Select a GPU type to finish the check</span>}
       <div className="precheck-loaded-actions">{upload('Replace JSON')}<button type="button" onClick={() => {
         setNodeQuery('')
         setPage(0)
@@ -165,14 +184,15 @@ export function NodePrecheckPanel({
       <div className="precheck-report-content">
       {checkSelector}
       {modelSelector}
-      {selectedChecks.includes('gpu') && modelCoverage.length > 0 && <div className="precheck-model-coverage" aria-label="Selected NVIDIA GPU model coverage">
-        {modelCoverage.map(({ model, found, unconfirmed }) => <span key={model} className={found > 0 ? 'precheck-model-found' : undefined}>
-          <strong>{model}</strong> {found > 0
+      {selectedChecks.includes('gpu') && modelCoverage.length > 0 && <div className="precheck-model-coverage" aria-label="Selected NVIDIA GPU family coverage">
+        {modelCoverage.map(({ name, found, unconfirmed }) => <span key={name} className={found > 0 ? 'precheck-model-found' : undefined}>
+          <strong>{name}</strong> {found > 0
             ? `found on ${found} ${found === 1 ? 'node' : 'nodes'}`
             : unconfirmed ? 'not confirmed' : 'not found'}
         </span>)}
       </div>}
       {selectedChecks.length === 0 && <p className="precheck-select-prompt">Select a check to see node readiness.</p>}
+      {awaitingGpuType && <p className="precheck-select-prompt" role="status">Select a GPU type to check NVIDIA GPU readiness.</p>}
       {selectedChecks.length > 0 && <>
         {attentionCount > 0 && <div className="precheck-list-controls">
           <span>{nodeReports.length - attentionCount} passing · Showing only failing nodes</span>
@@ -181,7 +201,7 @@ export function NodePrecheckPanel({
             setPage(0)
           }} /></label>
         </div>}
-        {attentionCount === 0 && <div className="precheck-success" role="status">
+        {attentionCount === 0 && !awaitingGpuType && <div className="precheck-success" role="status">
           <Check size={17} aria-hidden="true" />
           <strong>All nodes passed</strong>
         </div>}
@@ -219,7 +239,7 @@ export function NodePrecheckPanel({
         <span className="precheck-step-number" aria-hidden="true">1</span>
         <div>
           <strong>Choose nodes</strong>
-          <p>Label the Linux nodes to check <code>krab/preflight=true</code>.</p>
+          <p>Add <code>krab/preflight=true</code> to the Linux nodes you want to check.</p>
         </div>
       </div>
       <div className="precheck-step">

@@ -12,6 +12,7 @@ import {
   type HardwareFamilyCatalog,
 } from '../src/lib/artifacts.ts'
 import {
+  ANY_GPU_MODEL,
   hasGpuModel,
   parseNodePrecheck,
   unavailableFamilyForChecks,
@@ -59,7 +60,7 @@ test('every available GPU mode has a matching node report and install values', a
         const report = await nodeReport(family, tee)
         const model = family.models[0]
         const checks = tee ? ['gpu', tee] as Array<'gpu' | 'tdx' | 'snp'> : ['gpu'] as Array<'gpu'>
-        const selectedModels = model ? [model] : []
+        const selectedModels = model ? [model] : [ANY_GPU_MODEL]
         if (model) assert.equal(hasGpuModel(report, model), true, `${family.id}: ${model}`)
         assert.equal(unavailableFamilyForChecks(family, [report], checks, selectedModels), null,
           `${family.id}: ${mode.id} ${tee ?? ''}`)

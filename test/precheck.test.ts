@@ -5,10 +5,12 @@ import test from 'node:test'
 import { parse } from 'yaml'
 import catalog from '../src/generated/catalog.json' with { type: 'json' }
 import {
+  ANY_GPU_MODEL,
   allNodesLack,
   erofsPrecheckStatus,
   gpuModelChoices,
   hasGpuModel,
+  needsGpuType,
   parseNodePrecheck,
   parsePrecheckUpload,
   unavailableFamilyReason,
@@ -172,7 +174,11 @@ test('selected checks and GPU models restrict vendor cards', () => {
   assert.deepEqual(available(['tdx']), ['nvidia', 'custom', 'intel'])
   assert.deepEqual(available(['snp']), ['nvidia', 'custom', 'amd'])
   assert.deepEqual(available(['se']), ['custom', 'ibm'])
-  assert.deepEqual(available(['gpu']), ['nvidia', 'custom'])
+  assert.equal(needsGpuType(['gpu'], []), true)
+  assert.equal(needsGpuType(['gpu'], [ANY_GPU_MODEL]), false)
+  assert.deepEqual(available(['gpu']), [])
+  assert.match(unavailableVendorForChecks(vendors.nvidia, [], ['gpu'], [])!, /Select a GPU type/)
+  assert.deepEqual(available(['gpu'], [ANY_GPU_MODEL]), ['nvidia', 'custom'])
   assert.deepEqual(available(['tdx', 'gpu'], ['H100']), ['nvidia', 'custom'])
   assert.deepEqual(available(['se', 'gpu']), [])
   assert.deepEqual(available(['tdx', 'snp']), [])
@@ -181,6 +187,10 @@ test('selected checks and GPU models restrict vendor cards', () => {
   const node = report()
   node.checks.tdx = probe('yes')
   assert.deepEqual(available(['tdx', 'gpu'], ['H100'], [node]), ['nvidia', 'custom'])
+  assert.deepEqual(available(['tdx', 'gpu'], [ANY_GPU_MODEL], [node]), ['nvidia', 'custom'])
+  node.gpus.devices[0].name = 'NVIDIA L40S PCIe'
+  assert.deepEqual(available(['tdx', 'gpu'], [ANY_GPU_MODEL], [node]), ['nvidia', 'custom'])
+  node.gpus.devices[0].name = 'NVIDIA H100'
   assert.deepEqual(available(['tdx', 'gpu'], ['H200'], [node]), [])
   node.checks.tdx = probe('no')
   assert.deepEqual(available(['tdx', 'gpu'], ['H100'], [node]), [])
@@ -195,6 +205,7 @@ test('NVIDIA GPU families and modes follow the selected checks', () => {
   const blackwellOn = blackwell.modes.find(({ id }) => id === 'on')!
 
   assert.equal(unavailableFamilyForChecks(hopper, [], ['tdx', 'gpu'], ['H100']), null)
+  assert.match(unavailableFamilyForChecks(hopper, [], ['gpu'], [])!, /Select a GPU type/)
   assert.match(unavailableFamilyForChecks(blackwell, [], ['tdx', 'gpu'], ['H100'])!, /models/)
   assert.match(unavailableModeForChecks(hopperOff, hopper, [], ['tdx', 'gpu'], ['H100'])!, /CPU TEE/)
   assert.equal(unavailableModeForChecks(hopperPpcie, hopper, [], ['tdx', 'gpu'], ['H100']), null)

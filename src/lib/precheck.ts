@@ -5,6 +5,9 @@ import catalog from '../generated/catalog.json' with { type: 'json' }
 
 export type ProbeStatus = 'yes' | 'no' | 'unknown' | 'review'
 export type RequestedCheck = 'tdx' | 'snp' | 'se' | 'gpu'
+export const ANY_GPU_MODEL = 'any-gpu-model'
+export const needsGpuType = (checks: RequestedCheck[], gpuModels: string[]) =>
+  checks.includes('gpu') && gpuModels.length === 0
 type Probe = { status: ProbeStatus; reason: string }
 
 export type NodePrecheck = {
@@ -152,7 +155,7 @@ export function unavailableVendorReason(vendor: VendorCatalog, reports: NodePrec
 
 function reportsMatchingChecks(reports: NodePrecheck[], checks: RequestedCheck[], gpuModels: string[]) {
   const tees = checks.filter((check) => check !== 'gpu')
-  const requiredModels = checks.includes('gpu') ? gpuModels : []
+  const requiredModels = checks.includes('gpu') ? gpuModels.filter((model) => model !== ANY_GPU_MODEL) : []
   return reports.filter((report) =>
     report.checks.kvm.status !== 'no' &&
     tees.every((tee) => report.checks[tee].status !== 'no') &&
@@ -168,8 +171,9 @@ export function unavailableFamilyForChecks(
   checks: RequestedCheck[],
   gpuModels: string[],
 ): string | null {
+  if (needsGpuType(checks, gpuModels)) return 'Select a GPU type to check node readiness.'
   const tees = checks.filter((check) => check !== 'gpu')
-  const requiredModels = checks.includes('gpu') ? gpuModels : []
+  const requiredModels = checks.includes('gpu') ? gpuModels.filter((model) => model !== ANY_GPU_MODEL) : []
   if (requiredModels.length > 0 && !family.models.some((model) => requiredModels.includes(model)))
     return 'This GPU family does not match the selected models.'
   if (tees.length > 0 && !family.modes.some((mode) => mode.supportedCpuTeeIds.includes(tees[0])))
@@ -203,8 +207,9 @@ export function unavailableVendorForChecks(
   gpuModels: string[],
 ): string | null {
   if (checks.length === 0) return unavailableVendorReason(vendor, reports)
+  if (needsGpuType(checks, gpuModels)) return 'Select a GPU type to check node readiness.'
   const tees = checks.filter((check) => check !== 'gpu')
-  const requiredModels = checks.includes('gpu') ? gpuModels : []
+  const requiredModels = checks.includes('gpu') ? gpuModels.filter((model) => model !== ANY_GPU_MODEL) : []
   if (tees.length > 1) return 'Selected CPU TEEs cannot run on the same node.'
   if (checks.includes('gpu') && vendor.hardwareFamilies.length === 0)
     return 'This path does not configure NVIDIA GPUs.'
