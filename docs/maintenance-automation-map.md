@@ -13,7 +13,9 @@ resource names. The generator also updates chart dependencies, image defaults,
 the precheck image and dispatcher, and KRAB release versions. Pages and release
 CI regenerate these files and reject an out-of-date tree.
 
-The generator entry point coordinates `scripts/upstream/`: `sources.ts` verifies
+The [field ownership map](../scripts/upstream/OWNERS.md) identifies the input
+for generated catalog fields, chart defaults, and the precheck image. The
+generator entry point coordinates `scripts/upstream/`: `sources.ts` verifies
 the locked sources, `inputs.ts` parses them, `policy.ts` reads KRAB's reviewed
 compatibility and presentation choices, `build-catalog.ts` assembles the derived
 data, and `outputs.ts` writes it. The application build type checks this path.
@@ -66,11 +68,11 @@ checks that the published artifact exists. The app version remains distinct.
 The stages below cover every row in the inventory. Each stage can be reviewed
 independently, but its output becomes the input to the following stages.
 
-### 1. Establish ownership and generation checks
+### 1. Establish ownership and generation checks (implemented)
 
-- For every field in `catalog.json`, chart defaults, and the precheck image,
-  record one owner: a pinned upstream file, KRAB release metadata, or KRAB
-  compatibility/presentation policy. Keep the owner map beside the generator.
+- `scripts/upstream/OWNERS.md` maps generated catalog fields, chart defaults,
+  and the precheck image to pinned upstream files, KRAB release metadata, or
+  KRAB policy. Keep it beside the generator as new fields are added.
 - Split `sync-upstream.ts` into source acquisition, upstream parsing, policy
   application, and output rendering (done). CI regenerates and compares the
   committed output, so changes to deployment values remain visible in the PR.
