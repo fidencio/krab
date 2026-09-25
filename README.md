@@ -139,16 +139,13 @@ optional `erofsVersion` field empty.
 
 ## Development
 
-Development changes land on the `dev` branch. GitHub Pages serves the latest
-published stable release at `/krab/` and a build from `main`, called Next, at
-`/krab/dev/`.
+Development changes land on `main`. GitHub Pages serves the latest published
+stable release at `/krab/` and a build from `main`, called Next, at `/krab/dev/`.
 Each pull request is built and checked independently. When it passes, Pages
 publishes it at `/krab/pr/<number>/` and a bot comment links to that preview.
 The preview is removed from the next Pages deployment after the PR closes or
 its current revision fails validation.
-When cutting a release, merge `dev` into `main` and dispatch the chart release
-workflow from `main`; the workflow refuses to release if the two branch trees
-differ.
+When cutting a release, dispatch the chart release workflow from `main`.
 
 ```sh
 npm ci

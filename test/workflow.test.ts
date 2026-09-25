@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFile, readdir } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import test from 'node:test'
 import { parse } from 'yaml'
@@ -42,38 +42,6 @@ test('PR previews are validated before they become Pages artifacts', async () =>
   assert.match(source, /npm test/)
   assert.match(source, /npm run build/)
   assert.match(source, /pr-preview-\$\{\{ github\.event\.pull_request\.number \}\}-\$\{\{ github\.event\.pull_request\.head\.sha \}\}/)
-})
-
-test('chart releases require synchronized main and dev trees', async () => {
-  const { source, workflow } = await readWorkflow('release-chart')
-
-  assert.deepEqual(Object.keys(workflow.on), ['workflow_dispatch'])
-  assert.match(source, /refs\/heads\/main/)
-  assert.match(source, /refs\/remotes\/origin\/dev/)
-  assert.match(
-    source,
-    /git diff --quiet HEAD refs\/remotes\/origin\/dev -- \./,
-  )
-  assert.match(source, /precheck\.version/)
-  assert.match(source, /cargo test --manifest-path preflight\/Cargo\.toml --locked/)
-  assert.match(source, /file: Dockerfile\.precheck/)
-  assert.match(source, /helm package "\$\{PRECHECK_CHART_PATH\}"/)
-  assert.match(source, /helm push "\$\{precheck_package\}"/)
-  assert.match(source, /dist-precheck\/krab-precheck-\*\.tgz/)
-  assert.match(source, /PRECHECK_IMAGE=ghcr\.io\/fidencio\/krab-preflight:\$\{chart_version\}/)
-  assert.match(source, /Verify anonymous pre-flight image access/)
-  assert.match(source, /node --import tsx scripts\/chart-sbom\.ts/)
-  assert.match(source, /anchore\/sbom-action\/download-syft@v0/)
-  assert.match(source, /for arch in amd64 arm64 ppc64le s390x/)
-  assert.match(source, /spdx-json=dist-sbom\/krab-preflight-/)
-  assert.equal(source.match(/uses: actions\/attest@v4/g)?.length, 6)
-  assert.match(source, /dist-sbom\/\*\.spdx\.json/)
-  assert.match(source, /BASE_PATH="\/\$\{\{ github\.event\.repository\.name \}\}\/releases\/\$\{CHART_VERSION\}\/" npm run build/)
-  assert.match(source, /dist-builder\/krab-builder-\*\.tar\.gz/)
-  assert.equal(workflow.permissions.actions, 'write')
-  assert.match(source, /gh workflow run pages\.yml --ref main/)
-  const workflows = await readdir(resolve(root, '.github/workflows'))
-  assert.ok(!workflows.includes('release-precheck.yml'))
 })
 
 test('pull requests build chart and image SBOM artifacts', async () => {

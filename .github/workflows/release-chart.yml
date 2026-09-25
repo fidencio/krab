@@ -27,8 +27,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
@@ -53,15 +51,6 @@ jobs:
 
           if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
             echo "::error::Chart releases must be dispatched from main"
-            exit 1
-          fi
-
-          if ! git show-ref --verify --quiet refs/remotes/origin/dev; then
-            echo "::error::The dev branch must exist before releasing"
-            exit 1
-          fi
-          if ! git diff --quiet HEAD refs/remotes/origin/dev -- .; then
-            echo "::error::main and dev must have identical trees before releasing"
             exit 1
           fi
 
