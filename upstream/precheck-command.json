@@ -1,0 +1,8 @@
+{
+  "releaseName": "krab-precheck",
+  "ociReference": "oci://ghcr.io/fidencio/krab-precheck",
+  "namespace": "krab-precheck",
+  "timeout": "35m",
+  "resultsJob": "krab-precheck-results",
+  "outputFile": "krab-precheck.json"
+}

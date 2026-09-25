@@ -98,6 +98,8 @@ PCI addresses, and kernel version.
 
 The browser reads reports locally. Definite incompatibilities disable matching
 choices, while unknown probes remain selectable and require operator review.
+The v1 report shape is defined in [`contracts/precheck-v1.schema.json`](contracts/precheck-v1.schema.json).
+The install command above and the builder use [`upstream/precheck-command.json`](upstream/precheck-command.json).
 An uploaded report is a snapshot, not a launch or attestation test. Add reports
 from every target node, particularly for clusters with mixed hardware. Select
 the Kubernetes distribution separately in the builder.

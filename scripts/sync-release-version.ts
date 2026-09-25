@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { precheckCommand } from '../src/lib/precheck-command.ts'
 
 const semver = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/
 
@@ -56,6 +57,13 @@ export async function syncReleaseVersion(root = resolve(import.meta.dirname, '..
       : `KRAB ${version}. Review generated values before deploying.`
     let next = replaceLines(content, /^status:.*$/gm, `status: ${status}`, 1, 'upstream/architecture.yaml')
     return replaceLines(next, /^notice:.*$/gm, `notice: ${notice}`, 1, 'upstream/architecture.yaml')
+  })
+  await updateFile(root, 'README.md', (content) => {
+    const labelCommand = content.indexOf('kubectl label nodes NODE_1 NODE_2 krab/preflight=true')
+    const start = content.indexOf('helm install ', labelCommand)
+    const end = content.indexOf('\n```', start)
+    if (labelCommand < 0 || start < 0 || end < 0) throw new Error('README.md: precheck command is missing')
+    return content.slice(0, start) + precheckCommand(version) + content.slice(end)
   })
   for (const [path, count] of [['README.md', 2], ['charts/krab/README.md', 1]] as const) {
     await updateFile(root, path, (content) =>

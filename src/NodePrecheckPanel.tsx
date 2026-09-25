@@ -3,6 +3,7 @@ import { Check, CircleAlert, Copy, Upload } from 'lucide-react'
 import packageData from '../package.json'
 import catalog from './generated/catalog.json' with { type: 'json' }
 import { gpuModelChoices, hasGpuModel, type NodePrecheck, type RequestedCheck } from './lib/precheck'
+import { precheckCommand } from './lib/precheck-command'
 
 const readinessChecks = [
   { id: 'tdx', label: 'Intel TDX' },
@@ -76,15 +77,7 @@ export function NodePrecheckPanel({
   const [nodeQuery, setNodeQuery] = useState('')
   const [page, setPage] = useState(0)
   const chartVersion = packageData.version
-  const command = [
-    'helm install krab-precheck \\',
-    '  oci://ghcr.io/fidencio/krab-precheck \\',
-    `  --version ${chartVersion} \\`,
-    '  --timeout 35m \\',
-    '  --namespace krab-precheck --create-namespace &&',
-    'kubectl --namespace krab-precheck logs \\',
-    '  job/krab-precheck-results > krab-precheck.json',
-  ].join('\n')
+  const command = precheckCommand(chartVersion)
   const upload = (label: string) => <label className="precheck-upload"><Upload size={14} /> {label}
     <input type="file" accept=".json,application/json" multiple onChange={(event) => {
       onFiles(event.target.files)

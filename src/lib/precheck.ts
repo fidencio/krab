@@ -1,4 +1,6 @@
 import type { HardwareFamilyCatalog, VendorCatalog } from './artifacts'
+import Ajv from 'ajv'
+import precheckSchema from '../../contracts/precheck-v1.schema.json' with { type: 'json' }
 
 export type ProbeStatus = 'yes' | 'no' | 'unknown' | 'review'
 export type RequestedCheck = 'tdx' | 'snp' | 'se' | 'gpu'
@@ -9,6 +11,8 @@ export type NodePrecheck = {
   kind: 'krab-node-precheck'
   node: { architecture: string; kernel: string }
   checks: Record<'kvm' | 'tdx' | 'snp' | 'se' | 'iommufd' | 'erofs', Probe>
+  erofsVersion?: string | null
+  runtime?: { detected: string[]; layout: Probe }
   gpus: {
     present: Probe
     nvidia: Probe
@@ -30,35 +34,24 @@ export function gpuModelChoices(families: ReadonlyArray<{ models: readonly strin
   return [...models.values()]
 }
 
-const probeStatuses: ProbeStatus[] = ['yes', 'no', 'unknown', 'review']
-const isProbe = (value: unknown): value is Probe =>
-  typeof value === 'object' && value !== null &&
-  'status' in value && probeStatuses.includes(value.status as ProbeStatus) &&
-  'reason' in value && typeof value.reason === 'string'
+const ajv = new Ajv()
+const validateNodeReport = ajv.compile({ $ref: '#/definitions/nodeReport', definitions: precheckSchema.definitions })
+const validateClusterReport = ajv.compile({ $ref: '#/definitions/clusterReport', definitions: precheckSchema.definitions })
 
 export function parseNodePrecheck(text: string): NodePrecheck {
   const data: unknown = JSON.parse(text)
-  if (typeof data !== 'object' || data === null) throw new Error('Invalid node report.')
-  const report = data as NodePrecheck
-  if (report.kind !== 'krab-node-precheck' || report.schemaVersion !== 1 ||
-      !report.node || typeof report.node.architecture !== 'string' ||
-      typeof report.node.kernel !== 'string' || !report.checks || !report.gpus ||
-      !Array.isArray(report.gpus.devices) ||
-      !['kvm', 'tdx', 'snp', 'se', 'iommufd', 'erofs'].every((key) =>
-        isProbe(report.checks[key as keyof NodePrecheck['checks']])) ||
-      !['present', 'nvidia', 'cc', 'ppcie', 'nvswitch'].every((key) =>
-        isProbe(report.gpus[key as keyof Pick<NodePrecheck['gpus'], 'present' | 'nvidia' | 'cc' | 'ppcie' | 'nvswitch'>]))) {
+  if (!validateNodeReport(data)) {
     throw new Error('This is not a supported KRAB node pre-check report.')
   }
-  return report
+  return data as NodePrecheck
 }
 
 export function parsePrecheckUpload(text: string, filename: string): Array<{ name: string; report: NodePrecheck }> {
   const data: unknown = JSON.parse(text)
   if (typeof data === 'object' && data !== null && 'kind' in data && data.kind === 'krab-cluster-precheck') {
-    const collection = data as { schemaVersion?: unknown; nodes?: unknown }
-    if (collection.schemaVersion !== 1 || !Array.isArray(collection.nodes) || collection.nodes.length === 0)
+    if (!validateClusterReport(data))
       throw new Error('Invalid KRAB cluster pre-check collection.')
+    const collection = data as unknown as { nodes: Array<{ nodeName: string; report: NodePrecheck }> }
     const names = new Set<string>()
     return collection.nodes.map((entry: unknown) => {
       if (typeof entry !== 'object' || entry === null || !('nodeName' in entry) ||

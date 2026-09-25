@@ -21,6 +21,10 @@ import {
   type NodePrecheck,
 } from '../src/lib/precheck.ts'
 import type { HardwareFamilyCatalog, VendorCatalog } from '../src/lib/artifacts.ts'
+import { precheckCommand } from '../src/lib/precheck-command.ts'
+import precheckSchema from '../contracts/precheck-v1.schema.json' with { type: 'json' }
+import commandConfig from '../upstream/precheck-command.json' with { type: 'json' }
+import packageData from '../package.json' with { type: 'json' }
 
 const probe = (status: 'yes' | 'no' | 'unknown') => ({ status, reason: 'fixture' })
 const report = (arch = 'amd64'): NodePrecheck => ({
@@ -39,6 +43,12 @@ const family = {
 test('parses a versioned node report and rejects incomplete reports', () => {
   assert.deepEqual(parseNodePrecheck(JSON.stringify(report())), report())
   assert.throws(() => parseNodePrecheck('{"kind":"krab-node-precheck","schemaVersion":1}'))
+  const invalid = report()
+  invalid.gpus.devices[0].name = 3 as unknown as string
+  assert.throws(() => parseNodePrecheck(JSON.stringify(invalid)))
+  assert.throws(() => parseNodePrecheck(JSON.stringify({ ...report(), newField: true })))
+  assert.deepEqual(precheckSchema.definitions.nodeReport.properties.checks.required,
+    ['kvm', 'tdx', 'snp', 'se', 'iommufd', 'erofs'])
 })
 
 test('accepts one complete cluster collection', () => {
@@ -225,9 +235,13 @@ test('node reports are requested before vendor selection', async () => {
   assert.ok(app.indexOf('<NodePrecheckPanel') < app.indexOf('<div className="platform-directory">'))
   assert.equal(app.match(/<NodePrecheckPanel/g)?.length, 1)
   assert.match(panel, /krab\/preflight=true/)
-  assert.match(panel, /oci:\/\/ghcr\.io\/fidencio\/krab-precheck/)
+  assert.match(panel, /precheckCommand\(chartVersion\)/)
   assert.doesNotMatch(panel, /\.\/charts\/precheck/)
-  assert.match(panel, /--timeout 35m/)
-  assert.match(panel, /--namespace krab-precheck --create-namespace &&/)
-  assert.match(panel, /kubectl --namespace krab-precheck logs/)
+  const command = precheckCommand('0.1.0-test')
+  assert.match(command, /--timeout 35m/)
+  assert.match(command, /--namespace krab-precheck --create-namespace &&/)
+  assert.match(command, /kubectl --namespace krab-precheck logs/)
+  assert.match(command, new RegExp(commandConfig.ociReference.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  const readme = await readFile(resolve(import.meta.dirname, '../README.md'), 'utf8')
+  assert.ok(readme.includes(precheckCommand(packageData.version)))
 })

@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/fidencio/krab/blob/main/contracts/precheck-v1.schema.json",
+  "title": "KRAB pre-check report v1",
+  "oneOf": [
+    { "$ref": "#/definitions/nodeReport" },
+    { "$ref": "#/definitions/clusterReport" }
+  ],
+  "definitions": {
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason"],
+      "properties": {
+        "status": { "enum": ["yes", "no", "unknown", "review"] },
+        "reason": { "type": "string" }
+      }
+    },
+    "nodeReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "node", "checks", "gpus"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "kind": { "const": "krab-node-precheck" },
+        "node": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["architecture", "kernel"],
+          "properties": {
+            "architecture": { "type": "string" },
+            "kernel": { "type": "string" }
+          }
+        },
+        "checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kvm", "tdx", "snp", "se", "iommufd", "erofs"],
+          "properties": {
+            "kvm": { "$ref": "#/definitions/probe" },
+            "tdx": { "$ref": "#/definitions/probe" },
+            "snp": { "$ref": "#/definitions/probe" },
+            "se": { "$ref": "#/definitions/probe" },
+            "iommufd": { "$ref": "#/definitions/probe" },
+            "erofs": { "$ref": "#/definitions/probe" }
+          }
+        },
+        "erofsVersion": { "type": ["string", "null"] },
+        "gpus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["present", "nvidia", "cc", "ppcie", "nvswitch", "devices"],
+          "properties": {
+            "present": { "$ref": "#/definitions/probe" },
+            "nvidia": { "$ref": "#/definitions/probe" },
+            "cc": { "$ref": "#/definitions/probe" },
+            "ppcie": { "$ref": "#/definitions/probe" },
+            "nvswitch": { "$ref": "#/definitions/probe" },
+            "devices": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["pciBusId", "name"],
+                "properties": {
+                  "pciBusId": { "type": "string" },
+                  "name": { "type": "string" },
+                  "chip": { "type": ["string", "null"] }
+                }
+              }
+            }
+          }
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["detected", "layout"],
+          "properties": {
+            "detected": { "type": "array", "items": { "type": "string" } },
+            "layout": { "$ref": "#/definitions/probe" }
+          }
+        }
+      }
+    },
+    "clusterReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "nodes"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "kind": { "const": "krab-cluster-precheck" },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["nodeName", "report"],
+            "properties": {
+              "nodeName": { "type": "string", "minLength": 1 },
+              "report": { "$ref": "#/definitions/nodeReport" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
