@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import test from 'node:test'
-import { parse } from 'yaml'
+import { parse, parseDocument } from 'yaml'
 import { syncChartImages, type KrabImageDefaults } from '../scripts/sync-chart-images.ts'
 
 const valuesPath = resolve(import.meta.dirname, '../charts/krab/values.yaml')
@@ -19,9 +19,10 @@ test('image sync updates pins without changing KRAB deployment policy', async ()
     provisioner: values['kata-device-provisioner'].image,
     provisionerDispatcher: values['kata-device-provisioner'].job.dispatcherImage,
   }
-  const stale = original
-    .replace('tag: v0.19.0', 'tag: old-nfd')
-    .replace('tag: "0.4.0"', 'tag: "old-dispatcher"')
+  const staleDocument = parseDocument(original)
+  staleDocument.setIn(['node-feature-discovery', 'image', 'tag'], 'old-nfd')
+  staleDocument.setIn(['kata-device-provisioner', 'job', 'dispatcherImage', 'tag'], 'old-dispatcher')
+  const stale = staleDocument.toString()
 
   const updated = syncChartImages(stale, images)
   assert.equal(updated, original)

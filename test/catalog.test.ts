@@ -23,8 +23,26 @@ const krabVersion = packageData.version
 const loadJson = async <T>(path: string) =>
   JSON.parse(await readFile(resolve(root, path), 'utf8')) as T
 
+const pinned = async (id: string) => {
+  const lock = parse(await readFile(resolve(root, 'upstream/sources.lock.yaml'), 'utf8')) as {
+    sources: Array<{ id: string; cache: string; ref: string; release: string; repository: string; path: string }>
+  }
+  const source = lock.sources.find((item) => item.id === id)
+  assert.ok(source, `Missing pinned source ${id}`)
+  return {
+    source,
+    values: parse(await readFile(resolve(root, 'upstream/cache', source.cache), 'utf8')),
+  }
+}
+
 test('generated catalog carries accurate upstream chart data', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const kataChart = await pinned('kata-chart')
+  const kataVersions = await pinned('kata-versions')
+  const nfdChart = await pinned('nfd-chart')
+  const nfdValues = await pinned('nfd-values')
+  const devicePluginChart = await pinned('device-plugin-chart')
+  const provisionerChart = await pinned('provisioner-chart')
   const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
   const local = catalog.vendors.find(({ id }) => id === 'custom')!
 
@@ -110,43 +128,41 @@ test('generated catalog carries accurate upstream chart data', async () => {
     ],
   )
   assert.match(vendor.sourceUrl, /^https:\/\/github\.com\/kata-containers\//)
-  assert.equal(vendor.runtime.chart.version, '4.2.0')
+  assert.equal(vendor.runtime.chart.version, String(kataChart.values.version))
   assert.equal(
     vendor.runtime.chart.ociReference,
     'oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy',
   )
   assert.equal(vendor.workload.resourceName, 'nvidia.com/gpu')
   assert.equal(catalog.plannedArchitecture.charts.nfd.required, true)
-  assert.equal(catalog.plannedArchitecture.charts.nfd.version, '0.19.0')
-  assert.equal(catalog.plannedArchitecture.charts.nfd.appVersion, 'v0.19.0')
+  assert.equal(catalog.plannedArchitecture.charts.nfd.version, nfdChart.source.release.slice(1))
+  assert.equal(catalog.plannedArchitecture.charts.nfd.appVersion, String(nfdChart.values.appVersion))
   assert.deepEqual(catalog.plannedArchitecture.charts.nfd.image, {
-    repository: 'registry.k8s.io/nfd/node-feature-discovery',
-    pullPolicy: 'IfNotPresent',
-    tag: 'v0.19.0',
+    ...nfdValues.values.image,
+    tag: nfdValues.values.image.tag || String(nfdChart.values.appVersion),
   })
-  assert.equal(catalog.plannedArchitecture.charts.kataDeploy.version, '4.2.0')
+  assert.equal(catalog.plannedArchitecture.charts.kataDeploy.version, String(kataChart.values.version))
   assert.equal(
     catalog.plannedArchitecture.charts.devicePlugin.version,
-    '0.2.0-rc.0',
+    String(devicePluginChart.values.version),
   )
   assert.equal(
     catalog.plannedArchitecture.charts.provisioner.version,
-    '0.1.0-alpha.1',
+    String(provisionerChart.values.version),
   )
   assert.equal(
     catalog.plannedArchitecture.charts.krab.version,
     krabVersion,
   )
+  const trustee = kataVersions.values.externals['coco-trustee']
+  const trusteeRepository = trustee.url.replace(/\.git$/, '')
   assert.deepEqual(catalog.plannedArchitecture.attestation.trustee, {
     displayName: 'Trustee',
-    repository: 'https://github.com/confidential-containers/trustee',
-    commit: '512fed65642015b849f38fb13bfdec7806639987',
-    sourceUrl:
-      'https://github.com/confidential-containers/trustee/commit/512fed65642015b849f38fb13bfdec7806639987',
-    documentationUrl:
-      'https://github.com/confidential-containers/trustee/blob/512fed65642015b849f38fb13bfdec7806639987/README.md',
-    kataSourceUrl:
-      'https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/versions.yaml',
+    repository: trusteeRepository,
+    commit: trustee.version,
+    sourceUrl: `${trusteeRepository}/commit/${trustee.version}`,
+    documentationUrl: `${trusteeRepository}/blob/${trustee.version}/README.md`,
+    kataSourceUrl: `https://github.com/${kataVersions.source.repository}/blob/${kataVersions.source.ref}/${kataVersions.source.path}`,
   })
   const dependencies = catalog.plannedArchitecture.charts.krab.dependencies
   assert.equal(dependencies.nfdRequired, true)
@@ -387,25 +403,13 @@ test('Custom artifacts install only the selected upstream RuntimeClasses', async
     s390x: 'qemu-runtime-rs',
     ppc64le: 'qemu-runtime-rs',
   })
-  assert.deepEqual(generatedValues['kata-deploy'].image, {
-    reference: 'quay.io/kata-containers/kata-deploy',
-    tag: '4.2.0',
-  })
-  assert.deepEqual(generatedValues['kata-deploy'].kubectlImage, {
-    reference: 'quay.io/kata-containers/kubectl',
-    tag: 'v1.37.0',
-  })
+  assert.deepEqual(generatedValues['kata-deploy'].image, local.runtime.chart.values.image)
+  assert.deepEqual(generatedValues['kata-deploy'].kubectlImage, local.runtime.chart.values.kubectlImage)
   assert.deepEqual(generatedValues['kata-deploy'].job, {
-    dispatcherImage: {
-      reference: 'ghcr.io/kata-containers/k8s-job-dispatcher',
-      tag: '0.3.0',
-    },
+    dispatcherImage: local.runtime.chart.values.job.dispatcherImage,
   })
-  assert.deepEqual(generatedValues['node-feature-discovery'].image, {
-    repository: 'registry.k8s.io/nfd/node-feature-discovery',
-    pullPolicy: 'IfNotPresent',
-    tag: 'v0.19.0',
-  })
+  assert.deepEqual(generatedValues['node-feature-discovery'].image,
+    catalog.plannedArchitecture.charts.nfd.image)
   assert.doesNotMatch(JSON.stringify(generatedValues), /latest/)
   assert.equal(
     shims['qemu-nvidia-cpu-runtime-rs'].containerd.snapshotter,
@@ -564,21 +568,12 @@ test('NVIDIA artifacts pin every component image version', async () => {
     ),
   )
 
-  assert.deepEqual(generatedValues['kata-device-plugin'].image, {
-    repository: 'ghcr.io/kata-containers/kata-device-plugin',
-    tag: 'v0.2.0-rc.0',
-    pullPolicy: 'IfNotPresent',
-  })
-  assert.deepEqual(generatedValues['kata-device-provisioner'].image, {
-    reference: 'ghcr.io/kata-containers/kata-device-provisioner',
-    tag: '0.1.0-alpha.1',
-  })
+  assert.deepEqual(generatedValues['kata-device-plugin'].image, vendor.devicePlugin.values.image)
+  assert.deepEqual(generatedValues['kata-device-provisioner'].image,
+    vendor.provisioner.values.image)
   assert.deepEqual(
     generatedValues['kata-device-provisioner'].job.dispatcherImage,
-    {
-      reference: 'ghcr.io/kata-containers/k8s-job-dispatcher',
-      tag: '0.4.0',
-    },
+    vendor.provisioner.values.job.dispatcherImage,
   )
   assert.doesNotMatch(JSON.stringify(generatedValues), /latest/)
   assert.deepEqual(generatedValues['kata-deploy'].defaultShim, {
@@ -770,7 +765,7 @@ test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
         pullPolicy: 'IfNotPresent',
         pullSecrets: [' registry-secret '],
         reference: 'registry.example.com/kata-deploy',
-        tag: '4.2.0',
+        tag: 'test-kata',
         kubectlReference: 'registry.example.com/kubectl',
         dispatcherReference: 'registry.example.com/dispatcher',
       },
@@ -779,21 +774,21 @@ test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
         pullPolicy: 'IfNotPresent',
         pullSecrets: [' nfd-secret '],
         reference: 'registry.example.com/node-feature-discovery',
-        tag: '0.19.0',
+        tag: 'test-nfd',
       },
       devicePlugin: {
         ...createAdvancedConfiguration().images.devicePlugin,
         pullPolicy: 'Always',
         pullSecrets: [' plugin-secret '],
         reference: 'registry.example.com/kata-device-plugin',
-        tag: '0.1.0',
+        tag: 'test-plugin',
       },
       provisioner: {
         ...createAdvancedConfiguration().images.provisioner,
         pullPolicy: 'IfNotPresent',
         pullSecrets: [' provisioner-secret '],
         reference: 'registry.example.com/kata-device-provisioner',
-        tag: '0.1.0',
+        tag: 'test-provisioner',
         dispatcherReference: 'registry.example.com/provisioner-dispatcher',
       },
     },

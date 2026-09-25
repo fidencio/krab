@@ -16,9 +16,10 @@ builds the site.
 4. The React UI renders that generated catalog and creates artifacts from the
    upstream chart values.
 
-The catalog currently uses released Kata Containers data and the explicitly
-marked alpha profile set from
-[`kata-device-provisioner` v0.1.0-alpha.1](https://github.com/kata-containers/kata-device-provisioner/releases/tag/v0.1.0-alpha.1).
+The catalog uses released Kata Containers data and the reviewed provisioner
+profiles pinned in [`sources.lock.yaml`](upstream/sources.lock.yaml). The exact
+refs and checksums are in the generated
+[`provenance.json`](src/generated/provenance.json).
 KRAB's reviewed [`compatibility.json`](upstream/compatibility.json) records
 which profile and CPU TEE combinations the builder offers. Generation checks
 that policy against the pinned Kata runtimes, provisioner profiles, and node

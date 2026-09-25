@@ -97,10 +97,9 @@ test('chart defaults and generated values satisfy the values schema', async () =
     defaults['kata-device-provisioner']['node-feature-discovery'].enabled,
     false,
   )
-  assert.deepEqual(defaults['kata-device-plugin'].image, {
-    repository: 'ghcr.io/kata-containers/kata-device-plugin',
-    tag: 'v0.2.0-rc.0',
-  })
+  const architecture = await readYaml('upstream/architecture.yaml')
+  assert.deepEqual(defaults['kata-device-plugin'].image,
+    architecture.images.devicePlugin)
 
   const generated = parse(
     buildValuesBundle(
