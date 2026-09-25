@@ -257,6 +257,17 @@ GitHub release with both chart packages. Reruns verify existing artifacts
 before replacing release assets. Publication is refused while any pinned
 upstream OCI dependency is unavailable.
 
+The release also includes SPDX SBOMs for both packaged charts and for each
+published pre-flight image architecture (`amd64`, `arm64`, `ppc64le`, and
+`s390x`). The chart SBOMs list the packaged subcharts, their nested
+dependencies, and every container image in the packaged chart defaults after
+KRAB's overrides. They also include KRAB's optional, digest-pinned EROFS
+utility image. Upstream image references that use tags are identified by those
+tags; KRAB does not claim to inventory the contents of upstream images. The
+four pre-flight image SBOMs describe the contents of each published image
+manifest. All six SBOM files are in `SHA256SUMS` and have GitHub attestations;
+the pre-flight image attestations are also attached to their GHCR manifests.
+
 For a prerelease, specify its version explicitly when installing with Helm:
 
 ```sh

@@ -175,7 +175,8 @@ jobs:
 
           helm dependency build "${CHART_PATH}"
           helm lint "${CHART_PATH}"
-          helm template krab "${CHART_PATH}" --namespace kata-system >/dev/null
+          helm template krab "${CHART_PATH}" --namespace kata-system \
+            > "${RUNNER_TEMP}/krab-default-render.yaml"
 
           cat > "${RUNNER_TEMP}/nvidia-values.yaml" <<'VALUES'
           nvidia:
@@ -188,10 +189,12 @@ jobs:
           VALUES
           helm template krab "${CHART_PATH}" \
             --namespace kata-system \
-            --values "${RUNNER_TEMP}/nvidia-values.yaml" >/dev/null
+            --values "${RUNNER_TEMP}/nvidia-values.yaml" \
+            > "${RUNNER_TEMP}/krab-nvidia-render.yaml"
 
           helm lint "${PRECHECK_CHART_PATH}"
-          helm template krab-precheck "${PRECHECK_CHART_PATH}" --namespace krab-precheck >/dev/null
+          helm template krab-precheck "${PRECHECK_CHART_PATH}" --namespace krab-precheck \
+            > "${RUNNER_TEMP}/krab-precheck-render.yaml"
 
           mkdir -p dist-chart dist-precheck
           helm package "${CHART_PATH}" --destination dist-chart
@@ -263,12 +266,38 @@ jobs:
             echo "PUBLISH_PRECHECK_CHART=true" >> "${GITHUB_ENV}"
           fi
 
-      - name: Prepare release checksums
-        shell: bash
+      - name: Generate chart SBOMs from packaged dependencies
         run: |
-          set -euo pipefail
-          sha256sum "dist-chart/krab-${CHART_VERSION}.tgz" "dist-precheck/krab-precheck-${CHART_VERSION}.tgz" \
-            | sed 's#dist-chart/##; s#dist-precheck/##' > dist-chart/SHA256SUMS
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          mkdir -p dist-sbom
+          node --import tsx scripts/chart-sbom.ts \
+            "dist-chart/krab-${CHART_VERSION}.tgz" \
+            "dist-sbom/krab-${CHART_VERSION}.spdx.json"
+          node --import tsx scripts/chart-sbom.ts \
+            "dist-precheck/krab-precheck-${CHART_VERSION}.tgz" \
+            "dist-sbom/krab-precheck-${CHART_VERSION}.spdx.json"
+
+      - name: Check rendered images against chart SBOMs
+        run: |
+          node --import tsx scripts/verify-sbom-images.ts \
+            "dist-sbom/krab-${CHART_VERSION}.spdx.json" \
+            "${RUNNER_TEMP}/krab-default-render.yaml" \
+            "${RUNNER_TEMP}/krab-nvidia-render.yaml"
+          node --import tsx scripts/verify-sbom-images.ts \
+            "dist-sbom/krab-precheck-${CHART_VERSION}.spdx.json" \
+            "${RUNNER_TEMP}/krab-precheck-render.yaml"
+
+      - name: Attest KRAB chart SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: dist-chart/krab-${{ env.CHART_VERSION }}.tgz
+          sbom-path: dist-sbom/krab-${{ env.CHART_VERSION }}.spdx.json
+
+      - name: Attest pre-flight chart SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: dist-precheck/krab-precheck-${{ env.CHART_VERSION }}.tgz
+          sbom-path: dist-sbom/krab-precheck-${{ env.CHART_VERSION }}.spdx.json
 
       - name: Check existing pre-flight image
         shell: bash
@@ -319,12 +348,95 @@ jobs:
           echo "::error::Pre-flight image is not anonymously pullable"
           exit 1
 
+      - uses: anchore/sbom-action/download-syft@v0
+        id: syft
+        with:
+          syft-version: v1.52.0
+
+      - name: Generate a pre-flight image SBOM for each architecture
+        id: image_sbom
+        shell: bash
+        env:
+          SYFT: ${{ steps.syft.outputs.cmd }}
+        run: |
+          set -euo pipefail
+          image_digest="$(oras manifest fetch --descriptor "${PRECHECK_IMAGE}" | jq -r '.digest')"
+          [[ "${image_digest}" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+            echo "::error::Could not resolve the published pre-flight image digest"
+            exit 1
+          }
+          echo "index_digest=${image_digest}" >> "${GITHUB_OUTPUT}"
+          manifest="$(oras manifest fetch "${PRECHECK_IMAGE}@${image_digest}")"
+          for arch in amd64 arm64 ppc64le s390x; do
+            platform_digest="$(jq -r --arg arch "${arch}" \
+              '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == $arch) | .digest] | if length == 1 then .[0] else empty end' \
+              <<<"${manifest}")"
+            [[ "${platform_digest}" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+              echo "::error::Expected one published linux/${arch} manifest"
+              exit 1
+            }
+            echo "${arch}_digest=${platform_digest}" >> "${GITHUB_OUTPUT}"
+            "${SYFT}" "${PRECHECK_IMAGE}@${image_digest}" \
+              --from registry \
+              --platform "linux/${arch}" \
+              -o "spdx-json=dist-sbom/krab-preflight-${CHART_VERSION}-linux-${arch}.spdx.json"
+          done
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Attest amd64 pre-flight image SBOM
+        uses: actions/attest@v4
+        with:
+          subject-name: ghcr.io/fidencio/krab-preflight
+          subject-digest: ${{ steps.image_sbom.outputs.amd64_digest }}
+          sbom-path: dist-sbom/krab-preflight-${{ env.CHART_VERSION }}-linux-amd64.spdx.json
+          push-to-registry: true
+
+      - name: Attest arm64 pre-flight image SBOM
+        uses: actions/attest@v4
+        with:
+          subject-name: ghcr.io/fidencio/krab-preflight
+          subject-digest: ${{ steps.image_sbom.outputs.arm64_digest }}
+          sbom-path: dist-sbom/krab-preflight-${{ env.CHART_VERSION }}-linux-arm64.spdx.json
+          push-to-registry: true
+
+      - name: Attest ppc64le pre-flight image SBOM
+        uses: actions/attest@v4
+        with:
+          subject-name: ghcr.io/fidencio/krab-preflight
+          subject-digest: ${{ steps.image_sbom.outputs.ppc64le_digest }}
+          sbom-path: dist-sbom/krab-preflight-${{ env.CHART_VERSION }}-linux-ppc64le.spdx.json
+          push-to-registry: true
+
+      - name: Attest s390x pre-flight image SBOM
+        uses: actions/attest@v4
+        with:
+          subject-name: ghcr.io/fidencio/krab-preflight
+          subject-digest: ${{ steps.image_sbom.outputs.s390x_digest }}
+          sbom-path: dist-sbom/krab-preflight-${{ env.CHART_VERSION }}-linux-s390x.spdx.json
+          push-to-registry: true
+
+      - name: Prepare release checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum "dist-chart/krab-${CHART_VERSION}.tgz" \
+            "dist-precheck/krab-precheck-${CHART_VERSION}.tgz" \
+            dist-sbom/*.spdx.json \
+            | sed 's#dist-chart/##; s#dist-precheck/##; s#dist-sbom/##' \
+            > dist-chart/SHA256SUMS
+
       - uses: actions/upload-artifact@v5
         with:
           name: krab-chart-${{ env.CHART_VERSION }}
           path: |
             dist-chart/krab-*.tgz
             dist-precheck/krab-precheck-*.tgz
+            dist-sbom/*.spdx.json
             dist-chart/SHA256SUMS
           if-no-files-found: error
 
@@ -389,6 +501,7 @@ jobs:
             gh release upload "${RELEASE_TAG}" \
               dist-chart/krab-*.tgz \
               dist-precheck/krab-precheck-*.tgz \
+              dist-sbom/*.spdx.json \
               dist-chart/SHA256SUMS \
               --clobber
             gh release edit "${RELEASE_TAG}" \
@@ -398,6 +511,7 @@ jobs:
             gh release create "${RELEASE_TAG}" \
               dist-chart/krab-*.tgz \
               dist-precheck/krab-precheck-*.tgz \
+              dist-sbom/*.spdx.json \
               dist-chart/SHA256SUMS \
               --target "${GITHUB_SHA}" \
               --title "KRAB ${CHART_VERSION}" \
