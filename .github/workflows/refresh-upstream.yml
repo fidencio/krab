@@ -59,6 +59,7 @@ jobs:
       - if: steps.candidate.outputs.changed == 'true'
         run: npm run build
       - uses: peter-evans/create-pull-request@v7
+        id: pr
         if: steps.candidate.outputs.changed == 'true'
         with:
           branch: automation/refresh-${{ matrix.group }}
@@ -73,6 +74,16 @@ jobs:
             Please review compatibility and the generated diff before merging.
             The published chart was checked. Provisioner image digests are
             checked for amd64 and arm64 during generation.
+      - name: Summarize ${{ matrix.group }} refresh
+        if: always()
+        env:
+          REFRESH_NAME: ${{ matrix.group }}
+          REFRESH_CURRENT: ${{ steps.candidate.outputs.current }}
+          REFRESH_TAG: ${{ steps.candidate.outputs.tag }}
+          REFRESH_CHANGED: ${{ steps.candidate.outputs.changed }}
+          REFRESH_PR_URL: ${{ steps.pr.outputs.pull-request-url }}
+          REFRESH_JOB_STATUS: ${{ job.status }}
+        run: bash scripts/refresh-summary.sh
 
   refresh-erofs:
     runs-on: ubuntu-24.04
@@ -98,6 +109,7 @@ jobs:
       - if: steps.candidate.outputs.changed == 'true'
         run: npm run build
       - uses: peter-evans/create-pull-request@v7
+        id: pr
         if: steps.candidate.outputs.changed == 'true'
         with:
           branch: automation/refresh-erofs-image
@@ -109,3 +121,13 @@ jobs:
             Its image digest and amd64/arm64 manifests were verified.
 
             Please review compatibility with the pinned Kata release before merging.
+      - name: Summarize EROFS refresh
+        if: always()
+        env:
+          REFRESH_NAME: erofs-utils
+          REFRESH_CURRENT: ${{ steps.candidate.outputs.current }}
+          REFRESH_TAG: ${{ steps.candidate.outputs.tag }}
+          REFRESH_CHANGED: ${{ steps.candidate.outputs.changed }}
+          REFRESH_PR_URL: ${{ steps.pr.outputs.pull-request-url }}
+          REFRESH_JOB_STATUS: ${{ job.status }}
+        run: bash scripts/refresh-summary.sh

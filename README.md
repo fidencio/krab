@@ -173,6 +173,8 @@ follows its release tag, since the source
 `Chart.yaml` at that tag has a different version. KRAB's deployment settings
 stay in the values file; the kubectl image pin and device plugin tag choice
 remain in `upstream/architecture.yaml`.
+Each refresh job writes its pinned version, candidate, and result to the
+workflow run summary, with a link when it opens a PR.
 
 `npm run refresh:nfd` remains a shortcut for the NFD group.
 

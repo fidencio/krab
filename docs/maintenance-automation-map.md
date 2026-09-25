@@ -162,9 +162,10 @@ selectable.
   generated data or the local policy files. Keep direct contract tests for the
   generated values and rendered Helm output; remove tests that merely restate
   a now-generated constant.
-- Have the weekly job summarize discovered, adopted, blocked, and ignored
-  upstream releases. Include the locked ref and source checksum in generated
-  provenance so a support claim can be traced to a reviewed PR.
+- Have the weekly job summarize pinned releases, discovered candidates, proposed
+  PRs, blocked updates, and candidates with no PR (implemented). Include the
+  locked ref and source checksum in generated provenance so a support claim can
+  be traced to a reviewed PR.
 - Document the update and rollback commands. Reverting a reviewed update PR
   must restore its lockfile and all generated artifacts together.
 

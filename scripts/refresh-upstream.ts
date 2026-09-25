@@ -129,9 +129,11 @@ async function main() {
   if (!current || selected.some((source) => source.release !== current || source.ref !== selected[0].ref)) {
     throw new Error(`${group} locked sources disagree on their release or commit`)
   }
+  if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `current=${current}\n`)
   const releases = await publishedReleases(repository)
   const tag = newerRelease(releases, current, group) ??
     (/^[0-9a-f]{40}$/.test(selected[0].ref) ? undefined : current)
+  if (tag && process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `tag=${tag}\n`)
   if (!tag) {
     console.log(`${group} ${current} is current`)
     if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, 'changed=false\n')
@@ -147,7 +149,7 @@ async function main() {
   const files = new Map(downloaded)
   const updated = updateGroupLock(content, group, tag, commit, files)
   await writeFile(lockPath, updated)
-  if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `changed=true\ntag=${tag}\n`)
+  if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, 'changed=true\n')
   console.log(`${group}: ${current} -> ${tag} (${commit}); run npm run sync:upstream`)
 }
 

@@ -6,6 +6,7 @@ import { compareVersions, inspectErofsImage, listErofsTags, validateErofsImageLo
 const path = resolve(import.meta.dirname, '../upstream/erofs-utils-image.lock.json')
 const lock = JSON.parse(await readFile(path, 'utf8')) as ErofsImageLock
 validateErofsImageLock(lock)
+if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `current=${lock.tag}\n`)
 const tags = await listErofsTags(lock.reference)
 const candidates = tags.filter((tag) => compareVersions(tag, lock.tag) > 0)
   .sort(compareVersions).reverse()
