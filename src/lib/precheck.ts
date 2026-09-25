@@ -104,8 +104,7 @@ const possibleFamilyOnNode = (family: HardwareFamilyCatalog, report: NodePrechec
       report.checks.kvm.status === 'no' || report.checks.iommufd.status === 'no' ||
       report.gpus.nvidia.status === 'no') return false
   if (family.id !== 'pcie-gpu' && report.gpus.devices.length > 0 &&
-      !family.models.some((model) => report.gpus.devices.some(({ name }) =>
-        name.toLowerCase().includes(model.toLowerCase())))) return false
+      !family.models.some((model) => hasGpuModel(report, model))) return false
   return true
 }
 
@@ -119,9 +118,9 @@ export function unavailableFamilyReason(family: HardwareFamilyCatalog, reports: 
     return 'IOMMUFD is unavailable on every uploaded node.'
   if (reports.every(({ gpus }) => gpus.nvidia.status === 'no'))
     return 'No NVIDIA GPU was found on any uploaded node.'
-  const names = reports.flatMap(({ gpus }) => gpus.devices.map(({ name }) => name.toLowerCase()))
-  if (names.length > 0 && family.id !== 'pcie-gpu') {
-    const matches = family.models.some((model) => names.some((name) => name.includes(model.toLowerCase())))
+  const hasDevices = reports.some(({ gpus }) => gpus.devices.length > 0)
+  if (hasDevices && family.id !== 'pcie-gpu') {
+    const matches = family.models.some((model) => reports.some((report) => hasGpuModel(report, model)))
     if (!matches) return `No ${family.displayName} GPU was found in the uploaded reports.`
   }
   if (!reports.some((report) => possibleFamilyOnNode(family, report)))
