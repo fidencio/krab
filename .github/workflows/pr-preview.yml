@@ -1,0 +1,39 @@
+name: Build PR preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Validate generated files
+        run: |
+          npm run generate
+          git diff --exit-code -- \
+            package-lock.json charts/krab/Chart.yaml charts/krab/values.yaml \
+            charts/precheck/Chart.yaml charts/precheck/values.yaml \
+            Dockerfile.precheck upstream/precheck-image.lock.json \
+            upstream/architecture.yaml README.md charts/krab/README.md \
+            CHANGELOG.md src/generated
+      - run: npm test
+      - run: npm run test:chart
+      - run: npm run lint
+      - run: npm run build
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/pr/${{ github.event.pull_request.number }}/
+      - uses: actions/upload-artifact@v5
+        with:
+          name: pr-preview-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          path: dist
+          if-no-files-found: error

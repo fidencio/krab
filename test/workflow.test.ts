@@ -23,6 +23,24 @@ test('Pages publishes stable and development builds together', async () => {
   assert.match(source, /BASE_PATH: \/\$\{\{ github\.event\.repository\.name \}\}\/dev\//)
   assert.match(source, /cp -R stable\/dist\/\. site\//)
   assert.match(source, /cp -R development\/dist\/\. site\/dev\//)
+  assert.deepEqual(workflow.on.workflow_run.workflows, ['Build PR preview'])
+  assert.deepEqual(workflow.on.pull_request_target.types, ['closed'])
+  assert.match(source, /bash stable\/scripts\/compose-pr-previews\.sh site/)
+  assert.match(source, /bash scripts\/comment-pr-previews\.sh/)
+})
+
+test('PR previews are validated before they become Pages artifacts', async () => {
+  const { source, workflow } = await readWorkflow('pr-preview')
+
+  assert.deepEqual(workflow.on.pull_request.types, [
+    'opened', 'synchronize', 'reopened',
+  ])
+  assert.deepEqual(workflow.permissions, { contents: 'read' })
+  assert.match(source, /npm run generate/)
+  assert.match(source, /git diff --exit-code/)
+  assert.match(source, /npm test/)
+  assert.match(source, /npm run build/)
+  assert.match(source, /pr-preview-\$\{\{ github\.event\.pull_request\.number \}\}-\$\{\{ github\.event\.pull_request\.head\.sha \}\}/)
 })
 
 test('chart releases require synchronized main and dev trees', async () => {

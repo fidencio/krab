@@ -3,12 +3,20 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main, dev]
+  workflow_run:
+    workflows: [Build PR preview]
+    types: [completed]
+  pull_request_target:
+    types: [closed]
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
+  pull-requests: read
   pages: write
   id-token: write
+  issues: write
 
 concurrency:
   group: pages
@@ -89,6 +97,15 @@ jobs:
           cp -R stable/dist/. site/
           cp -R development/dist/. site/dev/
 
+      # This job uses only scripts from main. PR artifacts are copied as static
+      # files; none of their contents are run with this workflow's token.
+      - name: Add current PR previews
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: bash stable/scripts/compose-pr-previews.sh site
+
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
@@ -100,9 +117,21 @@ jobs:
     runs-on: ubuntu-24.04
     needs: build
     steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
         # deploy-pages#434: bundled @actions/artifact still loads core punycode.
         env:
           NODE_OPTIONS: --no-deprecation
+
+      - name: Link previews from pull requests
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        shell: bash
+        run: bash scripts/comment-pr-previews.sh
