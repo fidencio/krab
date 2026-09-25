@@ -887,9 +887,9 @@ function App() {
                 {version}
               </a>
             ))}
-            {!isDevelopmentBuild && <a href={`${siteRootUrl}dev/`}>Next</a>}
             {selectableReleases.length === 0 && isDevelopmentBuild &&
               <span>No stable releases yet</span>}
+            <a href={`${siteRootUrl}dev/`} aria-current={isDevelopmentBuild ? 'page' : undefined}>Next</a>
           </div>
         </details>
         <nav aria-label="Display settings">
