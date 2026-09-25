@@ -7,6 +7,7 @@ import { syncChartDependencies } from './sync-chart-dependencies.ts'
 import { syncChartImages } from './sync-chart-images.ts'
 import { resolveImageLock, syncPrecheck } from './sync-precheck.ts'
 import { syncReleaseVersion } from './sync-release-version.ts'
+import { inspectErofsImage, validateErofsImageLock, type ErofsImageLock } from './erofs-image.ts'
 
 type Source = {
   id: string
@@ -35,6 +36,7 @@ const krabChartPath = resolve(root, 'charts/krab/Chart.yaml')
 const krabValuesPath = resolve(root, 'charts/krab/values.yaml')
 const krabSchemaPath = resolve(root, 'charts/krab/values.schema.json')
 const precheckImageLockPath = resolve(root, 'upstream/precheck-image.lock.json')
+const erofsImageLockPath = resolve(root, 'upstream/erofs-utils-image.lock.json')
 const precheckDockerfilePath = resolve(root, 'Dockerfile.precheck')
 const precheckValuesPath = resolve(root, 'charts/precheck/values.yaml')
 const generatedRoot = resolve(root, 'src/generated')
@@ -94,6 +96,15 @@ const firstComment = (content: string) =>
     .find(Boolean) ?? ''
 
 async function main() {
+  const erofsImageLock = JSON.parse(await readFile(erofsImageLockPath, 'utf8')) as ErofsImageLock
+  validateErofsImageLock(erofsImageLock)
+  if (shouldFetch) {
+    const published = await inspectErofsImage(erofsImageLock.reference, erofsImageLock.tag)
+    if (published.digest !== erofsImageLock.digest ||
+        JSON.stringify(published.platforms) !== JSON.stringify(erofsImageLock.platforms)) {
+      throw new Error('Published EROFS utility image differs from the pinned lock')
+    }
+  }
   const lock = (await readYaml(lockPath)) as LockFile
   if (lock.schemaVersion !== 1 || !Array.isArray(lock.sources)) {
     throw new Error('Unsupported upstream source lock schema')

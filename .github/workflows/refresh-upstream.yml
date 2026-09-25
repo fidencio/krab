@@ -73,3 +73,39 @@ jobs:
             Please review compatibility and the generated diff before merging.
             The published chart was checked. Provisioner image digests are
             checked for amd64 and arm64 during generation.
+
+  refresh-erofs:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: oras-project/setup-oras@v2.0.1
+        with:
+          version: 1.3.3
+      - name: Find a newer EROFS utility image
+        id: candidate
+        run: npm run refresh:erofs-image
+      - if: steps.candidate.outputs.changed == 'true'
+        run: npm run verify:erofs-image
+      - if: steps.candidate.outputs.changed == 'true'
+        run: npm run generate
+      - if: steps.candidate.outputs.changed == 'true'
+        run: npm test
+      - if: steps.candidate.outputs.changed == 'true'
+        run: npm run build
+      - uses: peter-evans/create-pull-request@v7
+        if: steps.candidate.outputs.changed == 'true'
+        with:
+          branch: automation/refresh-erofs-image
+          delete-branch: true
+          commit-message: "chore: refresh erofs-utils to ${{ steps.candidate.outputs.tag }}"
+          title: "chore: refresh erofs-utils to ${{ steps.candidate.outputs.tag }}"
+          body: |
+            Proposes erofs-utils ${{ steps.candidate.outputs.tag }} from Quay.
+            Its image digest and amd64/arm64 manifests were verified.
+
+            Please review compatibility with the pinned Kata release before merging.

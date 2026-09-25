@@ -1,4 +1,5 @@
 import { parse, stringify } from 'yaml'
+import { erofsUtilsImage } from './erofs-image'
 
 export type ModeCatalog = {
   id: string
@@ -979,7 +980,7 @@ export function buildValuesBundle(
       'erofs-utils': {
         image:
           advanced.erofsUtilsImage.trim() ||
-          'quay.io/kata-containers/erofs-utils:1.9.3',
+          erofsUtilsImage,
         binaries: ['mkfs.erofs'],
         pullPolicy: 'IfNotPresent',
       },

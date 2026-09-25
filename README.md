@@ -147,7 +147,12 @@ npm run sync:upstream
 ```
 
 This command also resolves the precheck provisioner image digest and requires
-the ORAS CLI.
+the ORAS CLI. The EROFS utility image has its own
+[`upstream/erofs-utils-image.lock.json`](upstream/erofs-utils-image.lock.json).
+`npm run verify:erofs-image` checks its Quay digest and amd64/arm64 manifests;
+`npm run refresh:erofs-image` selects a newer published version when both
+platforms are present. The weekly workflow proposes that update for review.
+The utility image is used only when generated values request EROFS setup.
 
 Updating an upstream version is a reviewed change. For example, run
 `npm run refresh:upstream -- --group kata` to discover the newest Kata release,

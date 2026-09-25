@@ -9,6 +9,8 @@
     "generate": "tsx scripts/sync-upstream.ts",
     "sync:upstream": "tsx scripts/sync-upstream.ts --fetch",
     "verify:precheck-image": "tsx scripts/verify-precheck-image.ts",
+    "verify:erofs-image": "tsx scripts/verify-erofs-image.ts",
+    "refresh:erofs-image": "tsx scripts/refresh-erofs-image.ts",
     "refresh:nfd": "tsx scripts/refresh-upstream.ts --group nfd",
     "refresh:upstream": "tsx scripts/refresh-upstream.ts",
     "verify:chart-artifact": "tsx scripts/verify-chart-artifact.ts",

@@ -20,6 +20,7 @@ import packageData from '../package.json'
 import krabLogoDark from './assets/brands/krab-kata-hybrid.png'
 import krabLogoLight from './assets/brands/krab-kata-hybrid-light.png'
 import { NodePrecheckPanel } from './NodePrecheckPanel'
+import { erofsUtilsImage } from './lib/erofs-image'
 import {
   allNodesLack,
   erofsPrecheckStatus,
@@ -1629,7 +1630,7 @@ function App() {
                             <input
                               type="text"
                               value={advanced.erofsUtilsImage}
-                              placeholder="quay.io/kata-containers/erofs-utils:1.9.3"
+                              placeholder={erofsUtilsImage}
                               onChange={(event) =>
                                 setAdvanced((current) => ({
                                   ...current,

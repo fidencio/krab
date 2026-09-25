@@ -32,6 +32,7 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: npm run verify:precheck-image
+      - run: npm run verify:erofs-image
       - uses: docker/setup-buildx-action@v3
       - name: Build and smoke test the distroless precheck image
         run: |

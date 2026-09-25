@@ -1029,6 +1029,15 @@ test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
       pullPolicy: 'IfNotPresent',
     },
   )
+  const erofsLock = await loadJson<{ reference: string; tag: string; digest: string }>(
+    'upstream/erofs-utils-image.lock.json')
+  const defaultErofsValues = parse(buildValuesBundle(catalog, vendor,
+    { hopper: { modeId: 'off', cpuTeeIds: [] } },
+    { distributionId: 'kubeadm', selinuxEnabled: false },
+    { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    { ...createAdvancedConfiguration(), installErofsUtils: true }))
+  assert.equal(defaultErofsValues['kata-deploy'].nodeBinaries['erofs-utils'].image,
+    `${erofsLock.reference}:${erofsLock.tag}@${erofsLock.digest}`)
   assert.equal(passthroughValues['kata-deploy'].k8sDistribution, 'k8s')
 
   const emptyValues = parse(
