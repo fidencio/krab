@@ -3,7 +3,7 @@
   "plannedArchitecture": {
     "schemaVersion": 1,
     "status": "prerelease",
-    "notice": "KRAB 0.1.0-alpha.7 is prerelease software. Review generated values before deploying.",
+    "notice": "KRAB 0.1.0-alpha.8 is prerelease software. Review generated values before deploying.",
     "namespace": "kata-system",
     "images": {
       "kubectl": {
@@ -80,8 +80,8 @@
           "nfdValuesKey": "node-feature-discovery",
           "nfdRequired": true
         },
-        "version": "0.1.0-alpha.7",
-        "appVersion": "0.1.0-alpha.7"
+        "version": "0.1.0-alpha.8",
+        "appVersion": "0.1.0-alpha.8"
       },
       "nfd": {
         "chartName": "node-feature-discovery",
