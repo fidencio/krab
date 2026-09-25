@@ -267,6 +267,9 @@ tags; KRAB does not claim to inventory the contents of upstream images. The
 four pre-flight image SBOMs describe the contents of each published image
 manifest. All six SBOM files are in `SHA256SUMS` and have GitHub attestations;
 the pre-flight image attestations are also attached to their GHCR manifests.
+Pull requests build the same chart SBOMs and per-architecture pre-flight image
+SBOMs as downloadable workflow artifacts. They also fail if a rendered image is
+missing from a chart SBOM.
 
 For a prerelease, specify its version explicitly when installing with Helm:
 

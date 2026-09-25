@@ -70,3 +70,18 @@ test('chart releases require synchronized main and dev trees', async () => {
   const workflows = await readdir(resolve(root, '.github/workflows'))
   assert.ok(!workflows.includes('release-precheck.yml'))
 })
+
+test('pull requests build chart and image SBOM artifacts', async () => {
+  const { source, workflow } = await readWorkflow('sbom')
+
+  assert.deepEqual(workflow.on.pull_request.types, [
+    'opened', 'synchronize', 'reopened',
+  ])
+  assert.deepEqual(workflow.permissions, { contents: 'read' })
+  assert.match(source, /node --import tsx scripts\/chart-sbom\.ts/)
+  assert.match(source, /node --import tsx scripts\/verify-sbom-images\.ts/)
+  assert.match(source, /--platform linux\/amd64,linux\/arm64,linux\/ppc64le,linux\/s390x/)
+  assert.match(source, /--from oci-archive/)
+  assert.match(source, /name: chart-sboms/)
+  assert.match(source, /name: preflight-image-sboms/)
+})

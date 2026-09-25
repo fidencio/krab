@@ -1,0 +1,105 @@
+name: Build SBOMs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  charts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: azure/setup-helm@v5
+      - run: npm ci
+      - name: Build chart SBOMs and check rendered images
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p 'require("./package.json").version')"
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          mkdir -p dist-chart dist-precheck dist-sbom
+          helm dependency build charts/krab
+          helm package charts/krab --destination dist-chart
+          helm package charts/precheck --destination dist-precheck
+          node --import tsx scripts/chart-sbom.ts \
+            "dist-chart/krab-${version}.tgz" \
+            "dist-sbom/krab-${version}.spdx.json"
+          node --import tsx scripts/chart-sbom.ts \
+            "dist-precheck/krab-precheck-${version}.tgz" \
+            "dist-sbom/krab-precheck-${version}.spdx.json"
+
+          helm template krab charts/krab --namespace kata-system \
+            > "${RUNNER_TEMP}/krab-default-render.yaml"
+          cat > "${RUNNER_TEMP}/nvidia-values.yaml" <<'VALUES'
+          nvidia:
+            enabled: true
+          kata-device-provisioner:
+            profiles:
+              release-smoke:
+                enabled: true
+                ccMode: "off"
+          VALUES
+          helm template krab charts/krab --namespace kata-system \
+            --values "${RUNNER_TEMP}/nvidia-values.yaml" \
+            > "${RUNNER_TEMP}/krab-nvidia-render.yaml"
+          helm template krab-precheck charts/precheck --namespace krab-precheck \
+            > "${RUNNER_TEMP}/krab-precheck-render.yaml"
+          node --import tsx scripts/verify-sbom-images.ts \
+            "dist-sbom/krab-${version}.spdx.json" \
+            "${RUNNER_TEMP}/krab-default-render.yaml" \
+            "${RUNNER_TEMP}/krab-nvidia-render.yaml"
+          node --import tsx scripts/verify-sbom-images.ts \
+            "dist-sbom/krab-precheck-${version}.spdx.json" \
+            "${RUNNER_TEMP}/krab-precheck-render.yaml"
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: chart-sboms
+          path: dist-sbom/*.spdx.json
+          if-no-files-found: error
+
+  preflight_image:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: anchore/sbom-action/download-syft@v0
+        id: syft
+        with:
+          syft-version: v1.52.0
+      - name: Build and scan each pre-flight image architecture
+        shell: bash
+        env:
+          SYFT: ${{ steps.syft.outputs.cmd }}
+        run: |
+          set -euo pipefail
+          version="$(node -p 'require("./package.json").version')"
+          mkdir -p dist-sbom
+          docker buildx build \
+            --file Dockerfile.precheck \
+            --platform linux/amd64,linux/arm64,linux/ppc64le,linux/s390x \
+            --output "type=oci,dest=${RUNNER_TEMP}/krab-preflight.oci.tar" \
+            .
+          for arch in amd64 arm64 ppc64le s390x; do
+            "${SYFT}" "${RUNNER_TEMP}/krab-preflight.oci.tar" \
+              --from oci-archive \
+              --platform "linux/${arch}" \
+              -o "spdx-json=dist-sbom/krab-preflight-${version}-linux-${arch}.spdx.json"
+          done
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: preflight-image-sboms
+          path: dist-sbom/*.spdx.json
+          if-no-files-found: error
