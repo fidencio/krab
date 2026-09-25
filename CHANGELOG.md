@@ -2,6 +2,18 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.0] - 2026-09-25
+
+KRAB's first stable release includes the configuration builder, pinned Helm
+charts, pre-flight checks, values import validation, and release SBOMs developed
+through the alpha releases below.
+
+### Added
+
+- Each published stable release now includes its own builder. The version menu
+  opens older builders with their original chart and catalog, and shows a
+  warning when a newer builder is available.
+
 ## [0.1.0-alpha.8] - 2026-09-25
 
 ### Added

@@ -2,8 +2,8 @@ apiVersion: v2
 name: krab
 description: Kata Reference Architecture Builder umbrella chart
 type: application
-version: 0.1.0-alpha.8
-appVersion: "0.1.0-alpha.8"
+version: 0.1.0
+appVersion: "0.1.0"
 home: https://github.com/fidencio/krab
 icon: https://fidencio.github.io/krab/favicon.png
 sources:
@@ -18,7 +18,7 @@ maintainers:
     url: https://github.com/fidencio
 annotations:
   artifacthub.io/license: Apache-2.0
-  artifacthub.io/prerelease: "true"
+  artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: added
       description: Combine CPU TEE and NVIDIA GPU paths in Custom deployments.
