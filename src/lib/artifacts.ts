@@ -391,6 +391,45 @@ const deploymentNameFromFile = (
   return fileName.endsWith(suffix) ? fileName.slice(0, -suffix.length) : ''
 }
 
+const compareImportedFields = (
+  original: unknown,
+  generated: unknown,
+  path = '',
+): { missing: string[]; changed: string[] } => {
+  if (Array.isArray(original)) {
+    if (!Array.isArray(generated)) return { missing: [path], changed: [] }
+    return original.reduce<{ missing: string[]; changed: string[] }>(
+      (result, item, index) => {
+        const difference = compareImportedFields(item, generated[index], `${path}[${index}]`)
+        result.missing.push(...difference.missing)
+        result.changed.push(...difference.changed)
+        return result
+      },
+      { missing: [], changed: [] },
+    )
+  }
+  if (original !== null && typeof original === 'object') {
+    if (generated === null || typeof generated !== 'object' || Array.isArray(generated)) {
+      return { missing: [path], changed: [] }
+    }
+    return Object.entries(original).reduce<{ missing: string[]; changed: string[] }>(
+      (result, [key, value]) => {
+        const childPath = path ? `${path}.${key}` : key
+        const difference = compareImportedFields(value, (generated as Record<string, unknown>)[key], childPath)
+        result.missing.push(...difference.missing)
+        result.changed.push(...difference.changed)
+        return result
+      },
+      { missing: [], changed: [] },
+    )
+  }
+  return generated === undefined
+    ? { missing: [path], changed: [] }
+    : Object.is(original, generated)
+      ? { missing: [], changed: [] }
+      : { missing: [], changed: [path] }
+}
+
 export function importValuesBundle(
   catalog: ExplorerCatalog,
   source: string,
@@ -659,7 +698,7 @@ export function importValuesBundle(
     asRecord(provisionerValues.job).dispatcherImage,
   )
 
-  return {
+  const imported: ImportedValuesConfiguration = {
     vendorId: vendor.id,
     selections,
     cluster: {
@@ -678,6 +717,17 @@ export function importValuesBundle(
     deploymentName: deploymentNameFromFile(catalog, fileName, sourceVersion),
     warnings,
   }
+  const regenerated = parse(buildValuesBundle(
+    catalog, vendor, selections, imported.cluster, runtime, advanced,
+  ))
+  const difference = compareImportedFields(root, regenerated)
+  if (difference.missing.length > 0) {
+    throw new Error(`KRAB cannot preserve these imported fields: ${difference.missing.slice(0, 5).join(', ')}${difference.missing.length > 5 ? '…' : ''}.`)
+  }
+  if (difference.changed.length > 0) {
+    warnings.push(`These values change when KRAB rebuilds the file: ${difference.changed.slice(0, 5).join(', ')}${difference.changed.length > 5 ? '…' : ''}. Review the generated values before deploying.`)
+  }
+  return imported
 }
 
 const initialFamilySelections = (vendor: VendorCatalog): FamilySelections =>

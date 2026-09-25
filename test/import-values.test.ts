@@ -35,6 +35,14 @@ test('older compatible values load with a warning and retain their deployment na
   assert.match(importValuesBundle(catalog, legacy).warnings[0], /no KRAB version marker/)
 })
 
+test('import warns when a retained field changes on regeneration', () => {
+  const changed = parse(values)
+  changed['kata-deploy'].deploymentMode = 'daemonset'
+  const imported = importValuesBundle(catalog, stringify(changed))
+  assert.ok(imported.warnings.some((warning) =>
+    /kata-deploy.deploymentMode/.test(warning)))
+})
+
 test('changed or unknown chart fields fail instead of being discarded', () => {
   assert.throws(() => importValuesBundle(catalog,
     values.replace('# KRAB values format: 1', '# KRAB values format: 2')),
@@ -44,6 +52,11 @@ test('changed or unknown chart fields fail instead of being discarded', () => {
   unknownRoot.removedDependency = {}
   assert.throws(() => importValuesBundle(catalog, stringify(unknownRoot)),
     /does not match the current KRAB chart/)
+
+  const unknownNested = parse(values)
+  unknownNested['kata-deploy'].removedSetting = true
+  assert.throws(() => importValuesBundle(catalog, stringify(unknownNested)),
+    /cannot preserve these imported fields: kata-deploy.removedSetting/)
 
   const unknownShim = parse(values)
   unknownShim['kata-deploy'].shims['removed-runtime'] = { enabled: true }

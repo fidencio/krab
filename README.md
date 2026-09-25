@@ -63,8 +63,10 @@ Downloaded values files record their KRAB format and chart version in comments.
 When you load one into the builder, KRAB checks it against the current chart
 schema and the available shims and profiles. A compatible file from another
 release loads with a warning; an unknown format or removed choice fails with
-an explanation. Older files without version comments can still load after the
-same checks, with a warning to review the new output before deploying.
+an explanation. Imports also fail when the builder would drop a nested field,
+and warn if a field's value changes when regenerated. Older files without
+version comments can still load after the same checks, with a warning to
+review the new output before deploying.
 
 The chart is structurally complete, but publication is intentionally blocked
 until the kata-device-plugin chart is available from its planned upstream OCI
