@@ -139,8 +139,9 @@ optional `erofsVersion` field empty.
 
 ## Development
 
-Development changes land on the `dev` branch. GitHub Pages publishes the
-released `main` tree at `/krab/` and the integration tree at `/krab/dev/`.
+Development changes land on the `dev` branch. GitHub Pages serves the latest
+published stable release at `/krab/` and a build from `main`, called Next, at
+`/krab/dev/`.
 Each pull request is built and checked independently. When it passes, Pages
 publishes it at `/krab/pr/<number>/` and a bot comment links to that preview.
 The preview is removed from the next Pages deployment after the PR closes or
@@ -252,16 +253,16 @@ pre-flight checks, publishes the pre-flight image to
 `ghcr.io/fidencio/krab-preflight`, packages and attests both charts, and
 publishes them to `oci://ghcr.io/fidencio/krab` and
 `oci://ghcr.io/fidencio/krab-precheck`. It verifies anonymous access to all
-three artifacts before creating the matching `chart-vX.Y.Z-alpha.N` tag and
+three artifacts before creating the matching `chart-vX.Y.Z` tag and
 GitHub release with both chart packages and a versioned builder archive.
 Reruns verify existing artifacts before replacing release assets. Publication
 is refused while any pinned
 upstream OCI dependency is unavailable.
 
-The version menu in the header lists published stable releases. Each
-link opens the builder from that release's archive, with its matching catalog
-and chart contract. The current and development builders remain separate.
-Prereleases are omitted from the published menu.
+The home page uses the newest published stable release's builder and chart
+contract. Its version menu links to older stable releases and to Next,
+which builds from `main` at `/dev/`. Prereleases are omitted from the stable
+release list.
 
 The release also includes SPDX SBOMs for both packaged charts and for each
 published pre-flight image architecture (`amd64`, `arm64`, `ppc64le`, and

@@ -58,7 +58,9 @@ import './App.css'
 
 const catalog = catalogData as unknown as ExplorerCatalog
 const siteBase = import.meta.env.BASE_URL.split('/').filter(Boolean)[0]
-const releasesUrl = `/${siteBase ? `${siteBase}/` : ''}releases/`
+const siteRootUrl = `/${siteBase ? `${siteBase}/` : ''}`
+const releasesUrl = `${siteRootUrl}releases/`
+const isDevelopmentBuild = import.meta.env.BASE_URL.endsWith('/dev/')
 const chartVersions = catalog.plannedArchitecture.charts
 const frontPageVersions = [
   {
@@ -303,6 +305,7 @@ const preferredSystemTheme = (): Theme =>
 
 function App() {
   const [releaseOptions, setReleaseOptions] = useState<ReleaseOption[]>([])
+  const [latestStableVersion, setLatestStableVersion] = useState<string | null>(null)
   const releasePickerRef = useRef<HTMLDetailsElement>(null)
   const [themePreference, setThemePreference] = useState<Theme | 'system'>(() => {
     const savedTheme = window.localStorage.getItem('krab-theme-override')
@@ -375,12 +378,14 @@ function App() {
     let active = true
     fetch(`${releasesUrl}manifest.json`)
       .then((response) => response.ok ? response.json() : null)
-      .then((manifest: { releases?: ReleaseOption[] } | null) => {
+      .then((manifest: { currentVersion?: string; releases?: ReleaseOption[] } | null) => {
         if (active && Array.isArray(manifest?.releases)) {
           setReleaseOptions(manifest.releases.filter(({ version, path }) =>
             typeof version === 'string' &&
             /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/.test(version) &&
             path === `./${version}/index.html`))
+          setLatestStableVersion(typeof manifest.currentVersion === 'string'
+            ? manifest.currentVersion : null)
         }
       })
       .catch(() => {})
@@ -851,7 +856,18 @@ function App() {
     }
   }
 
+  const selectableReleases = isDevelopmentBuild
+    ? releaseOptions
+    : releaseOptions.filter(({ version }) => version !== packageData.version)
+
   return (
+    <>
+    {isDevelopmentBuild && (
+      <aside className="development-notice" role="note">
+        <span>You are viewing Next, an unreleased build from main.</span>
+        {latestStableVersion && <a href={siteRootUrl}>Open the latest stable release</a>}
+      </aside>
+    )}
     <div className="app-shell">
       <header className="site-header">
         <button className="brand" onClick={restart} aria-label="Kata Reference Architecture Builder home">
@@ -863,14 +879,17 @@ function App() {
         </button>
 
         <details className="release-picker" ref={releasePickerRef}>
-          <summary>{packageData.version} <ChevronDown size={12} aria-hidden="true" /></summary>
+          <summary>{isDevelopmentBuild ? 'Next' : packageData.version} <ChevronDown size={12} aria-hidden="true" /></summary>
           <div className="release-picker-menu">
-            {releaseOptions.filter(({ version }) => version !== packageData.version).length > 0
-              ? releaseOptions.filter(({ version }) => version !== packageData.version).map(({ version, path }) => (
-                <a key={version} href={`${releasesUrl}${path.slice(2)}`}>
-                  {version}
-                </a>
-              )) : <span>No other releases yet</span>}
+            {selectableReleases.map(({ version, path }) => (
+              <a key={version} href={version === latestStableVersion
+                ? siteRootUrl : `${releasesUrl}${path.slice(2)}`}>
+                {version}
+              </a>
+            ))}
+            {!isDevelopmentBuild && <a href={`${siteRootUrl}dev/`}>Next</a>}
+            {selectableReleases.length === 0 && isDevelopmentBuild &&
+              <span>No stable releases yet</span>}
           </div>
         </details>
         <nav aria-label="Display settings">
@@ -2815,6 +2834,7 @@ function App() {
       </main>
 
     </div>
+    </>
   )
 }
 

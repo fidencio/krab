@@ -27,7 +27,7 @@ if (releaseVersion) {
 
       const currentLink = document.createElement('a')
       currentLink.href = new URL('../', script.src).href
-      currentLink.textContent = 'Open the current builder'
+      currentLink.textContent = 'Open the latest stable release'
       Object.assign(currentLink.style, { color: '#ffab90', textDecoration: 'underline' })
       notice.append(currentLink)
       document.body.prepend(notice)

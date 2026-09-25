@@ -33,6 +33,22 @@ body::before {
   font-size-adjust: inherit;
 }
 
+.development-notice {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #ae715c;
+  background: #35271f;
+  color: #fff;
+  font: 500 13px Arial, sans-serif;
+  text-align: center;
+}
+
+.development-notice a { color: #ffab90; text-decoration: underline; }
+
 .site-header {
   min-height: 72px;
   display: grid;

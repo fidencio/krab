@@ -10,9 +10,9 @@ through the alpha releases below.
 
 ### Added
 
-- Each published stable release now includes its own builder. The version menu
-  opens older builders with their original chart and catalog, and shows a
-  warning when a newer builder is available.
+- The home page opens the latest stable builder. The version menu links to
+  older releases and Next, an unreleased build from `main`. Both Next and
+  older builders show where to find the latest stable release.
 
 ## [0.1.0-alpha.8] - 2026-09-25
 

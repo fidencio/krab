@@ -7,7 +7,9 @@ builder must use the catalog, chart version, and values format from that
 release. A version menu link opens that build, so users can generate values
 for an older deployment without silently switching to current defaults.
 
-The `main` and `dev` builders remain separate from official releases. A Git
+The home page uses the newest published stable release. Next at `/dev/` builds
+from `main`, so work merged after that release remains available. It shows a
+notice and links back to the stable release. A Git
 tag alone does not make a release visible: only a published, stable `chart-v*`
 GitHub release appears in the menu. Prereleases are excluded.
 
@@ -20,8 +22,10 @@ with the rebuilt site before accepting it, just as it compares published charts.
 
 The Pages workflow lists published stable releases, downloads their site
 archives, and extracts them under `/releases/<version>/`. It generates a small
-release manifest from those same published releases. Builders with the version
-menu read this manifest and link directly to the selected archive. Pages adds
+release manifest from those same published releases, sorts them by version,
+and serves the newest archived builder at the home page. If no stable release
+exists yet, the home page uses Next. Builders with the version menu
+read the manifest and link directly to the selected archive or `/dev/`. Pages adds
 a notice to archived pages when their version differs from the current builder,
 with a link back to it. The release archives themselves stay unchanged.
 Pages fails if a published stable release lacks a builder archive; silently

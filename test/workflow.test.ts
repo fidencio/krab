@@ -14,20 +14,19 @@ const readWorkflow = async (name: string) => {
   return { source, workflow: parse(source) }
 }
 
-test('Pages publishes stable and development builds together', async () => {
+test('Pages serves the newest published stable release and main as Next', async () => {
   const { source, workflow } = await readWorkflow('pages')
 
-  assert.deepEqual(workflow.on.push.branches, ['main', 'dev'])
+  assert.deepEqual(workflow.on.push.branches, ['main'])
   assert.equal(workflow.concurrency.group, 'pages')
   assert.equal(workflow.concurrency['cancel-in-progress'], false)
   assert.match(source, /BASE_PATH: \/\$\{\{ github\.event\.repository\.name \}\}\/dev\//)
-  assert.match(source, /cp -R stable\/dist\/\. site\//)
-  assert.match(source, /cp -R development\/dist\/\. site\/dev\//)
+  assert.match(source, /cp -R source\/dist\/\. site\/dev\//)
   assert.deepEqual(workflow.on.workflow_run.workflows, ['Build PR preview'])
   assert.deepEqual(workflow.on.pull_request_target.types, ['closed'])
   assert.equal(workflow.permissions['pull-requests'], 'write')
-  assert.match(source, /bash stable\/scripts\/compose-pr-previews\.sh site/)
-  assert.match(source, /bash stable\/scripts\/compose-release-builders\.sh site/)
+  assert.match(source, /bash source\/scripts\/compose-pr-previews\.sh site/)
+  assert.match(source, /bash source\/scripts\/compose-release-builders\.sh site/)
   assert.match(source, /bash scripts\/comment-pr-previews\.sh/)
 })
 
@@ -71,6 +70,8 @@ test('chart releases require synchronized main and dev trees', async () => {
   assert.match(source, /dist-sbom\/\*\.spdx\.json/)
   assert.match(source, /BASE_PATH="\/\$\{\{ github\.event\.repository\.name \}\}\/releases\/\$\{CHART_VERSION\}\/" npm run build/)
   assert.match(source, /dist-builder\/krab-builder-\*\.tar\.gz/)
+  assert.equal(workflow.permissions.actions, 'write')
+  assert.match(source, /gh workflow run pages\.yml --ref main/)
   const workflows = await readdir(resolve(root, '.github/workflows'))
   assert.ok(!workflows.includes('release-precheck.yml'))
 })

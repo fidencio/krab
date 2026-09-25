@@ -4,7 +4,6 @@ set -euo pipefail
 
 site="${1:?site directory required}"
 repo="${GH_REPO:?GH_REPO required}"
-current_version="${KRAB_CURRENT_VERSION:?KRAB_CURRENT_VERSION required}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 mkdir -p "${site}/releases"
 cp "${script_dir}/../public/releases/release-notice.js" "${site}/releases/release-notice.js"
@@ -22,7 +21,7 @@ while IFS=$'\t' read -r tag prerelease; do
   if [[ "${prerelease}" == "true" ]]; then
     continue
   fi
-  if [[ ! "${tag}" =~ ^chart-v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?)$ ]]; then
+  if [[ ! "${tag}" =~ ^chart-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
     echo "::error::Published KRAB release has an invalid tag: ${tag}" >&2
     exit 1
   fi
@@ -50,10 +49,18 @@ while IFS=$'\t' read -r tag prerelease; do
     echo "::error::${asset} has no index.html" >&2
     exit 1
   fi
+  cp "${destination}/index.html" "${downloads}/root-index-${version}.html"
   node "${script_dir}/inject-release-notice.mjs" "${destination}/index.html" "${version}"
   printf '%s\t%s\t%s\n' "${version}" "${tag}" "./${version}/index.html" >> "${manifest_rows}"
 done < "${releases}"
 
-jq -R -s --arg currentVersion "${current_version}" \
-  '{schemaVersion: 1, currentVersion: $currentVersion, releases: (split("\n") | map(select(length > 0) | split("\t") | {version: .[0], tag: .[1], path: .[2]}))}' \
+jq -R -s \
+  '{schemaVersion: 1, releases: (split("\n") | map(select(length > 0) | split("\t") | {version: .[0], tag: .[1], path: .[2]}) | sort_by(.version | split(".") | map(tonumber)) | reverse)} | .currentVersion = (.releases[0].version // null)' \
   "${manifest_rows}" > "${site}/releases/manifest.json"
+
+latest_version="$(jq -r '.currentVersion // empty' "${site}/releases/manifest.json")"
+if [[ -n "${latest_version}" ]]; then
+  cp "${downloads}/root-index-${latest_version}.html" "${site}/index.html"
+else
+  cp "${site}/dev/index.html" "${site}/index.html"
+fi

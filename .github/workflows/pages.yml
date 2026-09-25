@@ -2,7 +2,7 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main]
   workflow_run:
     workflows: [Build PR preview]
     types: [completed]
@@ -29,48 +29,16 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-          path: stable
-
-      - name: Prepare development checkout
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if git -C stable show-ref --verify --quiet refs/remotes/origin/dev; then
-            git -C stable worktree add --detach ../development refs/remotes/origin/dev
-          else
-            echo "::warning::dev branch does not exist yet; previewing main"
-            cp -R stable development
-          fi
+          path: source
 
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: |
-            stable/package-lock.json
-            development/package-lock.json
-
-      - name: Validate and build stable site
-        working-directory: stable
-        run: |
-          npm ci
-          npm run generate
-          git diff --exit-code -- \
-            package-lock.json charts/krab/Chart.yaml charts/krab/values.yaml \
-            charts/precheck/Chart.yaml charts/precheck/values.yaml \
-            Dockerfile.precheck upstream/precheck-image.lock.json \
-            upstream/architecture.yaml README.md charts/krab/README.md \
-            CHANGELOG.md src/generated
-          npm test
-          npm run test:chart
-          npm run lint
-          npm run build
-        env:
-          BASE_PATH: /${{ github.event.repository.name }}/
+          cache-dependency-path: source/package-lock.json
 
       - name: Validate and build development site
-        working-directory: development
+        working-directory: source
         run: |
           npm ci
           npm run generate
@@ -87,14 +55,13 @@ jobs:
         env:
           BASE_PATH: /${{ github.event.repository.name }}/dev/
 
-      - name: Compose stable and development sites
+      - name: Compose development site
         shell: bash
         run: |
           set -euo pipefail
 
           mkdir -p site/dev
-          cp -R stable/dist/. site/
-          cp -R development/dist/. site/dev/
+          cp -R source/dist/. site/dev/
 
       # This job uses only scripts from main. PR artifacts are copied as static
       # files; none of their contents are run with this workflow's token.
@@ -103,14 +70,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         shell: bash
-        run: bash stable/scripts/compose-pr-previews.sh site
+        run: bash source/scripts/compose-pr-previews.sh site
 
       - name: Add published release builders
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         shell: bash
-        run: KRAB_CURRENT_VERSION="$(jq -r .version stable/package.json)" bash stable/scripts/compose-release-builders.sh site
+        run: bash source/scripts/compose-release-builders.sh site
 
       - uses: actions/upload-pages-artifact@v5
         with:
