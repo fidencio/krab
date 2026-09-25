@@ -84,6 +84,11 @@ jobs:
           REFRESH_PR_URL: ${{ steps.pr.outputs.pull-request-url }}
           REFRESH_JOB_STATUS: ${{ job.status }}
         run: bash scripts/refresh-summary.sh
+      - name: Require a PR for a changed release
+        if: steps.candidate.outputs.changed == 'true' && steps.pr.outputs.pull-request-url == ''
+        run: |
+          echo "::error::A newer ${{ matrix.group }} release was found, but no PR was created"
+          exit 1
 
   refresh-erofs:
     runs-on: ubuntu-24.04
@@ -131,3 +136,25 @@ jobs:
           REFRESH_PR_URL: ${{ steps.pr.outputs.pull-request-url }}
           REFRESH_JOB_STATUS: ${{ job.status }}
         run: bash scripts/refresh-summary.sh
+      - name: Require a PR for a changed EROFS image
+        if: steps.candidate.outputs.changed == 'true' && steps.pr.outputs.pull-request-url == ''
+        run: |
+          echo "::error::A newer EROFS image was found, but no PR was created"
+          exit 1
+
+  notify:
+    if: ${{ always() && (needs['verify-pins'].result != 'success' || needs.refresh.result != 'success' || needs['refresh-erofs'].result != 'success') }}
+    needs: [verify-pins, refresh, refresh-erofs]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - name: Send Slack DM about blocked updates
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.KRAB_SLACK_BOT_TOKEN }}
+          SLACK_USER_ID: ${{ vars.KRAB_SLACK_USER_ID }}
+          PIN_STATUS: ${{ needs['verify-pins'].result }}
+          UPSTREAM_STATUS: ${{ needs.refresh.result }}
+          EROFS_STATUS: ${{ needs['refresh-erofs'].result }}
+        run: bash scripts/notify-refresh-slack.sh

@@ -187,6 +187,10 @@ stay in the values file; the kubectl image pin and device plugin tag choice
 remain in `upstream/architecture.yaml`.
 Each refresh job writes its pinned version, candidate, and result to the
 workflow run summary, with a link when it opens a PR.
+If verification fails or a newer candidate produces no PR, the workflow sends
+one Slack DM with a link to the run. Set the `KRAB_SLACK_BOT_TOKEN` repository
+secret to a bot token with `chat:write`, and set the `KRAB_SLACK_USER_ID`
+repository variable to the recipient's Slack user ID.
 
 `npm run refresh:nfd` remains a shortcut for the NFD group.
 
