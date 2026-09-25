@@ -57,6 +57,8 @@ import {
 import './App.css'
 
 const catalog = catalogData as unknown as ExplorerCatalog
+const siteBase = import.meta.env.BASE_URL.split('/').filter(Boolean)[0]
+const releasesUrl = `/${siteBase ? `${siteBase}/` : ''}releases/`
 const chartVersions = catalog.plannedArchitecture.charts
 const frontPageVersions = [
   {
@@ -294,11 +296,14 @@ const imageChartOptions = [
 ] as const
 
 type Theme = 'light' | 'dark'
+type ReleaseOption = { version: string; path: string }
 
 const preferredSystemTheme = (): Theme =>
   window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 
 function App() {
+  const [releaseOptions, setReleaseOptions] = useState<ReleaseOption[]>([])
+  const releasePickerRef = useRef<HTMLDetailsElement>(null)
   const [themePreference, setThemePreference] = useState<Theme | 'system'>(() => {
     const savedTheme = window.localStorage.getItem('krab-theme-override')
     return savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'system'
@@ -366,6 +371,29 @@ function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme
   }, [theme])
+  useEffect(() => {
+    let active = true
+    fetch(`${releasesUrl}manifest.json`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((manifest: { releases?: ReleaseOption[] } | null) => {
+        if (active && Array.isArray(manifest?.releases)) {
+          setReleaseOptions(manifest.releases.filter(({ version, path }) =>
+            typeof version === 'string' &&
+            /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/.test(version) &&
+            path === `./${version}/index.html`))
+        }
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
+  useEffect(() => {
+    const closeReleasePicker = (event: PointerEvent) => {
+      const picker = releasePickerRef.current
+      if (picker?.open && !picker.contains(event.target as Node)) picker.open = false
+    }
+    document.addEventListener('pointerdown', closeReleasePicker)
+    return () => document.removeEventListener('pointerdown', closeReleasePicker)
+  }, [])
   useEffect(() => {
     window.localStorage.removeItem('krab-theme')
     const colorScheme = window.matchMedia('(prefers-color-scheme: dark)')
@@ -834,7 +862,18 @@ function App() {
           </span>
         </button>
 
-        <nav aria-label="Main navigation">
+        <details className="release-picker" ref={releasePickerRef}>
+          <summary>{packageData.version} <ChevronDown size={12} aria-hidden="true" /></summary>
+          <div className="release-picker-menu">
+            {releaseOptions.filter(({ version }) => version !== packageData.version).length > 0
+              ? releaseOptions.filter(({ version }) => version !== packageData.version).map(({ version, path }) => (
+                <a key={version} href={`${releasesUrl}${path.slice(2)}`}>
+                  {version}
+                </a>
+              )) : <span>No other releases yet</span>}
+          </div>
+        </details>
+        <nav aria-label="Display settings">
           <button
             type="button"
             className="theme-toggle"
@@ -853,10 +892,6 @@ function App() {
               <Sun size={15} aria-hidden="true" />
             )}
           </button>
-          <a href="https://github.com/fidencio/krab" target="_blank" rel="noreferrer">
-            View on GitHub
-            <ExternalLink size={13} />
-          </a>
         </nav>
       </header>
 

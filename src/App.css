@@ -23,19 +23,58 @@ body::before {
   min-height: 100vh;
   margin: 0 auto;
   font-size-adjust: 0.56;
+  display: flex;
+  flex-direction: column;
 }
+
+.app-shell > main { flex: 1; }
 
 .app-shell * {
   font-size-adjust: inherit;
 }
 
 .site-header {
-  height: 72px;
-  display: flex;
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   border-bottom: 1px solid var(--line);
 }
+
+.site-header .brand { justify-self: start; }
+.site-header nav { justify-self: end; }
+.release-picker { position: relative; z-index: 10; }
+.release-picker summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  list-style: none;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.release-picker summary::-webkit-details-marker { display: none; }
+.release-picker summary:hover { color: var(--kata-orange); }
+.release-picker[open] summary svg { transform: rotate(180deg); }
+.release-picker-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 220px;
+  display: grid;
+  gap: 2px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 18%);
+}
+.release-picker-menu a,
+.release-picker-menu span { padding: 8px; color: var(--ink); font-size: 12px; text-decoration: none; }
+.release-picker-menu a:hover { color: var(--kata-orange); background: rgb(127 127 127 / 8%); }
+.release-picker-menu span { color: var(--muted); }
 
 .brand {
   display: flex;
@@ -4315,7 +4354,7 @@ nav a:hover,
   }
 
   .site-header {
-    height: 72px;
+    min-height: 72px;
   }
 
   .site-header nav {

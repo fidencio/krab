@@ -4,39 +4,38 @@
 
 Keep a fully usable builder for each official KRAB release. The released
 builder must use the catalog, chart version, and values format from that
-release. A release tab opens that build, so users can generate values for an
-older deployment without silently switching to current defaults.
+release. A version menu link opens that build, so users can generate values
+for an older deployment without silently switching to current defaults.
 
 The `main` and `dev` builders remain separate from official releases. A Git
-tag alone does not make a release visible: only a published `chart-v*` GitHub
-release gets a tab. This includes prereleases while KRAB is in alpha.
+tag alone does not make a release visible: only a published, stable `chart-v*`
+GitHub release appears in the menu. Prereleases are excluded.
 
 ## Publication
 
-The chart release workflow should build the site with
-`BASE_PATH=/<repo>/releases/<version>/` and attach a compressed `dist` archive
-to the same GitHub release as the charts. The archive is immutable for that
-version. A rerun should compare the existing archive before accepting it,
-just as the workflow compares an already published chart.
+The chart release workflow builds the site with
+`BASE_PATH=/<repo>/releases/<version>/` and attaches a compressed `dist` archive
+to the same GitHub release as the charts. A rerun compares an existing archive
+with the rebuilt site before accepting it, just as it compares published charts.
 
-The Pages workflow should list published releases, download their site
-archives, and extract them under `/releases/<version>/`. It should generate a
-small release manifest from those same published releases. A navigation page
-can use the manifest to show one tab per version and keep the selected builder
-open while switching tabs. It should fail if a published release lacks a
-builder archive; silently omitting that tab would make older installations
-hard to reproduce.
+The Pages workflow lists published stable releases, downloads their site
+archives, and extracts them under `/releases/<version>/`. It generates a small
+release manifest from those same published releases. Builders with the version
+menu read this manifest and link directly to the selected archive. Pages adds
+a notice to archived pages when their version differs from the current builder,
+with a link back to it. The release archives themselves stay unchanged.
+Pages fails if a published stable release lacks a builder archive; silently
+omitting that version would make older installations hard to reproduce.
 
-Existing releases have no site archive. Backfill each one from its release tag
-once, using its locked dependencies and base path, then attach the resulting
-archive after checking the tag and chart version. Do this as a reviewable
-backfill, rather than making every Pages deployment rebuild old source with
-the current Node and Vite toolchain. If a tag cannot be built, record the
-failure and resolve it before advertising a tab for that release.
+Existing prereleases have no site archive and are excluded from the published
+selector. Before listing historical stable releases, backfill each from its
+release tag once, using its locked dependencies and base path, then attach the
+archive after checking the tag and chart version. Pages must not rebuild old
+source with the current Node and Vite toolchain on every deployment.
 
 ## Values imported across releases
 
-Each tab uses its own chart schema to validate imported values. The current
+Each builder uses its own chart schema to validate imported values. The current
 builder warns when an older compatible file loads and rejects unsupported
 fields or choices. A historical builder should keep its own import behavior;
 the archive preserves it as part of that release. The version comments added

@@ -105,6 +105,13 @@ jobs:
         shell: bash
         run: bash stable/scripts/compose-pr-previews.sh site
 
+      - name: Add published release builders
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: KRAB_CURRENT_VERSION="$(jq -r .version stable/package.json)" bash stable/scripts/compose-release-builders.sh site
+
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site

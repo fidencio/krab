@@ -253,9 +253,15 @@ pre-flight checks, publishes the pre-flight image to
 publishes them to `oci://ghcr.io/fidencio/krab` and
 `oci://ghcr.io/fidencio/krab-precheck`. It verifies anonymous access to all
 three artifacts before creating the matching `chart-vX.Y.Z-alpha.N` tag and
-GitHub release with both chart packages. Reruns verify existing artifacts
-before replacing release assets. Publication is refused while any pinned
+GitHub release with both chart packages and a versioned builder archive.
+Reruns verify existing artifacts before replacing release assets. Publication
+is refused while any pinned
 upstream OCI dependency is unavailable.
+
+The version menu in the header lists published stable releases. Each
+link opens the builder from that release's archive, with its matching catalog
+and chart contract. The current and development builders remain separate.
+Prereleases are omitted from the published menu.
 
 The release also includes SPDX SBOMs for both packaged charts and for each
 published pre-flight image architecture (`amd64`, `arm64`, `ppc64le`, and

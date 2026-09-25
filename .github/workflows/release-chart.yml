@@ -130,6 +130,37 @@ jobs:
           npm run lint
           npm run build
 
+      - name: Build versioned release builder
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BASE_PATH="/${{ github.event.repository.name }}/releases/${CHART_VERSION}/" npm run build
+          mkdir -p dist-builder
+          builder_archive="dist-builder/krab-builder-${CHART_VERSION}.tar.gz"
+          tar -czf "${builder_archive}" -C dist .
+
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            existing_dir="${RUNNER_TEMP}/existing-builder"
+            local_dir="${RUNNER_TEMP}/local-builder"
+            mkdir -p "${existing_dir}" "${local_dir}"
+            if gh release download "${RELEASE_TAG}" \
+              --pattern "krab-builder-${CHART_VERSION}.tar.gz" \
+              --dir "${existing_dir}" >/dev/null 2>&1; then
+              tar -xzf "${builder_archive}" -C "${local_dir}"
+              published_archive="${existing_dir}/krab-builder-${CHART_VERSION}.tar.gz"
+              published_dir="${RUNNER_TEMP}/published-builder"
+              mkdir -p "${published_dir}"
+              tar -xzf "${published_archive}" -C "${published_dir}"
+              if ! diff --recursive --brief "${local_dir}" "${published_dir}"; then
+                echo "::error::Published builder ${CHART_VERSION} differs from this build"
+                exit 1
+              fi
+              cp "${published_archive}" "${builder_archive}"
+            fi
+          fi
+
       - name: Verify upstream OCI dependencies
         shell: bash
         run: |
@@ -426,8 +457,9 @@ jobs:
           set -euo pipefail
           sha256sum "dist-chart/krab-${CHART_VERSION}.tgz" \
             "dist-precheck/krab-precheck-${CHART_VERSION}.tgz" \
+            "dist-builder/krab-builder-${CHART_VERSION}.tar.gz" \
             dist-sbom/*.spdx.json \
-            | sed 's#dist-chart/##; s#dist-precheck/##; s#dist-sbom/##' \
+            | sed 's#dist-chart/##; s#dist-precheck/##; s#dist-builder/##; s#dist-sbom/##' \
             > dist-chart/SHA256SUMS
 
       - uses: actions/upload-artifact@v5
@@ -436,6 +468,7 @@ jobs:
           path: |
             dist-chart/krab-*.tgz
             dist-precheck/krab-precheck-*.tgz
+            dist-builder/krab-builder-*.tar.gz
             dist-sbom/*.spdx.json
             dist-chart/SHA256SUMS
           if-no-files-found: error
@@ -449,6 +482,11 @@ jobs:
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist-precheck/krab-precheck-*.tgz
+
+      - name: Attest release builder
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist-builder/krab-builder-*.tar.gz
 
       - name: Publish and verify charts
         shell: bash
@@ -501,6 +539,7 @@ jobs:
             gh release upload "${RELEASE_TAG}" \
               dist-chart/krab-*.tgz \
               dist-precheck/krab-precheck-*.tgz \
+              dist-builder/krab-builder-*.tar.gz \
               dist-sbom/*.spdx.json \
               dist-chart/SHA256SUMS \
               --clobber
@@ -511,6 +550,7 @@ jobs:
             gh release create "${RELEASE_TAG}" \
               dist-chart/krab-*.tgz \
               dist-precheck/krab-precheck-*.tgz \
+              dist-builder/krab-builder-*.tar.gz \
               dist-sbom/*.spdx.json \
               dist-chart/SHA256SUMS \
               --target "${GITHUB_SHA}" \

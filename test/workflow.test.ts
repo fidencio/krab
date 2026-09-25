@@ -27,6 +27,7 @@ test('Pages publishes stable and development builds together', async () => {
   assert.deepEqual(workflow.on.pull_request_target.types, ['closed'])
   assert.equal(workflow.permissions['pull-requests'], 'write')
   assert.match(source, /bash stable\/scripts\/compose-pr-previews\.sh site/)
+  assert.match(source, /bash stable\/scripts\/compose-release-builders\.sh site/)
   assert.match(source, /bash scripts\/comment-pr-previews\.sh/)
 })
 
@@ -68,6 +69,8 @@ test('chart releases require synchronized main and dev trees', async () => {
   assert.match(source, /spdx-json=dist-sbom\/krab-preflight-/)
   assert.equal(source.match(/uses: actions\/attest@v4/g)?.length, 6)
   assert.match(source, /dist-sbom\/\*\.spdx\.json/)
+  assert.match(source, /BASE_PATH="\/\$\{\{ github\.event\.repository\.name \}\}\/releases\/\$\{CHART_VERSION\}\/" npm run build/)
+  assert.match(source, /dist-builder\/krab-builder-\*\.tar\.gz/)
   const workflows = await readdir(resolve(root, '.github/workflows'))
   assert.ok(!workflows.includes('release-precheck.yml'))
 })
