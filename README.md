@@ -19,9 +19,10 @@ builds the site.
 The catalog currently uses released Kata Containers data and the explicitly
 marked alpha profile set from
 [`kata-device-provisioner` v0.1.0-alpha.1](https://github.com/kata-containers/kata-device-provisioner/releases/tag/v0.1.0-alpha.1).
-GPU, CPU TEE, and CC-mode claims are validated against the pinned NVIDIA
-Confidential Containers 1.0.0 supported-platform, CC-mode, and workload
-documentation.
+KRAB's reviewed [`compatibility.json`](upstream/compatibility.json) records
+which profile and CPU TEE combinations the builder offers. Generation checks
+that policy against the pinned Kata runtimes, provisioner profiles, and node
+label definitions. Profile publication alone does not enable a new path.
 
 The KRAB umbrella chart always installs Node Feature Discovery and kata-deploy.
 NVIDIA configurations additionally install kata-device-plugin and a

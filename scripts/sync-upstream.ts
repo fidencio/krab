@@ -37,6 +37,7 @@ const krabValuesPath = resolve(root, 'charts/krab/values.yaml')
 const krabSchemaPath = resolve(root, 'charts/krab/values.schema.json')
 const precheckImageLockPath = resolve(root, 'upstream/precheck-image.lock.json')
 const erofsImageLockPath = resolve(root, 'upstream/erofs-utils-image.lock.json')
+const compatibilityPath = resolve(root, 'upstream/compatibility.json')
 const precheckDockerfilePath = resolve(root, 'Dockerfile.precheck')
 const precheckValuesPath = resolve(root, 'charts/precheck/values.yaml')
 const generatedRoot = resolve(root, 'src/generated')
@@ -106,6 +107,21 @@ async function main() {
     }
   }
   const lock = (await readYaml(lockPath)) as LockFile
+  const compatibility = JSON.parse(await readFile(compatibilityPath, 'utf8')) as {
+    schemaVersion: number
+    teeSelectors: Record<string, Record<string, string>>
+    teeSelectorEvidence: Record<string, string>
+    families: Record<string, {
+      displayName: string
+      supportedArches: string[]
+      availability: 'available' | 'pending'
+      availabilityReason: string | null
+      evidence: string[]
+      profiles: Record<string, { sourceId: string; mode: string; cpuTees: string[] }>
+    }>
+    modelAliases: Record<string, string[]>
+  }
+  if (compatibility.schemaVersion !== 1) throw new Error('Unsupported compatibility matrix')
   if (lock.schemaVersion !== 1 || !Array.isArray(lock.sources)) {
     throw new Error('Unsupported upstream source lock schema')
   }
@@ -740,10 +756,23 @@ async function main() {
     }
   })
 
-  const customTeeNodeSelectors: Record<string, Record<string, string>> = {
-    'qemu-snp-runtime-rs': { 'amd.feature.node.kubernetes.io/snp': 'true' },
-    'qemu-tdx-runtime-rs': { 'intel.feature.node.kubernetes.io/tdx': 'true' },
-    'qemu-se-runtime-rs': { 'feature.node.kubernetes.io/cpu-security.se.enabled': 'true' },
+  const customTeeNodeSelectors = compatibility.teeSelectors
+  const kataRule = await readFile(cachePath('kata-node-feature-rule'), 'utf8')
+  const provisionerRule = await readFile(cachePath('provisioner-node-feature-rule'), 'utf8')
+  const nfdLabels = await readFile(cachePath('nfd-feature-labels'), 'utf8')
+  for (const [shimId, selector] of Object.entries(customTeeNodeSelectors)) {
+    requireValue(kataValues.shims[shimId], `Missing Kata shim ${shimId}`)
+    requireValue(compatibility.teeSelectorEvidence[shimId], `Missing selector evidence for ${shimId}`)
+    for (const [label, value] of Object.entries(selector)) {
+      const produced = shimId === 'qemu-se-runtime-rs'
+        ? label === 'feature.node.kubernetes.io/cpu-security.se.enabled' &&
+          nfdLabels.includes('feature.node.kubernetes.io/<feature>') &&
+          nfdLabels.includes('`cpu-security.se.enabled`')
+        : kataRule.includes(`"${label}": "${value}"`)
+      if (value !== 'true' || !produced) {
+        throw new Error(`${shimId} selector ${label} is not backed by pinned NFD/Kata data`)
+      }
+    }
   }
   const customTeeShims = teeVendors.map(({ runtime }) => ({
     ...runtime.shims[0],
@@ -782,32 +811,23 @@ async function main() {
     .map((line) => line.match(/^\| \[`([^`]+)`\]\(([^)]+)\) \| ([^|]+) \| ([^|]+) \|$/))
     .filter((match): match is RegExpMatchArray => Boolean(match))
 
-  const profileSources: Record<
-    string,
-    { sourceId: string; familyId: string }
-  > = {
-    'HGX-Hx00': { sourceId: 'hopper-passthrough', familyId: 'hopper' },
-    'HGX-Hx00-PPCIE': {
-      sourceId: 'hopper-confidential',
-      familyId: 'hopper',
-    },
-    'HGX-Bx00': { sourceId: 'blackwell-passthrough', familyId: 'blackwell' },
-    'HGX-Bx00-CC': {
-      sourceId: 'blackwell-confidential',
-      familyId: 'blackwell',
-    },
-    'PCIE-GPU': {
-      sourceId: 'pcie-gpu-passthrough',
-      familyId: 'pcie-gpu',
-    },
-    'PCIE-GPU-CC': {
-      sourceId: 'pcie-gpu-confidential',
-      familyId: 'pcie-gpu',
-    },
-    GBx00: {
-      sourceId: 'grace-blackwell-passthrough',
-      familyId: 'grace-blackwell',
-    },
+  const profileSources = Object.fromEntries(Object.entries(compatibility.families)
+    .flatMap(([familyId, definition]) => Object.entries(definition.profiles)
+      .map(([name, policy]) => [name, { ...policy, familyId }]))) as Record<string, {
+        sourceId: string; familyId: string; mode: string; cpuTees: string[]
+      }>
+  if (Object.keys(profileSources).length !== Object.values(compatibility.families)
+    .reduce((count, family) => count + Object.keys(family.profiles).length, 0)) {
+    throw new Error('A provisioner profile belongs to more than one family')
+  }
+  const documentedProfiles = new Set(tableRows.map((row) => row[1]))
+  for (const name of Object.keys(profileSources)) {
+    if (!documentedProfiles.has(name)) throw new Error(`Reviewed profile ${name} is missing upstream`)
+    for (const tee of profileSources[name].cpuTees) {
+      if (!cpuTees.some(({ id }) => id === tee)) {
+        throw new Error(`${name} refers to unsupported CPU TEE ${tee}`)
+      }
+    }
   }
 
   const profileRecords = await Promise.all(
@@ -827,6 +847,14 @@ async function main() {
         }
         const { enabled: _enabled, ...values } = configuredProfile
         const ccMode = requireValue(values.ccMode, `${profileName} has no ccMode`)
+        if (ccMode !== profileSources[profileName].mode) {
+          throw new Error(`${profileName} mode differs from the reviewed matrix`)
+        }
+        for (const label of Object.keys(values.nodeSelector ?? {})) {
+          if (!provisionerRule.includes(`"${label}": "true"`)) {
+            throw new Error(`${profileName} selects ${label}, but the pinned provisioner rule does not produce it`)
+          }
+        }
         return {
           profileName,
           nodes,
@@ -842,32 +870,7 @@ async function main() {
       }),
   )
 
-  const familyDefinitions = {
-    'grace-blackwell': {
-      displayName: 'NVIDIA GBx00',
-      supportedArches: ['arm64'],
-      availability: 'pending',
-      availabilityReason: 'Kata Containers support pending',
-    },
-    blackwell: {
-      displayName: 'NVIDIA HGX Bx00',
-      supportedArches: ['amd64'],
-      availability: 'available',
-      availabilityReason: null,
-    },
-    hopper: {
-      displayName: 'NVIDIA HGX Hx00',
-      supportedArches: ['amd64'],
-      availability: 'available',
-      availabilityReason: null,
-    },
-    'pcie-gpu': {
-      displayName: 'NVIDIA PCIe GPUs',
-      supportedArches: ['amd64'],
-      availability: 'available',
-      availabilityReason: null,
-    },
-  }
+  const familyDefinitions = compatibility.families
 
   const families = Object.entries(familyDefinitions).map(([generation, definition]) => {
     const profiles = profileRecords.filter((profile) => profile.generation === generation)
@@ -878,24 +881,32 @@ async function main() {
     const models = passthrough.nodes.match(/\(([^)]+)\)/)?.[1]
       ?.split(',')
       .map((model) => model.trim()) ?? []
+    if (definition.evidence.length === 0 || definition.evidence.some((id) => !sourceById.has(id))) {
+      throw new Error(`${generation} has missing compatibility evidence`)
+    }
+    if (definition.supportedArches.length === 0) {
+      throw new Error(`${generation} support decision needs review`)
+    }
+    if (definition.availability === 'available' && !definition.supportedArches.every((arch) =>
+      nvidiaGpuRuntimeRsShims[0].supportedArches.includes(arch))) {
+      throw new Error(`${generation} claims an architecture unsupported by Kata's GPU runtime`)
+    }
 
     return {
       id: generation,
       displayName: definition.displayName,
       upstreamName: passthrough.nodes.replace(/\s*\([^)]+\)/, ''),
       models,
+      modelAliases: Object.fromEntries(models.filter((model) => compatibility.modelAliases[model])
+        .map((model) => [model, compatibility.modelAliases[model]])),
       supportedArches: definition.supportedArches,
       availability: definition.availability,
       availabilityReason: definition.availabilityReason,
+      evidenceUrls: definition.evidence.map(sourceLink),
       defaultModeId: 'off',
       modes: profiles.map((profile) => ({
         id: String(profile.ccMode),
-        supportedCpuTeeIds:
-          profile.ccMode === 'off'
-            ? []
-            : profile.ccMode === 'ppcie'
-              ? ['tdx']
-              : cpuTees.map(({ id }) => id),
+        supportedCpuTeeIds: profileSources[profile.profileName].cpuTees,
         displayName:
           profile.ccMode === 'off'
             ? 'Passthrough'

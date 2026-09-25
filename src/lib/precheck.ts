@@ -1,6 +1,7 @@
 import type { HardwareFamilyCatalog, VendorCatalog } from './artifacts'
 import Ajv from 'ajv'
 import precheckSchema from '../../contracts/precheck-v1.schema.json' with { type: 'json' }
+import catalog from '../generated/catalog.json' with { type: 'json' }
 
 export type ProbeStatus = 'yes' | 'no' | 'unknown' | 'review'
 export type RequestedCheck = 'tdx' | 'snp' | 'se' | 'gpu'
@@ -37,6 +38,9 @@ export function gpuModelChoices(families: ReadonlyArray<{ models: readonly strin
 const ajv = new Ajv()
 const validateNodeReport = ajv.compile({ $ref: '#/definitions/nodeReport', definitions: precheckSchema.definitions })
 const validateClusterReport = ajv.compile({ $ref: '#/definitions/clusterReport', definitions: precheckSchema.definitions })
+const modelAliases = new Map(Object.entries(Object.assign({}, ...catalog.vendors
+  .flatMap((vendor) => vendor.hardwareFamilies)
+  .map((family) => family.modelAliases)))) as Map<string, string[]>
 
 export function parseNodePrecheck(text: string): NodePrecheck {
   const data: unknown = JSON.parse(text)
@@ -74,12 +78,15 @@ export function erofsPrecheckStatus(reports: NodePrecheck[]): 'confirmed' | 'pro
 }
 
 export function hasGpuModel(report: NodePrecheck, model: string): boolean {
-  const wanted = model.trim().replace(/\s+/g, ' ')
-  if (!wanted) return true
-  const escaped = wanted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const pattern = new RegExp(`(^|[^a-z0-9])${escaped}($|[^a-z0-9])`, 'i')
-  return report.gpus.devices.some(({ name, chip }) =>
-    chip?.toLowerCase() === wanted.toLowerCase() || pattern.test(name.replace(/\s+/g, ' ')))
+  const aliases = modelAliases.get(model) ?? []
+  return [model, ...aliases].some((candidate) => {
+    const wanted = candidate.trim().replace(/\s+/g, ' ')
+    if (!wanted) return true
+    const escaped = wanted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const pattern = new RegExp(`(^|[^a-z0-9])${escaped}($|[^a-z0-9])`, 'i')
+    return report.gpus.devices.some(({ name, chip }) =>
+      chip?.toLowerCase() === wanted.toLowerCase() || pattern.test(name.replace(/\s+/g, ' ')))
+  })
 }
 
 export function unavailableShimReason(shim: { id: string; supportedArches: string[] }, reports: NodePrecheck[]): string | null {

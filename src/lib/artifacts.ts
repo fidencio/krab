@@ -19,9 +19,11 @@ export type HardwareFamilyCatalog = {
   displayName: string
   upstreamName: string
   models: string[]
+  modelAliases?: Record<string, string[]>
   supportedArches: string[]
   availability: 'available' | 'pending'
   availabilityReason: string | null
+  evidenceUrls?: string[]
   defaultModeId: string
   modes: ModeCatalog[]
   sourceUrl: string

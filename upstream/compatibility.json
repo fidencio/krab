@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "teeSelectors": {
+    "qemu-snp-runtime-rs": { "amd.feature.node.kubernetes.io/snp": "true" },
+    "qemu-tdx-runtime-rs": { "intel.feature.node.kubernetes.io/tdx": "true" },
+    "qemu-se-runtime-rs": { "feature.node.kubernetes.io/cpu-security.se.enabled": "true" }
+  },
+  "teeSelectorEvidence": {
+    "qemu-snp-runtime-rs": "kata-node-feature-rule",
+    "qemu-tdx-runtime-rs": "kata-node-feature-rule",
+    "qemu-se-runtime-rs": "nfd-feature-labels"
+  },
+  "families": {
+    "grace-blackwell": {
+      "displayName": "NVIDIA GBx00",
+      "supportedArches": ["arm64"],
+      "availability": "pending",
+      "availabilityReason": "Kata Containers support pending",
+      "evidence": ["grace-blackwell-passthrough", "kata-nvidia-profile"],
+      "profiles": { "GBx00": { "sourceId": "grace-blackwell-passthrough", "mode": "off", "cpuTees": [] } }
+    },
+    "blackwell": {
+      "displayName": "NVIDIA HGX Bx00",
+      "supportedArches": ["amd64"],
+      "availability": "available",
+      "availabilityReason": null,
+      "evidence": ["blackwell-passthrough", "blackwell-confidential", "kata-nvidia-profile"],
+      "profiles": {
+        "HGX-Bx00": { "sourceId": "blackwell-passthrough", "mode": "off", "cpuTees": [] },
+        "HGX-Bx00-CC": { "sourceId": "blackwell-confidential", "mode": "on", "cpuTees": ["snp", "tdx"] }
+      }
+    },
+    "hopper": {
+      "displayName": "NVIDIA HGX Hx00",
+      "supportedArches": ["amd64"],
+      "availability": "available",
+      "availabilityReason": null,
+      "evidence": ["hopper-passthrough", "hopper-confidential", "kata-nvidia-profile"],
+      "profiles": {
+        "HGX-Hx00": { "sourceId": "hopper-passthrough", "mode": "off", "cpuTees": [] },
+        "HGX-Hx00-PPCIE": { "sourceId": "hopper-confidential", "mode": "ppcie", "cpuTees": ["tdx"] }
+      }
+    },
+    "pcie-gpu": {
+      "displayName": "NVIDIA PCIe GPUs",
+      "supportedArches": ["amd64"],
+      "availability": "available",
+      "availabilityReason": null,
+      "evidence": ["pcie-gpu-passthrough", "pcie-gpu-confidential", "kata-nvidia-profile"],
+      "profiles": {
+        "PCIE-GPU": { "sourceId": "pcie-gpu-passthrough", "mode": "off", "cpuTees": [] },
+        "PCIE-GPU-CC": { "sourceId": "pcie-gpu-confidential", "mode": "on", "cpuTees": ["snp", "tdx"] }
+      }
+    }
+  },
+  "modelAliases": {
+    "H100": ["H100 SXM5 80GB"],
+    "B200": ["B200 SXM"]
+  }
+}

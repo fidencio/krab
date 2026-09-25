@@ -92,6 +92,9 @@ test('GPU model matching uses complete model names', () => {
   node.gpus.devices[0] = { name: 'NVIDIA GPU', chip: 'B200', pciBusId: '0000:01:00.0' }
   assert.equal(hasGpuModel(node, 'B200'), true)
   assert.equal(hasGpuModel(node, 'GB200'), false)
+  node.gpus.devices[0].chip = 'H100 SXM5 80GB'
+  assert.equal(hasGpuModel(node, 'H100'), true)
+  assert.equal(hasGpuModel(node, 'H200'), false)
   node.gpus.devices = []
   assert.equal(hasGpuModel(node, 'GB200'), false)
 })

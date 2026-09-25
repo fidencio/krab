@@ -160,11 +160,16 @@
             "GB200",
             "GB300"
           ],
+          "modelAliases": {},
           "supportedArches": [
             "arm64"
           ],
           "availability": "pending",
           "availabilityReason": "Kata Containers support pending",
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
           "defaultModeId": "off",
           "modes": [
             {
@@ -203,11 +208,21 @@
             "B200",
             "B300"
           ],
+          "modelAliases": {
+            "B200": [
+              "B200 SXM"
+            ]
+          },
           "supportedArches": [
             "amd64"
           ],
           "availability": "available",
           "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
           "defaultModeId": "off",
           "modes": [
             {
@@ -277,11 +292,21 @@
             "H800",
             "H20"
           ],
+          "modelAliases": {
+            "H100": [
+              "H100 SXM5 80GB"
+            ]
+          },
           "supportedArches": [
             "amd64"
           ],
           "availability": "available",
           "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
           "defaultModeId": "off",
           "modes": [
             {
@@ -345,11 +370,17 @@
           "displayName": "NVIDIA PCIe GPUs",
           "upstreamName": "discrete cards, no NVSwitch",
           "models": [],
+          "modelAliases": {},
           "supportedArches": [
             "amd64"
           ],
           "availability": "available",
           "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
           "defaultModeId": "off",
           "modes": [
             {
@@ -793,11 +824,16 @@
             "GB200",
             "GB300"
           ],
+          "modelAliases": {},
           "supportedArches": [
             "arm64"
           ],
           "availability": "pending",
           "availabilityReason": "Kata Containers support pending",
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
           "defaultModeId": "off",
           "modes": [
             {
@@ -836,11 +872,21 @@
             "B200",
             "B300"
           ],
+          "modelAliases": {
+            "B200": [
+              "B200 SXM"
+            ]
+          },
           "supportedArches": [
             "amd64"
           ],
           "availability": "available",
           "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
           "defaultModeId": "off",
           "modes": [
             {
@@ -910,11 +956,21 @@
             "H800",
             "H20"
           ],
+          "modelAliases": {
+            "H100": [
+              "H100 SXM5 80GB"
+            ]
+          },
           "supportedArches": [
             "amd64"
           ],
           "availability": "available",
           "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
           "defaultModeId": "off",
           "modes": [
             {
@@ -978,11 +1034,17 @@
           "displayName": "NVIDIA PCIe GPUs",
           "upstreamName": "discrete cards, no NVSwitch",
           "models": [],
+          "modelAliases": {},
           "supportedArches": [
             "amd64"
           ],
           "availability": "available",
           "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
           "defaultModeId": "off",
           "modes": [
             {

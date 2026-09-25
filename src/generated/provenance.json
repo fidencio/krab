@@ -27,6 +27,16 @@
       "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
     },
     {
+      "id": "kata-node-feature-rule",
+      "repository": "kata-containers/kata-containers",
+      "ref": "c7351e797efff8bfc6bd73da0eb1909be12e2cfe",
+      "release": "4.2.0",
+      "draft": false,
+      "path": "tools/packaging/kata-deploy/helm-chart/kata-deploy/templates/node-feature-rules.yaml",
+      "sha256": "78f4a3c50079d90a4362b7380bf231ba841e32cf7084372e5493ba43d83956b0",
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/templates/node-feature-rules.yaml"
+    },
+    {
       "id": "kata-versions",
       "repository": "kata-containers/kata-containers",
       "ref": "c7351e797efff8bfc6bd73da0eb1909be12e2cfe",
@@ -65,6 +75,16 @@
       "path": "deployment/helm/node-feature-discovery/values.yaml",
       "sha256": "84c6277dd7934c1ba54c0707c307e6b206400ac51179af0674b1de300e8fcb8b",
       "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/45d276ed9d3f0f67fb642aa78969721df3034451/deployment/helm/node-feature-discovery/values.yaml"
+    },
+    {
+      "id": "nfd-feature-labels",
+      "repository": "kubernetes-sigs/node-feature-discovery",
+      "ref": "45d276ed9d3f0f67fb642aa78969721df3034451",
+      "release": "v0.19.0",
+      "draft": false,
+      "path": "docs/usage/features.md",
+      "sha256": "72e0af17ca4dc542213d11cdbfea7b7da8689848fa3dbf7cb6d645f91ddbcc52",
+      "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/45d276ed9d3f0f67fb642aa78969721df3034451/docs/usage/features.md"
     },
     {
       "id": "device-plugin-code",
@@ -115,6 +135,16 @@
       "path": "deploy/helm/kata-device-provisioner/values.yaml",
       "sha256": "f8169d4314a6641caf83009e856f8da05841a57dd2726e9432bf050bfadc6750",
       "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/values.yaml"
+    },
+    {
+      "id": "provisioner-node-feature-rule",
+      "repository": "kata-containers/kata-device-provisioner",
+      "ref": "5a27c86f7f828abbd8c3c1803c2723bfc5e86163",
+      "release": "v0.1.0-alpha.1",
+      "draft": false,
+      "path": "deploy/helm/kata-device-provisioner/templates/node-feature-rule.yaml",
+      "sha256": "e544758fbe93eec57085146d6a35a58360342b3df1b23f70caee2ca307a0c56f",
+      "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/templates/node-feature-rule.yaml"
     },
     {
       "id": "provisioner-profiles",
