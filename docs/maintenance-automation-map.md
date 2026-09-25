@@ -13,6 +13,11 @@ resource names. The generator also updates chart dependencies, image defaults,
 the precheck image and dispatcher, and KRAB release versions. Pages and release
 CI regenerate these files and reject an out-of-date tree.
 
+The generator entry point coordinates `scripts/upstream/`: `sources.ts` verifies
+the locked sources, `inputs.ts` parses them, `policy.ts` reads KRAB's reviewed
+compatibility and presentation choices, `build-catalog.ts` assembles the derived
+data, and `outputs.ts` writes it. The application build type checks this path.
+
 The weekly `refresh-upstream.yml` workflow now checks Kata, NFD, device plugin,
 and provisioner releases separately. It resolves each candidate tag to a commit,
 checksums the locked source paths, regenerates KRAB, and proposes a PR after
@@ -67,8 +72,8 @@ independently, but its output becomes the input to the following stages.
   record one owner: a pinned upstream file, KRAB release metadata, or KRAB
   compatibility/presentation policy. Keep the owner map beside the generator.
 - Split `sync-upstream.ts` into source acquisition, upstream parsing, policy
-  application, and output rendering. Preserve the current catalog as a fixture
-  so refactoring cannot silently change deployment values.
+  application, and output rendering (done). CI regenerates and compares the
+  committed output, so changes to deployment values remain visible in the PR.
 - Keep `npm run generate` as the command for all derived files. Pages and release
   CI already check the generated tree, including chart dependencies and image
   defaults; extend those checks to each new output.
