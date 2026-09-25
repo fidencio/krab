@@ -59,6 +59,13 @@ Generated NVIDIA values set `nvidia.enabled=true` and configure
 `kata-device-provisioner.profiles` with one entry per selected hardware,
 confidential-computing mode, and CPU TEE combination.
 
+Downloaded values files record their KRAB format and chart version in comments.
+When you load one into the builder, KRAB checks it against the current chart
+schema and the available shims and profiles. A compatible file from another
+release loads with a warning; an unknown format or removed choice fails with
+an explanation. Older files without version comments can still load after the
+same checks, with a warning to review the new output before deploying.
+
 The chart is structurally complete, but publication is intentionally blocked
 until the kata-device-plugin chart is available from its planned upstream OCI
 repository. The multi-profile kata-device-provisioner chart is a published

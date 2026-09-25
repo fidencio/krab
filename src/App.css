@@ -370,7 +370,8 @@ nav a:hover {
   font-size: 11px;
 }
 
-.import-values-message.error {
+.import-values-message.error,
+.import-values-message.warning {
   border-color: rgba(230, 155, 63, 0.45);
   background: rgba(230, 155, 63, 0.07);
   color: #e7b28f;
@@ -3631,7 +3632,8 @@ nav a:hover,
   color: #2a394e;
 }
 
-.import-values-message.error {
+.import-values-message.error,
+.import-values-message.warning {
   color: #8b2f20;
 }
 
@@ -4237,7 +4239,8 @@ nav a:hover,
   color: #f1b2a5;
 }
 
-:root[data-theme='dark'] .import-values-message.error {
+:root[data-theme='dark'] .import-values-message.error,
+:root[data-theme='dark'] .import-values-message.warning {
   color: #ffb4a6;
 }
 

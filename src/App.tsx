@@ -339,7 +339,7 @@ function App() {
   const runtimeOnlyVendor = isRuntimeOnlyVendor(selectedVendor)
   const [copied, setCopied] = useState<'install' | 'values' | null>(null)
   const [importMessage, setImportMessage] = useState<{
-    type: 'success' | 'error'
+    type: 'success' | 'warning' | 'error'
     text: string
   } | null>(null)
   const [selections, setSelections] = useState<FamilySelections>(() =>
@@ -557,8 +557,8 @@ function App() {
       setAdvanced(imported.advanced)
       setDeploymentName(imported.deploymentName)
       setImportMessage({
-        type: 'success',
-        text: `${file.name} loaded. Review the imported configuration before deploying.`,
+        type: imported.warnings.length ? 'warning' : 'success',
+        text: `${file.name} loaded. ${imported.warnings.join(' ') || 'Review the imported configuration before deploying.'}`,
       })
       setStep(2)
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1073,9 +1073,9 @@ function App() {
               {importMessage && (
                 <p
                   className={`import-values-message ${importMessage.type}`}
-                  role={importMessage.type === 'error' ? 'alert' : 'status'}
+                  role={importMessage.type === 'success' ? 'status' : 'alert'}
                 >
-                  {importMessage.type === 'error' ? (
+                  {importMessage.type !== 'success' ? (
                     <AlertTriangle size={15} />
                   ) : (
                     <Check size={15} />

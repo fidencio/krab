@@ -1,4 +1,6 @@
 import { parse, stringify } from 'yaml'
+import Ajv from 'ajv'
+import valuesSchema from '../../charts/krab/values.schema.json' with { type: 'json' }
 import { erofsUtilsImage } from './erofs-image'
 
 export type ModeCatalog = {
@@ -298,7 +300,11 @@ export type ImportedValuesConfiguration = {
   runtime: RuntimeConfiguration
   advanced: AdvancedConfiguration
   deploymentName: string
+  warnings: string[]
 }
+
+const valuesFormatVersion = 1
+const validateValues = new Ajv({ allErrors: true }).compile(valuesSchema)
 
 const createChartImageConfiguration = (): ChartImageConfiguration => ({
   pullPolicy: '',
@@ -379,8 +385,9 @@ const imageConfiguration = (
 const deploymentNameFromFile = (
   catalog: ExplorerCatalog,
   fileName: string,
+  sourceVersion = catalog.plannedArchitecture.charts.krab.version,
 ) => {
-  const suffix = `-${catalog.plannedArchitecture.charts.krab.version}-${catalog.plannedArchitecture.charts.krab.valuesFileName}`
+  const suffix = `-${sourceVersion}-${catalog.plannedArchitecture.charts.krab.valuesFileName}`
   return fileName.endsWith(suffix) ? fileName.slice(0, -suffix.length) : ''
 }
 
@@ -389,10 +396,28 @@ export function importValuesBundle(
   source: string,
   fileName = '',
 ): ImportedValuesConfiguration {
+  const format = source.match(/^# KRAB values format: (.+)$/m)?.[1]
+  const sourceVersion = source.match(/^# KRAB chart version: (.+)$/m)?.[1]
+  if (format && format !== String(valuesFormatVersion)) {
+    throw new Error(`Unsupported KRAB values format ${format}.`)
+  }
+  if (Boolean(format) !== Boolean(sourceVersion)) {
+    throw new Error('The KRAB values file has incomplete version information.')
+  }
+  const warnings: string[] = []
+  if (!format) {
+    warnings.push('This file has no KRAB version marker. Its fields were checked against the current chart; review the generated values before deploying.')
+  } else if (sourceVersion !== catalog.plannedArchitecture.charts.krab.version) {
+    warnings.push(`This file was made for KRAB ${sourceVersion}; this builder uses ${catalog.plannedArchitecture.charts.krab.version}. Review the generated values before deploying.`)
+  }
   const parsed = parse(source)
   const root = asRecord(parsed)
   if (Object.keys(root).length === 0) {
     throw new Error('The selected file does not contain Helm values.')
+  }
+  if (!validateValues(root)) {
+    const error = validateValues.errors?.[0]
+    throw new Error(`This file does not match the current KRAB chart: ${error?.instancePath || 'root'} ${error?.message ?? 'is invalid'}.`)
   }
 
   const dependencies = catalog.plannedArchitecture.charts.krab.dependencies
@@ -402,11 +427,40 @@ export function importValuesBundle(
     ([id, configuration]) =>
       id !== 'disableAll' && asRecord(configuration).enabled === true ? [id] : [],
   )
+  const supportedShimIds = new Set(catalog.vendors.flatMap((candidate) =>
+    candidate.runtime.shims.map(({ id }) => id)))
+  for (const id of Object.keys(configuredShims)) {
+    if (id !== 'disableAll' && !supportedShimIds.has(id)) {
+      throw new Error(`The imported RuntimeClass ${id} is not available in this KRAB release.`)
+    }
+  }
   const provisionerValues = asRecord(root[dependencies.provisionerValuesKey])
   const configuredProfiles = asRecord(provisionerValues.profiles)
+  const supportedProfiles = new Map(catalog.vendors.flatMap((candidate) =>
+    candidate.hardwareFamilies.flatMap((family) => family.modes.flatMap((mode) =>
+      (mode.supportedCpuTeeIds.length ? mode.supportedCpuTeeIds : ['']).map((tee) => [
+        tee ? `${mode.profileName}-${tee.toUpperCase()}` : mode.profileName,
+        mode.id,
+      ] as const)))))
+  for (const [name, configuration] of Object.entries(configuredProfiles)) {
+    const expectedMode = supportedProfiles.get(name)
+    if (!expectedMode) {
+      throw new Error(`The imported provisioner profile ${name} is not available in this KRAB release.`)
+    }
+    if (asRecord(configuration).ccMode !== expectedMode) {
+      throw new Error(`The imported provisioner profile ${name} has a different mode in this KRAB release.`)
+    }
+  }
   const nvidiaEnabled = asRecord(root[dependencies.nvidiaValuesKey]).enabled === true
-  const embeddedSelection = source.match(/^# KRAB selection: ([a-z0-9-]+)$/m)?.[1]
+  if (!nvidiaEnabled && Object.values(configuredProfiles).some((profile) =>
+    asRecord(profile).enabled === true)) {
+    throw new Error('The file enables a provisioner profile while NVIDIA dependencies are disabled.')
+  }
+  const embeddedSelection = source.match(/^# KRAB selection: (.+)$/m)?.[1]
   const selectedVendor = catalog.vendors.find(({ id }) => id === embeddedSelection)
+  if (embeddedSelection && !selectedVendor) {
+    throw new Error(`The imported vendor ${embeddedSelection} is not available in this KRAB release.`)
+  }
   const detectedVendor = catalog.vendors
         .filter(({ id }) => id !== 'nvidia')
         .map((candidate) => ({
@@ -461,6 +515,9 @@ export function importValuesBundle(
   const distribution = catalog.plannedArchitecture.cluster.distributions.find(
     ({ kataDeployValue }) => kataDeployValue === runtimeValues.k8sDistribution,
   )
+  if (runtimeValues.k8sDistribution && !distribution) {
+    throw new Error(`The imported Kubernetes distribution ${runtimeValues.k8sDistribution} is not available in this KRAB release.`)
+  }
   const selectedShimConfigs = enabledShimIds.map((id) =>
     asRecord(configuredShims[id]),
   )
@@ -618,7 +675,8 @@ export function importValuesBundle(
     },
     runtime,
     advanced,
-    deploymentName: deploymentNameFromFile(catalog, fileName),
+    deploymentName: deploymentNameFromFile(catalog, fileName, sourceVersion),
+    warnings,
   }
 }
 
@@ -1219,7 +1277,7 @@ export function buildValuesBundle(
     provisionerImages.dispatcherTag,
   )
 
-  return `# ${architecture.notice}\n# KRAB selection: ${vendor.id}\n${yaml({
+  return `# ${architecture.notice}\n# KRAB values format: ${valuesFormatVersion}\n# KRAB chart version: ${architecture.charts.krab.version}\n# KRAB selection: ${vendor.id}\n${yaml({
     [dependencies.nvidiaValuesKey]: {
       enabled: includeDevicePlugin || includeProvisioner,
     },
