@@ -13,10 +13,9 @@ on:
 permissions:
   actions: read
   contents: read
-  pull-requests: read
+  pull-requests: write
   pages: write
   id-token: write
-  issues: write
 
 concurrency:
   group: pages
