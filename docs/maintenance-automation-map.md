@@ -166,8 +166,9 @@ selectable.
   PRs, blocked updates, and candidates with no PR (implemented). Include the
   locked ref and source checksum in generated provenance so a support claim can
   be traced to a reviewed PR.
-- Document the update and rollback commands. Reverting a reviewed update PR
-  must restore its lockfile and all generated artifacts together.
+- The README documents source and EROFS update commands, chart and image
+  verification, and rollback of a reviewed PR (implemented). The revert keeps
+  its lockfile and generated artifacts together.
 
 **Done when:** routine upstream and KRAB version updates require one reviewed
 input change each, CI detects drift, and unsupported candidates are visible

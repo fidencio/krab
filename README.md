@@ -178,6 +178,49 @@ workflow run summary, with a link when it opens a PR.
 
 `npm run refresh:nfd` remains a shortcut for the NFD group.
 
+### Updating or rolling back an upstream pin
+
+For a source release, choose one group (`kata`, `nfd`, `device-plugin`, or
+`provisioner`) and run:
+
+```sh
+npm run refresh:upstream -- --group GROUP
+npm run sync:upstream
+npm run verify:chart-artifact -- --group GROUP
+npm test
+npm run build
+```
+
+Review the lockfile, generated catalog, chart dependencies, image pins, and
+compatibility claims together in one PR. `sync:upstream` also resolves the
+published provisioner image digest and checks its platform coverage.
+
+The EROFS image has a separate lock. Update and check it with:
+
+```sh
+npm run refresh:erofs-image
+npm run verify:erofs-image
+npm run generate
+npm test
+npm run build
+```
+
+To roll back a merged upstream update, revert its PR commit in a new PR:
+
+```sh
+git revert UPDATE_COMMIT
+npm run generate
+npm test
+npm run build
+git diff --exit-code
+```
+
+For a merge commit, use `git revert -m 1 UPDATE_COMMIT` instead. GitHub's
+Revert action is also suitable. Keep the lockfile and all generated files in
+the same revert. If generation leaves a diff, review and commit it with the
+revert: changes made since the original update can affect the output. The PR's
+generation check must finish with no diff.
+
 ## Releases
 
 KRAB chart, pre-flight chart, pre-flight image, and application versions are
