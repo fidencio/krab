@@ -25,6 +25,7 @@ test('Pages publishes stable and development builds together', async () => {
   assert.match(source, /cp -R development\/dist\/\. site\/dev\//)
   assert.deepEqual(workflow.on.workflow_run.workflows, ['Build PR preview'])
   assert.deepEqual(workflow.on.pull_request_target.types, ['closed'])
+  assert.equal(workflow.permissions['pull-requests'], 'write')
   assert.match(source, /bash stable\/scripts\/compose-pr-previews\.sh site/)
   assert.match(source, /bash scripts\/comment-pr-previews\.sh/)
 })
