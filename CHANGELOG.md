@@ -2,6 +2,27 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.0-alpha.8] - 2026-09-25
+
+### Added
+
+- Pull requests provide a validated builder preview and downloadable SBOMs for
+  both charts and all four pre-flight image architectures.
+- Releases include chart and pre-flight image SBOMs with checksums and
+  attestations.
+
+### Changed
+
+- Chart dependencies, container image pins, the EROFS utility image, and KRAB
+  release versions now come from maintained sources and generation checks.
+- The pre-flight report has a versioned contract, and GPU model choices follow
+  the pinned device provisioner profiles.
+
+### Fixed
+
+- Imported values are checked against their chart version. Compatible older
+  files load with a warning; unsupported or lost fields fail validation.
+
 ## [0.1.0-alpha.7] - 2026-09-24
 
 ### Added
