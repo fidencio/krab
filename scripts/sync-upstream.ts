@@ -28,6 +28,14 @@ type LockFile = {
   sources: Source[]
 }
 
+type VendorPresentation = {
+  id: string
+  displayName: string
+  tagline: string
+  description: string
+  logo: string
+}
+
 const root = resolve(import.meta.dirname, '..')
 const cacheRoot = resolve(root, 'upstream/cache')
 const lockPath = resolve(root, 'upstream/sources.lock.yaml')
@@ -38,6 +46,7 @@ const krabSchemaPath = resolve(root, 'charts/krab/values.schema.json')
 const precheckImageLockPath = resolve(root, 'upstream/precheck-image.lock.json')
 const erofsImageLockPath = resolve(root, 'upstream/erofs-utils-image.lock.json')
 const compatibilityPath = resolve(root, 'upstream/compatibility.json')
+const presentationPath = resolve(root, 'upstream/presentation.json')
 const precheckDockerfilePath = resolve(root, 'Dockerfile.precheck')
 const precheckValuesPath = resolve(root, 'charts/precheck/values.yaml')
 const generatedRoot = resolve(root, 'src/generated')
@@ -46,6 +55,11 @@ const chartRepositories = {
   nfd: 'oci://registry.k8s.io/nfd/charts',
   devicePlugin: 'oci://ghcr.io/kata-containers/kata-device-plugin-charts',
   provisioner: 'oci://ghcr.io/kata-containers/kata-device-provisioner-charts',
+}
+const teeVendorShims = {
+  amd: 'qemu-snp-runtime-rs',
+  ibm: 'qemu-se-runtime-rs',
+  intel: 'qemu-tdx-runtime-rs',
 }
 
 const sha256 = (content: string) =>
@@ -122,6 +136,40 @@ async function main() {
     modelAliases: Record<string, string[]>
   }
   if (compatibility.schemaVersion !== 1) throw new Error('Unsupported compatibility matrix')
+  const presentation = JSON.parse(await readFile(presentationPath, 'utf8')) as {
+    schemaVersion: number
+    vendors: VendorPresentation[]
+  }
+  const vendorIds = ['nvidia', 'custom', ...Object.keys(teeVendorShims)]
+  if (presentation.schemaVersion !== 1 || !Array.isArray(presentation.vendors) ||
+      presentation.vendors.length !== vendorIds.length) {
+    throw new Error('Unsupported vendor presentation file')
+  }
+  const presentationById = new Map(presentation.vendors.map((vendor) => [vendor.id, vendor]))
+  if (presentationById.size !== vendorIds.length ||
+      vendorIds.some((id) => !presentationById.has(id))) {
+    throw new Error('Vendor presentation IDs must match the supported paths')
+  }
+  for (const vendor of presentation.vendors) {
+    if (!['displayName', 'tagline', 'description', 'logo'].every((field) =>
+      typeof vendor[field as keyof VendorPresentation] === 'string' &&
+      vendor[field as keyof VendorPresentation].trim())) {
+      throw new Error(`${vendor.id} is missing presentation text or a logo`)
+    }
+    if (!/^[a-z0-9-]+\.(svg|png)$/.test(vendor.logo)) {
+      throw new Error(`${vendor.id} has an invalid logo filename`)
+    }
+    await readFile(resolve(root, 'src/assets/brands', vendor.logo))
+  }
+  const presentationFor = (id: string) => {
+    const vendor = requireValue(presentationById.get(id), `Missing vendor presentation: ${id}`)
+    return {
+      displayName: vendor.displayName,
+      tagline: vendor.tagline,
+      description: vendor.description,
+      logo: vendor.logo,
+    }
+  }
   if (lock.schemaVersion !== 1 || !Array.isArray(lock.sources)) {
     throw new Error('Unsupported upstream source lock schema')
   }
@@ -650,41 +698,14 @@ async function main() {
     'node-feature-discovery': kataValues['node-feature-discovery'],
   }
 
-  const teeVendorDefinitions = [
-    {
-      id: 'amd',
-      displayName: 'AMD',
-      tagline: 'SEV-SNP',
-      description: 'Run AMD SEV-SNP confidential workloads with Kata.',
-      logo: 'amd.svg',
-      shimId: 'qemu-snp-runtime-rs',
-    },
-    {
-      id: 'ibm',
-      displayName: 'IBM',
-      tagline: 'Secure Execution for Linux',
-      description:
-        'Run IBM Z Secure Execution confidential workloads with Kata.',
-      logo: 'ibm.png',
-      shimId: 'qemu-se-runtime-rs',
-    },
-    {
-      id: 'intel',
-      displayName: 'Intel',
-      tagline: 'TDX',
-      description: 'Run Intel TDX confidential workloads with Kata.',
-      logo: 'intel.png',
-      shimId: 'qemu-tdx-runtime-rs',
-    },
-  ]
-  const teeVendors = teeVendorDefinitions.map((definition) => {
+  const teeVendors = Object.entries(teeVendorShims).map(([id, shimId]) => {
     const config = requireValue(
-      kataValues.shims[definition.shimId],
-      `Kata values are missing ${definition.shimId}`,
+      kataValues.shims[shimId],
+      `Kata values are missing ${shimId}`,
     )
     const shim = {
-      id: definition.shimId,
-      runtimeClass: `kata-${definition.shimId}`,
+      id: shimId,
+      runtimeClass: `kata-${shimId}`,
       supportedArches:
         (config as { supportedArches?: string[] }).supportedArches ?? [],
       snapshotter:
@@ -696,11 +717,8 @@ async function main() {
       sourceUrl: sourceLink('kata-values'),
     }
     return {
-      id: definition.id,
-      displayName: definition.displayName,
-      tagline: definition.tagline,
-      description: definition.description,
-      logo: definition.logo,
+      id,
+      ...presentationFor(id),
       capabilities: [{ id: 'confidential-computing' }],
       sourceUrl: sourceLink('kata-values'),
       hardwareFamilies: [],
@@ -711,12 +729,12 @@ async function main() {
           appVersion: String(kataChart.appVersion),
           ociReference: kataChartReference,
           namespace: plannedArchitecture.namespace,
-          valuesFileName: `kata-${definition.id}.values.yaml`,
+          valuesFileName: `kata-${id}.values.yaml`,
           values: {
             ...localRuntimeValues,
             shims: {
               disableAll: true,
-              [definition.shimId]: config,
+              [shimId]: config,
             },
           },
           sourceUrl: sourceLink('kata-chart'),
@@ -935,11 +953,7 @@ async function main() {
     vendors: [
       {
         id: 'custom',
-        displayName: 'Custom',
-        tagline: 'Custom Kata deployment',
-        description:
-          'Combine Kata runtimes for different node types in one deployment.',
-        logo: 'custom.svg',
+        ...presentationFor('custom'),
         capabilities: [
           { id: 'general-purpose' },
           { id: 'multiple-hypervisors' },
@@ -997,11 +1011,7 @@ async function main() {
       },
       {
         id: 'nvidia',
-        displayName: 'NVIDIA',
-        tagline: 'GPU and confidential computing',
-        description:
-          'Run GPU-accelerated workloads with Kata, from standard workloads to confidential ones.',
-        logo: 'nvidia.svg',
+        ...presentationFor('nvidia'),
         capabilities: [
           { id: 'gpu', resourceName: gpuResource },
           { id: 'confidential-computing', modes: [...new Set(profileRecords.map((p) => p.ccMode))] },
@@ -1070,7 +1080,7 @@ async function main() {
       ...teeVendors,
     ],
   }
-  const vendorOrder = ['nvidia', 'custom', 'amd', 'ibm', 'intel']
+  const vendorOrder = presentation.vendors.map(({ id }) => id)
   catalog.vendors.sort(
     (left, right) =>
       vendorOrder.indexOf(left.id) - vendorOrder.indexOf(right.id),

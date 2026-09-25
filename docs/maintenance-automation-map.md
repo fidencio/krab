@@ -33,7 +33,7 @@ the published chart and tests pass. Missing files or artifacts block that group.
 | Done | Precheck contract and release identifiers | `contracts/precheck-v1.schema.json` defines the report; `upstream/precheck-command.json` defines command metadata | Browser uploads and the image smoke test validate against the schema. Generation renders the README command; the UI uses the same configuration. | Probe semantics, privileges, and meaning of unknown results need explicit review. |
 | Done | TEE selectors | `upstream/compatibility.json` keeps the selector policy; pinned Kata rules, provisioner rules, and NFD v0.19 docs define the labels | Generation verifies SNP/TDX against Kata, IBM SE against NFD, and profile selectors against the provisioner rule. | Distribution usability remains local policy until Kata publishes structured support data. |
 | Done | Compatibility and availability claims | `upstream/compatibility.json` records family availability, architecture, profile modes, TEE mapping, aliases, and pinned evidence IDs | Generation checks these decisions against pinned profiles and Kata runtime arches and emits catalog evidence links. | New profiles stay unavailable until reviewed. `grace-blackwell` remains pending despite its profile. |
-| 3 | Vendor copy and presentation | Vendor names, descriptions, logos, ordering, and labels in `sync-upstream.ts` and `src/App.tsx` | Keep in one local presentation file if edits are frequent. Generate stable IDs and labels where they map directly to upstream fields. | Wording, ordering, and branding are editorial choices. |
+| Done | Vendor copy and presentation | `upstream/presentation.json` owns vendor names, descriptions, logos, and ordering | Generation checks that every supported vendor has complete presentation data and an existing logo. The catalog is unchanged. | Wording, ordering, and branding are editorial choices. |
 
 ## Upstream chart contracts worth contributing
 
@@ -141,9 +141,8 @@ requires a second manual version edit.
   IBM Secure Execution against NFD's built-in label, and NVIDIA selectors
   against the provisioner profiles and rule. No upstream label change is needed.
   Keep distribution names without structured upstream data as local policy.
-- Add the cited NVIDIA Confidential Containers support source to the lock and
-  validate the claims the README makes, or revise that claim. Keep vendor copy,
-  logos, and ordering in one small local presentation file.
+- The README now describes the checks KRAB actually performs against pinned
+  inputs. Vendor copy, logos, and ordering live in a local presentation file.
 
 **Done when:** each selectable combination has a matching upstream profile,
 an explicit KRAB support decision, and a representative generated-values and

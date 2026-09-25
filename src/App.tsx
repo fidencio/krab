@@ -86,11 +86,9 @@ const brandLogos = import.meta.glob('./assets/brands/*.{svg,png}', {
 }) as Record<string, string>
 
 const logoFor = (vendor: { logo: string }, theme: 'light' | 'dark') => {
-  const logo =
-    theme === 'dark' && vendor.logo === 'nvidia.svg'
-      ? 'nvidia-dark.svg'
-      : vendor.logo
-  return brandLogos[`./assets/brands/${logo}`]
+  const darkLogo = vendor.logo.replace(/\.(svg|png)$/, '-dark.$1')
+  return (theme === 'dark' && brandLogos[`./assets/brands/${darkLogo}`]) ||
+    brandLogos[`./assets/brands/${vendor.logo}`]
 }
 
 type DistributionOption =
