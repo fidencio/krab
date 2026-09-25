@@ -3,6 +3,10 @@
 This map describes the repository as of 2026-09-25. It separates data that can
 come from pinned upstream projects from KRAB policy that needs human review.
 
+The [release builder decision](release-builders.md) covers fully usable
+historical tabs and immutable site archives. No Kata Containers change is
+needed for the current automation plan.
+
 ## Current data flow
 
 `upstream/sources.lock.yaml` pins 22 upstream files by ref and SHA-256.
