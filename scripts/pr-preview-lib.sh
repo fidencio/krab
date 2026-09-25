@@ -15,5 +15,5 @@ preview_run() {
     --jq '[.artifacts[] | select(.expired == false)][0].workflow_run.id // empty')"
   [[ -n "${run_id}" ]] || return 0
   gh api "repos/${GH_REPO}/actions/runs/${run_id}" \
-    --jq 'select(.path == ".github/workflows/pr-preview.yml" and .conclusion == "success") | .id'
+    --jq 'select((.path == ".github/workflows/pr-preview.yml" or (.path | startswith(".github/workflows/pr-preview.yml@"))) and .conclusion == "success") | .id'
 }
