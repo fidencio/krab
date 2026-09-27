@@ -79,7 +79,7 @@ Label the Linux nodes to check, then install the published pre-check chart:
 kubectl label nodes NODE_1 NODE_2 krab/preflight=true
 helm install krab-precheck \
   oci://ghcr.io/fidencio/krab-precheck \
-  --version 0.1.2 \
+  --version 0.1.3 \
   --timeout 35m \
   --namespace krab-precheck --create-namespace &&
 kubectl --namespace krab-precheck logs \
@@ -283,7 +283,7 @@ For a prerelease, specify its version explicitly when installing with Helm:
 
 ```sh
 helm upgrade --install krab oci://ghcr.io/fidencio/krab \
-  --version 0.1.2 \
+  --version 0.1.3 \
   --namespace kata-system \
   --create-namespace \
   --values values.yaml

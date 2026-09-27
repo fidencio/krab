@@ -2,6 +2,25 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.3] - 2026-09-27
+
+### Added
+
+- Blocked upstream refreshes send a Slack DM with the failed jobs and run link.
+
+### Changed
+
+- Release publication stops if `main` advances during a run, and chart
+  dependency documentation is generated from the pinned chart.
+- CI renders packaged Helm charts for every selectable runtime shim and
+  supported GPU family, mode, and CPU TEE.
+
+### Fixed
+
+- Generated Helm values quote `on` and `off` GPU modes so Helm treats them as
+  strings.
+- The Next builder no longer links to itself in the release selector.
+
 ## [0.1.2] - 2026-09-25
 
 ### Changed
