@@ -21,7 +21,7 @@ const runtimeVendors = catalog.vendors.filter(
 const readYaml = async (path: string) =>
   parse(await readFile(resolve(root, path), 'utf8'))
 
-test('KRAB chart declares unconditional and NVIDIA dependencies', async () => {
+test('chart dependency gates keep NFD and kata-deploy enabled and gate NVIDIA charts', async () => {
   const chart = await readYaml('charts/krab/Chart.yaml')
   const dependencies = Object.fromEntries(
     chart.dependencies.map((dependency: { name: string }) => [
@@ -40,7 +40,7 @@ test('KRAB chart declares unconditional and NVIDIA dependencies', async () => {
   )
 })
 
-test('front-page component versions match the packaged charts', async () => {
+test('catalog component versions match the declared chart dependencies', async () => {
   const chart = await readYaml('charts/krab/Chart.yaml')
   const precheck = await readYaml('charts/precheck/Chart.yaml')
   const packageData = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
@@ -58,7 +58,7 @@ test('front-page component versions match the packaged charts', async () => {
   assert.equal(precheck.version, packageData.version)
 })
 
-test('KRAB pins NFD from its own release', async () => {
+test('NFD dependency uses the version and registry pinned by the source lock', async () => {
   const chart = await readYaml('charts/krab/Chart.yaml')
   const lock = await readYaml('upstream/sources.lock.yaml')
   const nfd = lock.sources.find((source: { id: string }) => source.id === 'nfd-chart')
@@ -72,7 +72,7 @@ test('KRAB pins NFD from its own release', async () => {
   assert.equal(catalog.plannedArchitecture.charts.nfd.version, dependency.version)
 })
 
-test('chart prerelease annotation matches its semantic version', async () => {
+test('chart prerelease annotation agrees with its SemVer version', async () => {
   const chart = await readYaml('charts/krab/Chart.yaml')
   const match = chart.version.match(
     /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/,
@@ -85,7 +85,7 @@ test('chart prerelease annotation matches its semantic version', async () => {
   )
 })
 
-test('chart defaults and generated values satisfy the values schema', async () => {
+test('default, NVIDIA, Custom, and CPU-only values satisfy the KRAB schema', async () => {
   const schema = JSON.parse(
     await readFile(resolve(root, 'charts/krab/values.schema.json'), 'utf8'),
   )
@@ -188,7 +188,7 @@ test('chart defaults and generated values satisfy the values schema', async () =
   }
 })
 
-test('non-NVIDIA generated values omit conditional dependencies', () => {
+test('CPU-only values disable NVIDIA charts and retain NFD and kata-deploy', () => {
   const generated = parse(
     buildValuesBundle(
       catalog,
@@ -213,4 +213,18 @@ test('non-NVIDIA generated values omit conditional dependencies', () => {
   assert.equal(generated['kata-device-provisioner'], undefined)
   assert.ok(generated['node-feature-discovery'])
   assert.ok(generated['kata-deploy'])
+})
+
+test('generated Helm values quote on and off GPU modes as strings', () => {
+  for (const modeId of ['off', 'on']) {
+    const values = buildValuesBundle(
+      catalog,
+      vendor,
+      { blackwell: { enabled: true, modeId, cpuTeeIds: modeId === 'on' ? ['tdx'] : [] } },
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+      createAdvancedConfiguration(),
+    )
+    assert.match(values, new RegExp(`ccMode: ["']${modeId}["']`))
+  }
 })

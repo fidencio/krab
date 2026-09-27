@@ -44,7 +44,7 @@ async function nodeReport(family: HardwareFamilyCatalog, tee: string | null) {
   return parseNodePrecheck(JSON.stringify(report))
 }
 
-test('every available GPU mode has a matching node report and install values', async () => {
+test('each supported GPU family, mode, and CPU TEE generates an importable profile', async () => {
   const families = nvidia.hardwareFamilies.filter(({ availability }) => availability === 'available')
   const policy = JSON.parse(await readFile(resolve(import.meta.dirname,
     '../upstream/compatibility.json'), 'utf8')) as {

@@ -150,6 +150,8 @@ npm ci
 npm run generate
 npm test
 npm run test:chart
+helm dependency update charts/krab
+npm run test:helm
 npm run dev
 ```
 

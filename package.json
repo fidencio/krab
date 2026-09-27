@@ -16,6 +16,7 @@
     "verify:chart-artifact": "tsx scripts/verify-chart-artifact.ts",
     "test": "tsx --test test/*.test.ts",
     "test:chart": "tsx --test test/chart.test.ts",
+    "test:helm": "tsx --test test/helm-render.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },

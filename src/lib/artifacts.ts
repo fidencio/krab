@@ -738,8 +738,9 @@ const initialFamilySelections = (vendor: VendorCatalog): FamilySelections =>
     ]),
   )
 
+// Helm reads values with YAML 1.1 rules, where bare "on" and "off" are booleans.
 const yaml = (value: unknown) =>
-  stringify(value, { lineWidth: 0 }).trim()
+  stringify(value, { lineWidth: 0, version: '1.1' }).trim()
 
 const runtimeNamePattern = /^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$/
 
