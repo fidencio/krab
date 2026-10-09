@@ -30,6 +30,14 @@ export async function syncReleaseVersion(root = resolve(import.meta.dirname, '..
   if (!match) throw new Error(`Invalid KRAB version in package.json: ${version}`)
   const prerelease = match[1] !== undefined
 
+  for (const [path, section, pattern] of [
+    ['preflight/Cargo.toml', '[package]', /^\[package\]\nname = "krab-preflight"\nversion = "[^"]*"$/gm],
+    ['preflight/Cargo.lock', '[[package]]', /^\[\[package\]\]\nname = "krab-preflight"\nversion = "[^"]*"$/gm],
+  ] as const) {
+    await updateFile(root, path, (content) => replaceLines(content, pattern,
+      `${section}\nname = "krab-preflight"\nversion = "${version}"`, 1, path))
+  }
+
   await updateFile(root, 'package-lock.json', (content) => {
     const lock = JSON.parse(content)
     if (lock.name !== pkg.name || lock.packages?.['']?.name !== pkg.name) {

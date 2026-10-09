@@ -10,6 +10,8 @@ const root = resolve(import.meta.dirname, '..')
 const files = [
   'package.json',
   'package-lock.json',
+  'preflight/Cargo.toml',
+  'preflight/Cargo.lock',
   'charts/krab/Chart.yaml',
   'charts/precheck/Chart.yaml',
   'upstream/architecture.yaml',
@@ -17,6 +19,14 @@ const files = [
   'charts/krab/README.md',
   'CHANGELOG.md',
 ]
+
+test('the pre-flight container build uses the KRAB release version', async () => {
+  const pkg = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
+  const manifest = await readFile(resolve(root, 'preflight/Cargo.toml'), 'utf8')
+  const lock = await readFile(resolve(root, 'preflight/Cargo.lock'), 'utf8')
+  assert.equal(manifest.match(/^version = "([^"]+)"$/m)?.[1], pkg.version)
+  assert.equal(lock.match(/name = "krab-preflight"\nversion = "([^"]+)"/)?.[1], pkg.version)
+})
 
 test('one package version bump updates every release copy', async () => {
   const fixture = await mkdtemp(resolve(tmpdir(), 'krab-release-version-'))
@@ -42,6 +52,8 @@ test('one package version bump updates every release copy', async () => {
       const architecture = parse(await read('upstream/architecture.yaml'))
       assert.equal(lock.version, version)
       assert.equal(lock.packages[''].version, version)
+      assert.equal((await read('preflight/Cargo.toml')).match(/^version = "([^"]+)"$/m)?.[1], version)
+      assert.equal((await read('preflight/Cargo.lock')).match(/name = "krab-preflight"\nversion = "([^"]+)"/)?.[1], version)
       assert.equal(chart.version, version)
       assert.equal(chart.appVersion, version)
       assert.equal(precheck.version, version)

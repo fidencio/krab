@@ -256,7 +256,8 @@ kept identical. Alpha releases use a `chart-vX.Y.Z-alpha.N` Git tag; for
 example, the first release is tagged `chart-v0.1.0-alpha.0`.
 
 To bump the KRAB release version, edit only `version` in `package.json` and run
-`npm run generate`. It updates `package-lock.json`, both chart versions, the
+`npm run generate`. It updates `package-lock.json`, the pre-flight Rust package
+and lockfile versions, both chart versions, the
 release notice, installation examples, and the generated catalog. It also
 starts a new changelog section; add the release notes and date there. CI checks
 that the generated copies are committed.

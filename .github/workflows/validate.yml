@@ -23,7 +23,8 @@ jobs:
         run: |
           npm run generate
           git diff --exit-code -- \
-            package-lock.json charts/krab/Chart.yaml charts/krab/values.yaml \
+            package-lock.json preflight/Cargo.toml preflight/Cargo.lock \
+            charts/krab/Chart.yaml charts/krab/values.yaml \
             charts/precheck/Chart.yaml charts/precheck/values.yaml \
             Dockerfile.precheck upstream/precheck-image.lock.json upstream/architecture.yaml \
             README.md charts/krab/README.md CHANGELOG.md src/generated

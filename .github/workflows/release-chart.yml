@@ -61,6 +61,12 @@ jobs:
           const chart = parse(readFileSync('charts/krab/Chart.yaml', 'utf8'))
           const precheck = parse(readFileSync('charts/precheck/Chart.yaml', 'utf8'))
           const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+          for (const path of ['preflight/Cargo.toml', 'preflight/Cargo.lock']) {
+            const version = readFileSync(path, 'utf8').match(/name = \"krab-preflight\"\nversion = \"([^\"]+)\"/)?.[1]
+            if (version !== pkg.version) {
+              throw new Error(`${path}: pre-flight version ${version} must match KRAB ${pkg.version}; run npm run generate`)
+            }
+          }
           const match = chart.version.match(
             /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/,
           )
