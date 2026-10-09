@@ -1,5 +1,10 @@
 # Generated data owners
 
+`charts/krab/templates/tee-feature-rules.yaml` derives its CPU labels, match
+expressions, and extended resources from the locked `kata-node-feature-rule`
+source. KRAB owns the resource name and the fallback condition: render when
+Kata deployment is disabled and shared NFD or the NFD API is available.
+
 `catalog-owners.json` is the machine-checked index for this map. The test
 fails when a generated catalog field has no matching owner, so add a new field
 there and explain its source here in the same change.

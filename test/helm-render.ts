@@ -171,3 +171,39 @@ test('packaged chart enables each dependency independently of the legacy GPU def
     }
   }
 })
+
+test('CPU feature rules precede GPU provisioning when Kata deployment is disabled', () => {
+  const archive = packagedChart(chart)
+  const render = (kata: boolean, nfd: boolean, existingNfd = false) => {
+    const args = ['template', 'krab', archive, '--namespace', 'kata-system',
+      '--set', `kata-deploy.enabled=${kata}`,
+      '--set', `node-feature-discovery.enabled=${nfd}`,
+      '--set', 'kata-device-provisioner.enabled=true',
+      '--set', 'kata-device-provisioner.profiles.cc.enabled=true',
+      '--set-string', 'kata-device-provisioner.profiles.cc.ccMode=on',
+      '--set-string', 'kata-device-provisioner.profiles.cc.nodeSelector.amd\\.feature\\.node\\.kubernetes\\.io/snp=true']
+    if (existingNfd) args.push('--api-versions', 'nfd.k8s-sigs.io/v1alpha1')
+    return parseAllDocuments(helm(...args)).map((doc) => doc.toJS()).filter(Boolean)
+  }
+  const kataRules = render(true, true, true).find((resource) =>
+    resource.kind === 'NodeFeatureRule' && resource.metadata.name === 'kata-tee-keys')
+  assert.ok(kataRules, 'the pinned Kata chart must render its CPU rules')
+  for (const [nfd, existingNfd] of [[true, false], [false, true]]) {
+    const resources = render(false, nfd, existingNfd)
+    const rules = resources.filter((resource) => resource.kind === 'NodeFeatureRule'
+      && resource.spec.rules.some((rule: { name: string }) => rule.name === 'amd.sev-snp'))
+    assert.equal(rules.length, 1, 'exactly one CPU feature rule set should render')
+    assert.deepEqual(rules[0].spec, kataRules.spec, 'CPU detection must agree with the pinned Kata rules')
+    assert.equal(rules[0].metadata.annotations?.['helm.sh/hook'], undefined,
+      'feature rules must be ordinary resources applied before post-install dispatchers')
+    assert.ok(resources.some((resource) => resource.kind === 'Job'
+      && resource.metadata.annotations?.['helm.sh/hook']?.includes('post-install')))
+    assert.ok(!resources.some((resource) => resource.kind === 'RuntimeClass'))
+  }
+  assert.ok(!render(true, true, true).some((resource) =>
+    resource.metadata.name === 'krab-kata-system-tee-capabilities'),
+  'Kata deployment should keep ownership of its rules when enabled')
+  assert.ok(!render(false, false).some((resource) =>
+    resource.metadata.name === 'krab-kata-system-tee-capabilities'),
+  'do not install NFD custom resources without NFD or its API')
+})

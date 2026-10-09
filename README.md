@@ -59,6 +59,10 @@ Generated NVIDIA values set `nvidia.enabled=true` and configure
 `kata-device-provisioner.profiles` with one entry per selected hardware,
 confidential-computing mode, and CPU TEE combination.
 
+With Kata deployment disabled, KRAB supplies the pinned CPU feature rules for
+AMD SNP and Intel TDX through shared or existing NFD. This lets confidential GPU
+provisioning select capable nodes without installing Kata first.
+
 Downloaded values files record their KRAB format and chart version in comments.
 When you load one into the builder, KRAB checks it against the current chart
 schema and the available shims and profiles. A compatible file from another

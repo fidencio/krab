@@ -21,6 +21,13 @@ installing Kata. Use `--set kata-device-plugin.enabled=false` to omit only the
 device plugin from a GPU deployment. Explicit component switches take precedence
 over the legacy `nvidia.enabled` default.
 
+When Kata deployment is disabled, KRAB installs the pinned Kata CPU feature
+rules if shared NFD is enabled or the NFD API already exists in the cluster.
+NFD sets the AMD SNP and Intel TDX capability labels and advertises their key
+counts before provisioning selects nodes. These are ordinary chart resources;
+the provisioner's post-install dispatcher waits for NFD to publish the labels.
+When Kata deployment is enabled, Kata continues to own those rules.
+
 Disabling an already installed component during `helm upgrade` removes it through
 Helm's normal lifecycle, including the component's cleanup hooks.
 
