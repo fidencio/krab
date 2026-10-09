@@ -2,6 +2,21 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.5] - 2026-10-09
+
+### Changed
+
+- Choose deployed stack components directly on the architecture cards with
+  Deploy/Skip switches and a reset to architecture defaults.
+
+### Fixed
+
+- Install the pinned AMD SNP and Intel TDX feature rules through shared or
+  existing NFD when Kata deployment is disabled, allowing confidential GPU
+  provisioning to discover capable nodes independently of Kata installation.
+- The pre-flight Rust package and lockfile now follow the KRAB release version.
+  Generation and CI checks keep the build version aligned with the image tags.
+
 ## [0.1.4] - 2026-10-09
 
 ### Added
