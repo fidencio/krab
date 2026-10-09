@@ -1,6 +1,6 @@
 schemaVersion: 1
 status: stable
-notice: KRAB 0.1.6. Review generated values before deploying.
+notice: KRAB 0.1.7. Review generated values before deploying.
 namespace: kata-system
 images:
   kubectl:

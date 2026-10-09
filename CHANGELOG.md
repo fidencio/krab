@@ -2,6 +2,18 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.7] - 2026-10-09
+
+### Changed
+
+- Update the Kata device plugin chart and image to v0.2.0-rc.2.
+
+### Fixed
+
+- Schedule the device plugin on nodes with NVIDIA GPU PCI hardware instead of
+  requiring the Kata runtime installation label. This supports both TEE and
+  non-TEE deployments, including when Kata deployment is disabled.
+
 ## [0.1.6] - 2026-10-09
 
 ### Changed
