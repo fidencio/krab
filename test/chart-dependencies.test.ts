@@ -28,7 +28,7 @@ test('dependency sync restores upstream versions and preserves KRAB gates', asyn
   const updated = syncChartDependencies(staleChart.toString(), expected)
   assert.equal(updated, original)
   assert.equal(syncChartDependencies(updated, expected), updated)
-  assert.equal(parse(updated).dependencies[2].condition, 'nvidia.enabled')
+  assert.equal(parse(updated).dependencies[2].condition, 'kata-device-plugin.enabled,nvidia.enabled')
   assert.throws(
     () => syncChartDependencies(original.replace('name: kata-deploy', 'name: other'), expected),
     /Unexpected or duplicate KRAB dependency/,

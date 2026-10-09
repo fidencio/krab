@@ -7,18 +7,26 @@
     "nvidia": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["enabled"],
+      "required": [
+        "enabled"
+      ],
       "properties": {
         "enabled": {
           "type": "boolean",
           "default": false,
-          "description": "Install NVIDIA-specific device plugin and provisioner dependencies."
+          "description": "Default for GPU dependencies when their individual enabled values are omitted."
         }
       }
     },
     "node-feature-discovery": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable this component independently of other KRAB dependencies."
+        }
+      }
     },
     "kata-deploy": {
       "type": "object",
@@ -26,7 +34,13 @@
       "properties": {
         "k8sDistribution": {
           "type": "string",
-          "enum": ["k8s", "k0s", "k3s", "microk8s", "rke2"]
+          "enum": [
+            "k8s",
+            "k0s",
+            "k3s",
+            "microk8s",
+            "rke2"
+          ]
         },
         "selinux": {
           "type": "object",
@@ -55,12 +69,22 @@
               "description": "KRAB installs NFD as a direct dependency."
             }
           }
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable this component independently of other KRAB dependencies."
         }
       }
     },
     "kata-device-plugin": {
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable this component independently of other KRAB dependencies."
+        }
+      }
     },
     "kata-device-provisioner": {
       "type": "object",
@@ -89,21 +113,34 @@
         },
         "imagePullPolicy": {
           "type": "string",
-          "enum": ["Always", "IfNotPresent", "Never"]
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ]
         },
         "imagePullSecrets": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
-              "name": { "type": "string", "minLength": 1 }
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         },
         "job": {
           "type": "object",
           "additionalProperties": true
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable this component independently of other KRAB dependencies."
         }
       }
     }
@@ -112,14 +149,21 @@
     "provisionerProfile": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["enabled", "ccMode"],
+      "required": [
+        "enabled",
+        "ccMode"
+      ],
       "properties": {
         "enabled": {
           "type": "boolean"
         },
         "ccMode": {
           "type": "string",
-          "enum": ["off", "on", "ppcie"]
+          "enum": [
+            "off",
+            "on",
+            "ppcie"
+          ]
         },
         "nodeSelector": {
           "type": "object",

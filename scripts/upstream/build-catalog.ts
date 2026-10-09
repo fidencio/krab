@@ -124,16 +124,12 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
       )
     }
   }
-  if (
-    requireValue(krabDependencies.get('node-feature-discovery'), 'Missing NFD dependency').condition ||
-    requireValue(krabDependencies.get('kata-deploy'), 'Missing Kata dependency').condition
-  ) {
-    throw new Error('NFD and kata-deploy must be unconditional KRAB dependencies')
-  }
-  for (const name of ['kata-device-plugin', 'kata-device-provisioner']) {
-    const expectedCondition = `${plannedDependencies.nvidiaValuesKey}.enabled`
+  for (const name of Object.keys(expectedValuesKeys)) {
+    const expectedCondition = ['kata-device-plugin', 'kata-device-provisioner'].includes(name)
+      ? `${name}.enabled,${plannedDependencies.nvidiaValuesKey}.enabled`
+      : `${name}.enabled`
     if (requireValue(krabDependencies.get(name), `Missing ${name} dependency`).condition !== expectedCondition) {
-      throw new Error(`${name} must be gated by nvidia.enabled`)
+      throw new Error(`${name} must support its own enabled gate`)
     }
   }
   if (

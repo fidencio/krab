@@ -134,7 +134,7 @@ test('generated catalog carries accurate upstream chart data', async () => {
     'oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy',
   )
   assert.equal(vendor.workload.resourceName, 'nvidia.com/gpu')
-  assert.equal(catalog.plannedArchitecture.charts.nfd.required, true)
+  assert.equal(catalog.plannedArchitecture.charts.nfd.required, false)
   assert.equal(catalog.plannedArchitecture.charts.nfd.version, nfdChart.source.release.slice(1))
   assert.equal(catalog.plannedArchitecture.charts.nfd.appVersion, String(nfdChart.values.appVersion))
   assert.deepEqual(catalog.plannedArchitecture.charts.nfd.image, {
@@ -165,8 +165,8 @@ test('generated catalog carries accurate upstream chart data', async () => {
     kataSourceUrl: `https://github.com/${kataVersions.source.repository}/blob/${kataVersions.source.ref}/${kataVersions.source.path}`,
   })
   const dependencies = catalog.plannedArchitecture.charts.krab.dependencies
-  assert.equal(dependencies.nfdRequired, true)
-  assert.equal(dependencies.runtimeRequired, true)
+  assert.equal(dependencies.nfdRequired, false)
+  assert.equal(dependencies.runtimeRequired, false)
   assert.equal(dependencies.devicePluginRequired, false)
   assert.deepEqual(dependencies.devicePluginRequiredBy, ['nvidia'])
   assert.equal(dependencies.provisionerRequired, false)
@@ -317,8 +317,8 @@ test('Custom installs CPU TEEs without GPU dependencies', async () => {
   )
   const generated = parse(values)
   assert.equal(generated.nvidia.enabled, false)
-  assert.equal(generated['kata-device-plugin'], undefined)
-  assert.equal(generated['kata-device-provisioner'], undefined)
+  assert.equal(generated['kata-device-plugin'].enabled, false)
+  assert.equal(generated['kata-device-provisioner'].enabled, false)
   assert.deepEqual(generated['kata-deploy'].shims['qemu-se-runtime-rs'].runtimeClass.nodeSelector,
     { 'feature.node.kubernetes.io/cpu-security.se.enabled': 'true' })
   assert.deepEqual(importValuesBundle(catalog, values).cluster.architectures, ['amd64', 's390x'])
@@ -387,8 +387,8 @@ test('Custom artifacts install only the selected upstream RuntimeClasses', async
   const shims = generatedValues['kata-deploy'].shims
 
   assert.equal(generatedValues.nvidia.enabled, false)
-  assert.equal(generatedValues['kata-device-plugin'], undefined)
-  assert.equal(generatedValues['kata-device-provisioner'], undefined)
+  assert.equal(generatedValues['kata-device-plugin'].enabled, false)
+  assert.equal(generatedValues['kata-device-provisioner'].enabled, false)
   assert.deepEqual(Object.keys(shims), [
     'disableAll',
     'qemu-runtime-rs',
@@ -637,8 +637,8 @@ test('NVIDIA artifacts pin every component image version', async () => {
   )
   assert.deepEqual(cpuValues['kata-deploy'].snapshotter.setup, ['erofs'])
   assert.equal(cpuValues.nvidia.enabled, false)
-  assert.equal(cpuValues['kata-device-plugin'], undefined)
-  assert.equal(cpuValues['kata-device-provisioner'], undefined)
+  assert.equal(cpuValues['kata-device-plugin'].enabled, false)
+  assert.equal(cpuValues['kata-device-provisioner'].enabled, false)
 })
 
 test('custom runtimes generate independent RuntimeClasses and snapshotters', async () => {
@@ -1083,8 +1083,8 @@ test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
   )
   assert.ok(nonNvidiaValues['node-feature-discovery'])
   assert.ok(nonNvidiaValues['kata-deploy'])
-  assert.equal(nonNvidiaValues['kata-device-plugin'], undefined)
-  assert.equal(nonNvidiaValues['kata-device-provisioner'], undefined)
+  assert.equal(nonNvidiaValues['kata-device-plugin'].enabled, false)
+  assert.equal(nonNvidiaValues['kata-device-provisioner'].enabled, false)
 })
 
 test('App contains no product catalog constants', async () => {

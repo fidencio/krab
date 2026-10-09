@@ -1,15 +1,17 @@
 # Run npm run generate to refresh the image pins below from locked sources.
-# Vendor feature gates. NVIDIA dependencies are disabled unless selected.
+# Legacy GPU default; each dependency can override it with its own enabled value.
 nvidia:
   enabled: false
 
 # KRAB owns the shared NFD release.
 node-feature-discovery:
+  enabled: true
   image:
     repository: registry.k8s.io/nfd/node-feature-discovery
     tag: v0.19.0
 
 kata-deploy:
+  enabled: true
   # NFD is installed directly by KRAB, so the nested dependency stays disabled.
   node-feature-discovery:
     enabled: false
@@ -29,7 +31,7 @@ kata-deploy:
   shims:
     disableAll: true
 
-# Used only when nvidia.enabled=true.
+# Set enabled explicitly to override the nvidia.enabled fallback.
 kata-device-plugin:
   image:
     repository: ghcr.io/kata-containers/kata-device-plugin

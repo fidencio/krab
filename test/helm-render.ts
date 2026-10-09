@@ -153,3 +153,21 @@ test('Custom CPU and GPU selections render together with advanced runtime settin
   assert.ok(resources.some((resource) => resource.kind === 'RuntimeClass'))
   assert.ok(resources.some((resource) => resource.kind === 'CronJob'))
 })
+
+test('packaged chart enables each dependency independently of the legacy GPU default', () => {
+  const archive = packagedChart(chart)
+  const names = ['node-feature-discovery', 'kata-deploy', 'kata-device-plugin', 'kata-device-provisioner']
+  for (let mask = 0; mask < 16; mask++) {
+    for (const legacyGpu of [true, false]) {
+      const args = ['template', 'krab', archive, '--namespace', 'kata-system',
+        '--set', `nvidia.enabled=${legacyGpu}`,
+        '--set', 'kata-device-provisioner.profiles.smoke.enabled=true',
+        '--set-string', 'kata-device-provisioner.profiles.smoke.ccMode=off']
+      names.forEach((name, index) => args.push('--set', `${name}.enabled=${Boolean(mask & (1 << index))}`))
+      const rendered = helm(...args)
+      names.forEach((name, index) => assert.equal(
+        rendered.includes(`# Source: krab/charts/${name}/templates/`), Boolean(mask & (1 << index)),
+        `${name}, combination ${mask}, nvidia.enabled=${legacyGpu}`))
+    }
+  }
+})

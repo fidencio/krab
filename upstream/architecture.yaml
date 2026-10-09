@@ -42,7 +42,7 @@ charts:
     dependencies:
       nvidiaValuesKey: nvidia
       runtimeValuesKey: kata-deploy
-      runtimeRequired: true
+      runtimeRequired: false
       devicePluginValuesKey: kata-device-plugin
       devicePluginRequired: false
       devicePluginRequiredBy:
@@ -52,4 +52,4 @@ charts:
       provisionerRequiredBy:
         - nvidia
       nfdValuesKey: node-feature-discovery
-      nfdRequired: true
+      nfdRequired: false

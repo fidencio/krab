@@ -43,6 +43,7 @@ import {
   importValuesBundle,
   normalizeDeploymentName,
   resolveRuntimeShimIds,
+  resolveComponents,
   usesConfidentialComputing,
   validateCustomRuntimes,
   type AdvancedConfiguration,
@@ -547,17 +548,19 @@ function App() {
     requiresErofs &&
     advanced.erofsSnapshotterMode === 'disk' &&
     advanced.erofsDiskSize.trim().length === 0
+  const components = resolveComponents(selectedVendor, selections, advanced.components)
   const valuesReady =
     cluster.distributionId !== null &&
-    (selectedVendor.id !== 'custom' ||
-      (customArchitectures.length > 0 && uncoveredArchitectures.length === 0)) &&
-    incompleteFamilies.length === 0 &&
-    !erofsDiskSizeMissing &&
-    !unsupportedSelection &&
-    customRuntimeErrors.length === 0 &&
-    (runtimeOnlyVendor || selectedVendor.id === 'custom'
-      ? hasRuntimeSelection
-      : hasHardwareSelection || hasStandaloneRuntimeSelection)
+    (!(components.kataDeploy || components.provisioner) ||
+      (incompleteFamilies.length === 0 && !unsupportedSelection)) &&
+    (!components.kataDeploy || (
+      (selectedVendor.id !== 'custom' ||
+        (customArchitectures.length > 0 && uncoveredArchitectures.length === 0)) &&
+      !erofsDiskSizeMissing &&
+      customRuntimeErrors.length === 0 &&
+      (runtimeOnlyVendor || selectedVendor.id === 'custom'
+        ? hasRuntimeSelection
+        : hasHardwareSelection || hasStandaloneRuntimeSelection)))
 
   const selectVendor = (vendor: VendorCatalog) => {
     if (vendorPrecheckReason(vendor)) return
@@ -1249,6 +1252,28 @@ function App() {
                   </div>
                 </div>
               )}
+
+              <section className="cluster-config cluster-config-wide" aria-label="Stack components">
+                <header><h2>Stack components</h2><p>Enable or disable each component. Automatic follows your architecture selection.</p></header>
+                <div className="advanced-field-grid two-columns">
+                  {([
+                    ['nfd', 'Node Feature Discovery'],
+                    ['kataDeploy', 'Kata Containers'],
+                    ['devicePlugin', 'Device plugin'],
+                    ['provisioner', 'Device provisioner'],
+                  ] as const).map(([id, label]) => <label key={id}>
+                    <span>{label}</span>
+                    <select value={advanced.components[id] === null ? 'auto' : String(advanced.components[id])}
+                      onChange={(event) => setAdvanced((current) => ({ ...current,
+                        components: { ...current.components, [id]: event.target.value === 'auto' ? null : event.target.value === 'true' },
+                      }))}>
+                      <option value="auto">Automatic ({components[id] ? 'enabled' : 'disabled'})</option>
+                      <option value="true">Enabled</option>
+                      <option value="false">Disabled</option>
+                    </select>
+                  </label>)}
+                </div>
+              </section>
 
               <details className="advanced-config">
                 <summary>
@@ -2633,22 +2658,22 @@ function App() {
                       <ArrowRight size={18} />
                       <div className="architecture-dependencies">
                         <div className="architecture-node required">
-                          <small>Required dependency</small>
+                          <small>Optional component</small>
                           <strong>
                             {catalog.plannedArchitecture.charts.nfd.chartName}{' '}
                             {catalog.plannedArchitecture.charts.nfd.version}
                           </strong>
-                          <span>Always installed by KRAB</span>
+                          <span>{components.nfd ? 'Enabled' : 'Disabled'}</span>
                         </div>
                         <div className="architecture-node required">
-                          <small>Required dependency</small>
+                          <small>Optional component</small>
                           <strong>
                             {catalog.plannedArchitecture.charts.kataDeploy.chartName}{' '}
                             {catalog.plannedArchitecture.charts.kataDeploy.version}
                           </strong>
-                          <span>Installs Kata runtimes and RuntimeClasses</span>
+                          <span>{components.kataDeploy ? 'Installs Kata runtimes and RuntimeClasses' : 'Disabled'}</span>
                         </div>
-                        {hasHardwareSelection && (
+                        {(components.devicePlugin || components.provisioner || hasHardwareSelection) && (
                           <>
                             <div className="architecture-node vendor-specific">
                               <small>NVIDIA dependency</small>
@@ -2656,7 +2681,7 @@ function App() {
                                 {catalog.plannedArchitecture.charts.devicePlugin.chartName}{' '}
                                 {catalog.plannedArchitecture.charts.devicePlugin.version}
                               </strong>
-                              <span>Advertises VFIO devices to kubelet</span>
+                              <span>{components.devicePlugin ? 'Advertises VFIO devices to kubelet' : 'Disabled'}</span>
                             </div>
                             <div className="architecture-node vendor-specific">
                               <small>NVIDIA dependency</small>
@@ -2665,7 +2690,7 @@ function App() {
                                 {catalog.plannedArchitecture.charts.provisioner.version}
                               </strong>
                               <span>
-                                Provisions multiple hardware profiles in one release
+                                {components.provisioner ? 'Provisions multiple hardware profiles in one release' : 'Disabled'}
                               </span>
                             </div>
                           </>

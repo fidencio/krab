@@ -21,7 +21,7 @@ const runtimeVendors = catalog.vendors.filter(
 const readYaml = async (path: string) =>
   parse(await readFile(resolve(root, path), 'utf8'))
 
-test('chart dependency gates keep NFD and kata-deploy enabled and gate NVIDIA charts', async () => {
+test('chart dependency gates allow each component to be enabled independently', async () => {
   const chart = await readYaml('charts/krab/Chart.yaml')
   const dependencies = Object.fromEntries(
     chart.dependencies.map((dependency: { name: string }) => [
@@ -31,12 +31,12 @@ test('chart dependency gates keep NFD and kata-deploy enabled and gate NVIDIA ch
   )
 
   assert.equal(chart.name, 'krab')
-  assert.equal(dependencies['node-feature-discovery'].condition, undefined)
-  assert.equal(dependencies['kata-deploy'].condition, undefined)
-  assert.equal(dependencies['kata-device-plugin'].condition, 'nvidia.enabled')
+  assert.equal(dependencies['node-feature-discovery'].condition, 'node-feature-discovery.enabled')
+  assert.equal(dependencies['kata-deploy'].condition, 'kata-deploy.enabled')
+  assert.equal(dependencies['kata-device-plugin'].condition, 'kata-device-plugin.enabled,nvidia.enabled')
   assert.equal(
     dependencies['kata-device-provisioner'].condition,
-    'nvidia.enabled',
+    'kata-device-provisioner.enabled,nvidia.enabled',
   )
 })
 
@@ -209,8 +209,8 @@ test('CPU-only values disable NVIDIA charts and retain NFD and kata-deploy', () 
   )
 
   assert.equal(generated.nvidia.enabled, false)
-  assert.equal(generated['kata-device-plugin'], undefined)
-  assert.equal(generated['kata-device-provisioner'], undefined)
+  assert.equal(generated['kata-device-plugin'].enabled, false)
+  assert.equal(generated['kata-device-provisioner'].enabled, false)
   assert.ok(generated['node-feature-discovery'])
   assert.ok(generated['kata-deploy'])
 })

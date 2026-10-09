@@ -263,7 +263,26 @@ export type CustomRuntimeValidationError = {
   message: string
 }
 
+export type ComponentConfiguration = Record<'nfd' | 'kataDeploy' | 'devicePlugin' | 'provisioner', boolean | null>
+
+export function resolveComponents(
+  vendor: VendorCatalog,
+  selections: FamilySelections,
+  components: ComponentConfiguration,
+): Record<keyof ComponentConfiguration, boolean> {
+  const gpuSelected = vendor.hardwareFamilies.some((family) =>
+    family.availability === 'available' &&
+    family.modes.some(({ id }) => id === selections[family.id]?.modeId))
+  return {
+    nfd: components.nfd ?? true,
+    kataDeploy: components.kataDeploy ?? true,
+    devicePlugin: components.devicePlugin ?? gpuSelected,
+    provisioner: components.provisioner ?? gpuSelected,
+  }
+}
+
 export type AdvancedConfiguration = {
+  components: ComponentConfiguration
   containerdConfigDir: string
   containerdRuntimeSocket: string
   containerdConfigFileName: string
@@ -316,6 +335,7 @@ const createChartImageConfiguration = (): ChartImageConfiguration => ({
 })
 
 export const createAdvancedConfiguration = (): AdvancedConfiguration => ({
+  components: { nfd: null, kataDeploy: null, devicePlugin: null, provisioner: null },
   containerdConfigDir: '',
   containerdRuntimeSocket: '',
   containerdConfigFileName: '',
@@ -491,7 +511,7 @@ export function importValuesBundle(
     }
   }
   const nvidiaEnabled = asRecord(root[dependencies.nvidiaValuesKey]).enabled === true
-  if (!nvidiaEnabled && Object.values(configuredProfiles).some((profile) =>
+  if (!nvidiaEnabled && provisionerValues.enabled === undefined && Object.values(configuredProfiles).some((profile) =>
     asRecord(profile).enabled === true)) {
     throw new Error('The file enables a provisioner profile while NVIDIA dependencies are disabled.')
   }
@@ -522,7 +542,7 @@ export function importValuesBundle(
       ? detectedVendor.candidate
       : undefined)
 
-  if (!vendor || enabledShimIds.length === 0) {
+  if (!vendor || (enabledShimIds.length === 0 && runtimeValues.enabled !== false)) {
     throw new Error('KRAB could not identify a supported vendor or RuntimeClass.')
   }
 
@@ -582,6 +602,17 @@ export function importValuesBundle(
   }
 
   const advanced = createAdvancedConfiguration()
+  for (const [component, valuesKey] of Object.entries({
+    nfd: dependencies.nfdValuesKey,
+    kataDeploy: dependencies.runtimeValuesKey,
+    devicePlugin: dependencies.devicePluginValuesKey,
+    provisioner: dependencies.provisionerValuesKey,
+  })) {
+    const enabled = asRecord(root[valuesKey]).enabled
+    if (typeof enabled === 'boolean') {
+      advanced.components[component as keyof ComponentConfiguration] = enabled
+    }
+  }
   advanced.debug = runtimeValues.debug === true
   advanced.shimDropIns = Object.fromEntries(
     enabledShimIds.flatMap((id) => {
@@ -1268,12 +1299,12 @@ export function buildValuesBundle(
   const gpuPlatformSelected = vendor.hardwareFamilies.some((family) =>
     family.availability === 'available' &&
     family.modes.some(({ id }) => id === selections[family.id]?.modeId))
-  const includeDevicePlugin =
-    dependencies.devicePluginRequired || gpuPlatformSelected
-  const includeProvisioner =
-    dependencies.provisionerRequired || gpuPlatformSelected
+  const components = resolveComponents(vendor, selections, advanced.components)
+  const includeDevicePlugin = components.devicePlugin
+  const includeProvisioner = components.provisioner
   const nfdImages = advanced.images.nfd
   const nfdValues = {
+    enabled: components.nfd,
     image: {
       ...architecture.charts.nfd.image,
       ...(nfdImages.reference.trim()
@@ -1330,17 +1361,16 @@ export function buildValuesBundle(
 
   return `# ${architecture.notice}\n# KRAB values format: ${valuesFormatVersion}\n# KRAB chart version: ${architecture.charts.krab.version}\n# KRAB selection: ${vendor.id}\n${yaml({
     [dependencies.nvidiaValuesKey]: {
-      enabled: includeDevicePlugin || includeProvisioner,
+      enabled: gpuPlatformSelected || includeDevicePlugin || includeProvisioner,
     },
     [dependencies.nfdValuesKey]: nfdValues,
-    [dependencies.runtimeValuesKey]: orderedRuntimeValues,
-    ...(includeDevicePlugin
-      ? { [dependencies.devicePluginValuesKey]: devicePluginValues }
-      : {}),
-    ...(includeProvisioner
+    [dependencies.runtimeValuesKey]: { enabled: components.kataDeploy, ...orderedRuntimeValues },
+    [dependencies.devicePluginValuesKey]: { ...devicePluginValues, enabled: includeDevicePlugin },
+    ...((includeProvisioner || gpuPlatformSelected)
       ? {
           [dependencies.provisionerValuesKey]: {
             ...provisionerValues,
+            enabled: includeProvisioner,
             'node-feature-discovery': { enabled: false },
             profiles,
             ...(provisionerImage ? { image: provisionerImage } : {}),
@@ -1360,7 +1390,7 @@ export function buildValuesBundle(
               : {}),
           },
         }
-      : {}),
+      : { [dependencies.provisionerValuesKey]: { enabled: false } }),
   })}`
 }
 
