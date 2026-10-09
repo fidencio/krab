@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readFileSync } from 'node:fs'
 import { parse } from 'yaml'
 import catalogData from '../src/generated/catalog.json' with { type: 'json' }
 import {
@@ -13,6 +14,27 @@ const keys = {
   nfd: 'node-feature-discovery', kataDeploy: 'kata-deploy',
   devicePlugin: 'kata-device-plugin', provisioner: 'kata-device-provisioner',
 } as const
+
+test('device plugin targets NVIDIA GPU hardware independently of Kata deployment', () => {
+  const defaults = parse(readFileSync(new URL('../charts/krab/values.yaml', import.meta.url), 'utf8'))
+  const selector = {
+    'katacontainers.io/kata-runtime': null,
+    'feature.node.kubernetes.io/pci-0302_10de.present': 'true',
+  }
+  assert.deepEqual(defaults[keys.devicePlugin].nodeSelector, selector)
+  for (const gpuVendor of catalog.vendors.filter(({ id }) => ['custom', 'nvidia'].includes(id))) {
+    const advanced = createAdvancedConfiguration()
+    advanced.components.kataDeploy = false
+    advanced.components.provisioner = false
+    const values = parse(buildValuesBundle(catalog, gpuVendor,
+      { hopper: { enabled: true, modeId: 'off', cpuTeeIds: [] } },
+      { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+      { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+      advanced))
+    assert.equal(values[keys.devicePlugin].enabled, true)
+    assert.deepEqual(values[keys.devicePlugin].nodeSelector, selector)
+  }
+})
 
 test('independent component choices survive GPU values generation and import', () => {
   for (let mask = 0; mask < 16; mask++) {

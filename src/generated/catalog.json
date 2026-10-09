@@ -764,7 +764,8 @@
             "pullPolicy": "IfNotPresent"
           },
           "nodeSelector": {
-            "katacontainers.io/kata-runtime": "true"
+            "katacontainers.io/kata-runtime": null,
+            "feature.node.kubernetes.io/pci-0302_10de.present": "true"
           },
           "tolerations": [
             {
@@ -1608,7 +1609,8 @@
             "pullPolicy": "IfNotPresent"
           },
           "nodeSelector": {
-            "katacontainers.io/kata-runtime": "true"
+            "katacontainers.io/kata-runtime": null,
+            "feature.node.kubernetes.io/pci-0302_10de.present": "true"
           },
           "tolerations": [
             {

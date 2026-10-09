@@ -33,6 +33,11 @@ kata-deploy:
 
 # Set enabled explicitly to override the nvidia.enabled fallback.
 kata-device-plugin:
+  # NFD detects NVIDIA GPU PCI hardware even when it is bound to VFIO.
+  nodeSelector:
+    # Clear the upstream chart's Kata installation selector during Helm merging.
+    katacontainers.io/kata-runtime: null
+    feature.node.kubernetes.io/pci-0302_10de.present: "true"
   image:
     repository: ghcr.io/kata-containers/kata-device-plugin
     tag: v0.2.0-rc.2

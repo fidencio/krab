@@ -21,6 +21,12 @@ installing Kata. Use `--set kata-device-plugin.enabled=false` to omit only the
 device plugin from a GPU deployment. Explicit component switches take precedence
 over the legacy `nvidia.enabled` default.
 
+The device plugin selects NVIDIA GPU hardware using NFD's
+`feature.node.kubernetes.io/pci-0302_10de.present=true` label. This works with
+VFIO-bound GPUs and independently of Kata installation. With shared NFD
+disabled, an existing NFD installation must supply that label. KRAB clears the
+upstream chart's `katacontainers.io/kata-runtime` selector during Helm merging.
+
 When Kata deployment is disabled, KRAB installs the pinned Kata CPU feature
 rules if shared NFD is enabled or the NFD API already exists in the cluster.
 NFD sets the AMD SNP and Intel TDX capability labels and advertises their key

@@ -172,6 +172,18 @@ test('packaged chart enables each dependency independently of the legacy GPU def
   }
 })
 
+test('device plugin renders a hardware selector with Kata deployment disabled', () => {
+  const rendered = helm('template', 'krab', chart, '--namespace', 'kata-system',
+    '--set', 'kata-device-plugin.enabled=true', '--set', 'kata-deploy.enabled=false')
+  const plugin = parseAllDocuments(rendered).map((document) => document.toJS())
+    .find((resource) => resource?.kind === 'DaemonSet' &&
+      resource.metadata.labels?.['app.kubernetes.io/name'] === 'kata-device-plugin')
+  assert.ok(plugin, 'device plugin DaemonSet must render')
+  assert.deepEqual(plugin.spec.template.spec.nodeSelector, {
+    'feature.node.kubernetes.io/pci-0302_10de.present': 'true',
+  })
+})
+
 test('CPU feature rules precede GPU provisioning when Kata deployment is disabled', () => {
   const archive = packagedChart(chart)
   const render = (kata: boolean, nfd: boolean, existingNfd = false) => {

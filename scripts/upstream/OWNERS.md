@@ -83,7 +83,7 @@ generator itself owns derived labels, links, ordering, and schema versions.
 | `vendors[].provisioner.chart.experimental` | Generator contract | KRAB's experimental marker. |
 | `vendors[].provisioner.values.image.*`, `.job.dispatcherImage.*` | `provisioner-values`, with an absent image tag filled from `provisioner-chart` appVersion | Provisioner images. |
 | `vendors[].devicePlugin.chart.*` | `plannedArchitecture.charts.devicePlugin` above | Reused chart metadata and KRAB requirement. |
-| `vendors[nvidia,custom].devicePlugin.values.*` | `device-plugin-values`, except image fields below | Pinned chart defaults. CPU TEE paths use an empty object. |
+| `vendors[nvidia,custom].devicePlugin.values.*` | `device-plugin-values`, except image fields below and `nodeSelector` | Pinned chart defaults. KRAB overrides `nodeSelector` with NFD's NVIDIA GPU PCI class/vendor label (`feature.node.kubernetes.io/pci-0302_10de.present=true`), independent of Kata installation and host GPU drivers. CPU TEE paths use an empty object. |
 | `vendors[nvidia,custom].devicePlugin.values.image.repository`, `.pullPolicy` | `device-plugin-values` | Image defaults from the pinned chart. |
 | `vendors[nvidia,custom].devicePlugin.values.image.tag` | `upstream/architecture.yaml` | KRAB's selected image tag. |
 | `vendors[].devicePlugin.sourceUrl` | `device-plugin-chart` entry in `sources.lock.yaml` | Pinned chart link. |

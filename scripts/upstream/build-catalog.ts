@@ -808,6 +808,7 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
           chart: plannedArchitecture.charts.devicePlugin,
           values: {
             ...pluginValues,
+            nodeSelector: krabValues['kata-device-plugin'].nodeSelector,
             image: devicePluginImage,
           },
           sourceUrl: sourceLink('device-plugin-chart'),
@@ -876,6 +877,7 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
           chart: plannedArchitecture.charts.devicePlugin,
           values: {
             ...pluginValues,
+            nodeSelector: krabValues['kata-device-plugin'].nodeSelector,
             image: devicePluginImage,
           },
           sourceUrl: sourceLink('device-plugin-chart'),

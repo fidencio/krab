@@ -73,7 +73,7 @@
   "vendors[].devicePlugin.chart.**": "device-plugin-chart and upstream/architecture.yaml",
   "vendors[].devicePlugin.values.image.tag": "upstream/architecture.yaml",
   "vendors[].devicePlugin.values": "device-plugin-values",
-  "vendors[].devicePlugin.values.**": "device-plugin-values",
+  "vendors[].devicePlugin.values.**": "device-plugin-values and charts/krab/values.yaml nodeSelector policy",
   "vendors[].devicePlugin.sourceUrl": "device-plugin-chart",
   "vendors[].workload.resourceName": "device-plugin-code",
   "vendors[].workload.nvSwitchResourceName": "device-plugin-code",
