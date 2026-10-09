@@ -126,6 +126,12 @@ come from the pinned provisioner profiles. A node passes the model filter when
 its provisioner inventory identifies any selected model. The node report records
 the provisioner's `chip=` field and readable device name; older reports can
 still match a complete model name in the device name.
+If IOMMUFD is installed as an unloaded module, the report requests host setup
+instead of rejecting the kernel. Run `sudo modprobe iommufd`, then
+`echo iommufd | sudo tee /etc/modules-load.d/iommufd.conf` on each target node
+to persist it across reboots. Rerun the precheck afterward. The precheck itself
+is read-only.
+
 The generated deployment installs EROFS utilities when a checked node does not
 confirm suitable host utilities.
 The node probe runs on a distroless base. The collector uses a separate

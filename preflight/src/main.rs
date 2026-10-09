@@ -87,7 +87,7 @@ fn usage() -> &'static str {
      --tdx       /sys/module/kvm_intel/parameters/tdx is enabled\n\
      --snp       /sys/module/kvm_amd/parameters/sev_snp is enabled\n\
      --ibm-se    /sys/firmware/uv/prot_virt_host is enabled\n\
-     --iommufd   /dev/iommu exists as a character device\n\
+     --iommufd   /dev/iommu readiness and running-kernel module support\n\
      --erofs     mkfs.erofs contains the mkfs-time and sort options\n\
      --gpu       kata-device-provisioner finds a supported NVIDIA GPU\n\
      --gpu-cc    A supported NVIDIA GPU is CC capable\n\

@@ -19,13 +19,33 @@ Each option runs only its corresponding check. Options may be combined. The exit
 | `--tdx` | `/sys/module/kvm_intel/parameters/tdx` is `Y` or `1` |
 | `--snp` | `/sys/module/kvm_amd/parameters/sev_snp` is `Y` or `1` |
 | `--ibm-se` | `/sys/firmware/uv/prot_virt_host` is `Y` or `1` |
-| `--iommufd` | `/dev/iommu` is a character device |
+| `--iommufd` | `/dev/iommu` is a character device; otherwise inspect running-kernel module files and configuration |
 | `--erofs` | The first executable `mkfs.erofs` in `PATH` (or standard system directories) contains the `mkfs-time` and `sort` option strings required by Kata Deploy |
 | `--gpu` | `kata-device-provisioner status --all` reports a supported NVIDIA GPU |
 | `--gpu-cc` | At least one supported NVIDIA GPU reports CC capability |
 | `--gpu-ppcie` | At least one supported NVIDIA GPU reports PPCIE capability |
 
-The kernel checks report presence or enabled state. They do not open the devices, query KVM capabilities, launch a guest, or verify that a particular device can use IOMMUFD. An absent sysfs file reports unavailable; an unreadable file or an unexpected value reports an error.
+The kernel checks report presence or enabled state. They do not open the devices, query KVM capabilities, launch a guest, or verify that a particular device can use IOMMUFD. An absent sysfs file reports unavailable for the TEE checks; an unreadable file or an unexpected value reports an error.
+
+IOMMUFD readiness is confirmed by the host `/dev/iommu` character device. A
+missing device does not prove that the kernel lacks IOMMUFD: Ubuntu can ship it
+as an unloaded `iommufd.ko.zst` module. The probe checks the running kernel's
+module files, built-in module list, and kernel configuration under the host root.
+An installed but unloaded module, missing host mounts, or unavailable kernel
+metadata reports `skipped` (`unknown` in the node report), with an explanation.
+Only an explicit disabled kernel configuration confirms lack of support.
+The precheck does not load modules or change the host.
+
+To enable an installed module now and persist it across reboots:
+
+```sh
+sudo modprobe iommufd
+echo iommufd | sudo tee /etc/modules-load.d/iommufd.conf
+ls -l /dev/iommu
+```
+
+Rerun the precheck after setup. The persistent file must be created on every
+target node that needs IOMMUFD.
 
 The EROFS check reads the `mkfs.erofs` binary for the `mkfs-time` and `sort` option strings, following [Kata Deploy's option check](https://github.com/kata-containers/kata-containers/blob/main/tools/packaging/kata-deploy/binary/src/main.rs). It does not execute `mkfs.erofs`. Like Kata Deploy's option check, it does not inspect `-T` separately. It does not check kernel EROFS support, containerd version, or whether the snapshotter is configured.
 
@@ -33,7 +53,7 @@ The GPU checks require [`kata-device-provisioner`](https://github.com/kata-conta
 
 ## Container image
 
-The repository's `Dockerfile.precheck` builds Linux amd64, arm64, ppc64le, and s390x images. It includes pinned, published amd64 and arm64 `kata-device-provisioner` binaries; GPU checks are skipped on the other architectures. The runtime image deliberately does not contain `mkfs.erofs`: the EROFS check must inspect the host's utility, not a copy in the image. Its entrypoint is `node-precheck`, which uses this Rust binary and emits the versioned node report consumed by the KRAB chart and UI.
+The repository's `Dockerfile.precheck` builds Linux amd64, arm64, ppc64le, and s390x images. It includes pinned, published amd64 and arm64 `kata-device-provisioner` binaries; GPU checks are skipped on the other architectures. The runtime image deliberately does not contain `mkfs.erofs`: the EROFS check must inspect the host's utility, not a copy in the image. Its entrypoint is `krab-preflight --node-report`, which uses this Rust binary and emits the versioned node report consumed by the KRAB chart and UI.
 
 Build a multi-architecture OCI image archive with Docker Buildx:
 

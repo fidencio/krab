@@ -20,6 +20,7 @@ import packageData from '../package.json'
 import krabLogoDark from './assets/brands/krab-kata-hybrid.png'
 import krabLogoLight from './assets/brands/krab-kata-hybrid-light.png'
 import { NodePrecheckPanel } from './NodePrecheckPanel'
+import { IommufdSetupNote } from './IommufdSetupNote'
 import { erofsUtilsImage } from './lib/erofs-image'
 import {
   allNodesLack,
@@ -993,6 +994,8 @@ function App() {
                   setPrecheckError('')
                 }}
               />
+
+              <IommufdSetupNote reports={reports} />
 
               <div className="platform-directory">
                 <section className="platform-group">
