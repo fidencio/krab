@@ -43,6 +43,13 @@ jobs:
             --volume /proc:/host/proc:ro --volume /sys:/host/sys:ro \
             --volume /dev:/host/dev:ro krab-preflight:test \
             | ./node_modules/.bin/tsx scripts/check-node-report.ts
+      - name: Build and smoke test the collector image
+        run: |
+          docker buildx build --platform linux/amd64 --file Dockerfile.collector \
+            --tag krab-collector:test --load .
+          docker run --rm --entrypoint /bin/bash \
+            --volume "${PWD}/test:/tests:ro" krab-collector:test \
+            /tests/collector-smoke.sh /usr/local/bin/krab-collect
       - name: Validate published chart dependencies
         run: |
           helm dependency update charts/krab

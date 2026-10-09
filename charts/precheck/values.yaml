@@ -2,3 +2,5 @@ parallelism: 20
 dispatcherImage: ghcr.io/kata-containers/k8s-job-dispatcher:0.4.0
 probeImage:
   repository: ghcr.io/fidencio/krab-preflight
+collectorImage:
+  repository: ghcr.io/fidencio/krab-collector

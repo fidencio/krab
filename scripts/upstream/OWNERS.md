@@ -107,7 +107,7 @@ a new KRAB decision needs an entry here and in the reviewed policy file.
 | `Dockerfile.precheck` two provisioner `FROM` image references | `upstream/precheck-image.lock.json`; `sync-precheck.ts` replaces both references. |
 | `Dockerfile.precheck` all other instructions | KRAB's precheck build and runtime policy in that file. |
 | `charts/precheck/values.yaml` `dispatcherImage` | `provisioner-values` job dispatcher image. |
-| `charts/precheck/values.yaml` `parallelism`, `probeImage.*` | KRAB precheck chart policy in that file. |
+| `charts/precheck/values.yaml` `parallelism`, `probeImage.*`, `collectorImage.*` | KRAB precheck chart policy in that file. |
 
 To update a value, change its owner and run `npm run generate`. A new upstream
 release goes through `npm run refresh:upstream` and a reviewed lockfile update.

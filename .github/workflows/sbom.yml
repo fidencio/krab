@@ -103,3 +103,42 @@ jobs:
           name: preflight-image-sboms
           path: dist-sbom/*.spdx.json
           if-no-files-found: error
+
+  collector_image:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: anchore/sbom-action/download-syft@v0
+        id: syft
+        with:
+          syft-version: v1.52.0
+      - name: Build and scan each collector image architecture
+        shell: bash
+        env:
+          SYFT: ${{ steps.syft.outputs.cmd }}
+        run: |
+          set -euo pipefail
+          version="$(node -p 'require("./package.json").version')"
+          mkdir -p dist-sbom
+          docker buildx build \
+            --file Dockerfile.collector \
+            --platform linux/amd64,linux/arm64,linux/ppc64le,linux/s390x \
+            --output "type=oci,dest=${RUNNER_TEMP}/krab-collector.oci.tar" \
+            .
+          for arch in amd64 arm64 ppc64le s390x; do
+            "${SYFT}" "${RUNNER_TEMP}/krab-collector.oci.tar" \
+              --from oci-archive \
+              --platform "linux/${arch}" \
+              -o "spdx-json=dist-sbom/krab-collector-${version}-linux-${arch}.spdx.json"
+          done
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: collector-image-sboms
+          path: dist-sbom/*.spdx.json
+          if-no-files-found: error

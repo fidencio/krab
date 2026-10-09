@@ -128,7 +128,9 @@ the provisioner's `chip=` field and readable device name; older reports can
 still match a complete model name in the device name.
 The generated deployment installs EROFS utilities when a checked node does not
 confirm suitable host utilities.
-The precheck image runs the Rust probe on a distroless base. Its provisioner
+The node probe runs on a distroless base. The collector uses a separate
+`ghcr.io/fidencio/krab-collector` image containing Bash, curl, jq, and CA
+certificates, with the same release version as the precheck chart. Its probe provisioner
 image digest is kept in `upstream/precheck-image.lock.json`. Run
 `npm run sync:upstream` to refresh it with ORAS, check amd64 and arm64, and
 updates the Dockerfile and the precheck chart's dispatcher image. The probe
@@ -251,7 +253,7 @@ that the generated copies are committed.
 
 Dispatch the chart release workflow from `main`. It runs the application and
 pre-flight checks, publishes the pre-flight image to
-`ghcr.io/fidencio/krab-preflight`, packages and attests both charts, and
+`ghcr.io/fidencio/krab-preflight` and `ghcr.io/fidencio/krab-collector`, packages and attests both charts, and
 publishes them to `oci://ghcr.io/fidencio/krab` and
 `oci://ghcr.io/fidencio/krab-precheck`. It verifies anonymous access to all
 three artifacts before creating the matching `chart-vX.Y.Z` tag and

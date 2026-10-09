@@ -3,8 +3,9 @@
 set -euo pipefail
 
 api=https://kubernetes.default.svc
-token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+service_account_dir=${SERVICE_ACCOUNT_DIR:-/var/run/secrets/kubernetes.io/serviceaccount}
+token=$(cat "$service_account_dir/token")
+ca=$service_account_dir/ca.crt
 namespace=${POD_NAMESPACE:?}
 owner=${OWNER_LABEL:?}
 selector=${NODE_SELECTOR:?}

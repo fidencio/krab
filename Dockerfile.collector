@@ -1,0 +1,11 @@
+FROM debian:13-slim
+
+LABEL org.opencontainers.image.source="https://github.com/fidencio/krab"
+LABEL org.opencontainers.image.description="KRAB node report collector"
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends bash ca-certificates curl jq && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY charts/precheck/files/collect.sh /usr/local/bin/krab-collect
+ENTRYPOINT ["/bin/bash", "/usr/local/bin/krab-collect"]

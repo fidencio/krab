@@ -49,7 +49,7 @@ spec:
       serviceAccountName: {{ $name }}-collector
       containers:
         - name: collector
-          image: {{ printf "%s:%s" .Values.probeImage.repository .Chart.Version | quote }}
+          image: {{ printf "%s:%s" .Values.collectorImage.repository .Chart.Version | quote }}
           command: [/bin/bash, /etc/krab/collect.sh]
           env:
             - name: POD_NAMESPACE

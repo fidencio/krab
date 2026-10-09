@@ -132,7 +132,7 @@ export function chartSbom(
         const image = asRecord(value)
         const reference = image.reference ?? image.repository
         if (typeof reference === 'string' && reference) {
-          const fallback = key === 'probeImage'
+          const fallback = key === 'probeImage' || key === 'collectorImage'
             ? chart.version
             : chart.appVersion ?? chart.version
           const tag = image.tag || fallback
