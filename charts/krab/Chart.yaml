@@ -2,8 +2,8 @@ apiVersion: v2
 name: krab
 description: Kata Reference Architecture Builder umbrella chart
 type: application
-version: 0.1.3
-appVersion: "0.1.3"
+version: 0.1.4
+appVersion: "0.1.4"
 home: https://github.com/fidencio/krab
 icon: https://fidencio.github.io/krab/favicon.png
 sources:
@@ -21,19 +21,11 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: added
-      description: Combine CPU TEE and NVIDIA GPU paths in Custom deployments.
-    - kind: added
-      description: Show pinned component versions before deployment selection.
-    - kind: changed
-      description: Simplify pre-flight report choices and failing-node details.
+      description: Enable or disable each stack component independently.
     - kind: fixed
-      description: Ignore existing GPU CC mode when selecting deployment options.
-    - kind: changed
-      description: Release the pre-flight image and chart with KRAB.
+      description: Run the precheck collector in a dedicated image with Bash, curl, and jq.
     - kind: fixed
-      description: Use the published v0.2.0-rc.0 kata-device-plugin image tag.
-    - kind: added
-      description: Support optional deployment names and versioned values filenames.
+      description: Detect unloaded IOMMUFD modules and explain persistent host setup.
 # Run npm run generate to refresh these dependencies from pinned charts.
 dependencies:
   - name: node-feature-discovery

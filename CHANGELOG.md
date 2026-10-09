@@ -2,6 +2,21 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.4] - 2026-10-09
+
+### Added
+
+- Enable or disable Node Feature Discovery, Kata deployment, the device plugin,
+  and the device provisioner independently in the builder and Helm values.
+
+### Fixed
+
+- The pre-flight collector uses a dedicated image with Bash, curl, and jq,
+  allowing pre-flight checks to run before Kata Containers is installed.
+- IOMMUFD checks recognize an installed but unloaded kernel module instead of
+  reporting missing kernel support. Setup guidance includes loading the module
+  now and persisting it through `/etc/modules-load.d/iommufd.conf`.
+
 ## [0.1.3] - 2026-09-27
 
 ### Added
