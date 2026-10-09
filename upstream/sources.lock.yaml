@@ -58,25 +58,25 @@ sources:
     sha256: 72e0af17ca4dc542213d11cdbfea7b7da8689848fa3dbf7cb6d645f91ddbcc52
   - id: device-plugin-code
     repository: kata-containers/kata-device-plugin
-    ref: a73df34f399a888d7e733fc280b1b30567aaac2c
-    release: v0.2.0-rc.0
+    ref: 0e78c3bdfe3aa72ac45dc31922a4fd60178b3335
+    release: v0.2.0-rc.1
     path: src/vfio.rs
     cache: kata-device-plugin/vfio.rs
-    sha256: ef5de967def81289c4b9d761df1c9a8dc657f02675f2bfedecc565d625f04c77
+    sha256: 830d503ef21e87f8fb96f2ffedb8fcc021faade2ffec2c8295bec53fefd89c9b
   - id: device-plugin-chart
     repository: kata-containers/kata-device-plugin
-    ref: a73df34f399a888d7e733fc280b1b30567aaac2c
-    release: v0.2.0-rc.0
+    ref: 0e78c3bdfe3aa72ac45dc31922a4fd60178b3335
+    release: v0.2.0-rc.1
     path: deploy/helm/kata-device-plugin/Chart.yaml
     cache: kata-device-plugin/Chart.yaml
-    sha256: 4465f47aa9b8640f5e270e3a5b38acb1dc62b89d5b143520d09a169749606570
+    sha256: 123ace7f522ec1b55f19cbc735baa30ee22c86d8bb89ff2eff05f7392fa54955
   - id: device-plugin-values
     repository: kata-containers/kata-device-plugin
-    ref: a73df34f399a888d7e733fc280b1b30567aaac2c
-    release: v0.2.0-rc.0
+    ref: 0e78c3bdfe3aa72ac45dc31922a4fd60178b3335
+    release: v0.2.0-rc.1
     path: deploy/helm/kata-device-plugin/values.yaml
     cache: kata-device-plugin/values.yaml
-    sha256: 4863740bb108d71ad214a6e79d77fe57e7765cc5063281c1a8298faeed1bfa84
+    sha256: 13655d528c6c1158715aa53007287db382c9bd90293be4da88030a68c54e42a7
   - id: provisioner-chart
     repository: kata-containers/kata-device-provisioner
     ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163

@@ -2,6 +2,14 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.1.6] - 2026-10-09
+
+### Changed
+
+- Update the Kata device plugin chart and image to v0.2.0-rc.1, which publishes
+  its device resource contract in the chart and uses component-specific
+  DaemonSet names.
+
 ## [0.1.5] - 2026-10-09
 
 ### Changed

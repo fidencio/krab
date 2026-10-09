@@ -1,6 +1,6 @@
 schemaVersion: 1
 status: stable
-notice: KRAB 0.1.5. Review generated values before deploying.
+notice: KRAB 0.1.6. Review generated values before deploying.
 namespace: kata-system
 images:
   kubectl:
@@ -8,7 +8,7 @@ images:
     tag: v1.37.0
   devicePlugin:
     repository: ghcr.io/kata-containers/kata-device-plugin
-    tag: v0.2.0-rc.0
+    tag: v0.2.0-rc.1
 cluster:
   distributions:
     - id: kubeadm

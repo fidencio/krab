@@ -2,8 +2,8 @@ apiVersion: v2
 name: krab
 description: Kata Reference Architecture Builder umbrella chart
 type: application
-version: 0.1.5
-appVersion: "0.1.5"
+version: 0.1.6
+appVersion: "0.1.6"
 home: https://github.com/fidencio/krab
 icon: https://fidencio.github.io/krab/favicon.png
 sources:
@@ -21,11 +21,7 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: changed
-      description: Select deployed components directly on the architecture cards.
-    - kind: fixed
-      description: Supply SNP and TDX feature rules when Kata deployment is disabled.
-    - kind: fixed
-      description: Align the pre-flight Rust build version with the KRAB release.
+      description: Update the Kata device plugin chart and image to v0.2.0-rc.1.
 # Run npm run generate to refresh these dependencies from pinned charts.
 dependencies:
   - name: node-feature-discovery
@@ -37,7 +33,7 @@ dependencies:
     repository: oci://ghcr.io/kata-containers/kata-deploy-charts
     condition: kata-deploy.enabled
   - name: kata-device-plugin
-    version: "0.2.0-rc.0"
+    version: "0.2.0-rc.1"
     repository: oci://ghcr.io/kata-containers/kata-device-plugin-charts
     condition: kata-device-plugin.enabled,nvidia.enabled
   - name: kata-device-provisioner
