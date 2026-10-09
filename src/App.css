@@ -1188,6 +1188,81 @@ button.vendor-card {
   gap: 8px;
 }
 
+.architecture-component {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.architecture-component-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.architecture-component-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+.architecture-component-control input {
+  position: absolute;
+  width: 34px;
+  height: 20px;
+  right: 0;
+  margin: 0;
+  opacity: 0;
+}
+
+.architecture-component-control input:checked + .toggle-track {
+  border-color: var(--kata-primary);
+  background: var(--kata-primary);
+}
+
+.architecture-component-control input:checked + .toggle-track > span {
+  background: #fff;
+  transform: translateX(14px);
+}
+
+.architecture-component:has(input:focus-visible) {
+  outline: 2px solid var(--kata-primary);
+  outline-offset: 3px;
+}
+
+.architecture-component.is-disabled .architecture-component-copy {
+  opacity: 0.65;
+}
+
+.architecture-component-defaults {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.architecture-component-defaults button {
+  border: 0;
+  padding: 4px 0;
+  background: transparent;
+  color: var(--kata-primary);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.architecture-component-defaults button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .architecture-chain small {
   color: var(--kata-orange-bright);
   font-size: 9px;
@@ -4533,7 +4608,8 @@ nav a:hover,
     grid-row: auto;
   }
 
-  .architecture-chain {
+  .architecture-chain,
+  .summary-workspace .architecture-chain {
     grid-template-columns: 1fr;
   }
 

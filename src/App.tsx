@@ -1256,28 +1256,6 @@ function App() {
                 </div>
               )}
 
-              <section className="cluster-config cluster-config-wide" aria-label="Stack components">
-                <header><h2>Stack components</h2><p>Enable or disable each component. Automatic follows your architecture selection.</p></header>
-                <div className="advanced-field-grid two-columns">
-                  {([
-                    ['nfd', 'Node Feature Discovery'],
-                    ['kataDeploy', 'Kata Containers'],
-                    ['devicePlugin', 'Device plugin'],
-                    ['provisioner', 'Device provisioner'],
-                  ] as const).map(([id, label]) => <label key={id}>
-                    <span>{label}</span>
-                    <select value={advanced.components[id] === null ? 'auto' : String(advanced.components[id])}
-                      onChange={(event) => setAdvanced((current) => ({ ...current,
-                        components: { ...current.components, [id]: event.target.value === 'auto' ? null : event.target.value === 'true' },
-                      }))}>
-                      <option value="auto">Automatic ({components[id] ? 'enabled' : 'disabled'})</option>
-                      <option value="true">Enabled</option>
-                      <option value="false">Disabled</option>
-                    </select>
-                  </label>)}
-                </div>
-              </section>
-
               <details className="advanced-config">
                 <summary>
                   <span>
@@ -2648,7 +2626,7 @@ function App() {
                     <summary>
                       <span>
                         <strong>How KRAB assembles this architecture</strong>
-                        <small>View chart dependencies and ownership</small>
+                        <small>Choose which components KRAB will deploy</small>
                       </span>
                       <ChevronDown size={17} />
                     </summary>
@@ -2660,44 +2638,46 @@ function App() {
                       </div>
                       <ArrowRight size={18} />
                       <div className="architecture-dependencies">
-                        <div className="architecture-node required">
-                          <small>Optional component</small>
-                          <strong>
-                            {catalog.plannedArchitecture.charts.nfd.chartName}{' '}
-                            {catalog.plannedArchitecture.charts.nfd.version}
-                          </strong>
-                          <span>{components.nfd ? 'Enabled' : 'Disabled'}</span>
+                        {([
+                          ['nfd', 'Hardware discovery', 'Detects hardware and publishes node capability labels'],
+                          ['kataDeploy', 'Kata runtime', 'Installs Kata runtimes and RuntimeClasses'],
+                          ['devicePlugin', 'NVIDIA device plugin', 'Advertises VFIO devices to kubelet'],
+                          ['provisioner', 'NVIDIA device provisioner', 'Provisions the selected hardware profiles'],
+                        ] as const).map(([id, label, description]) => {
+                          const chart = catalog.plannedArchitecture.charts[id]
+                          return (
+                            <label key={id} className={`architecture-node architecture-component ${components[id] ? 'is-enabled' : 'is-disabled'}`}>
+                              <div className="architecture-component-copy">
+                                <small>{label}</small>
+                                <strong>{chart.chartName} {chart.version}</strong>
+                                <span>{description}</span>
+                              </div>
+                              <div className="architecture-component-control">
+                                <span>{components[id] ? 'Deploy' : 'Skip'}</span>
+                                <input type="checkbox" role="switch"
+                                  aria-label={`Deploy ${chart.chartName}`}
+                                  checked={components[id]}
+                                  onChange={(event) => {
+                                    const enabled = event.target.checked
+                                    setAdvanced((current) => ({ ...current,
+                                      components: { ...current.components, [id]: enabled },
+                                    }))
+                                  }} />
+                                <span className="toggle-track" aria-hidden="true"><span /></span>
+                              </div>
+                            </label>
+                          )
+                        })}
+                        <div className="architecture-component-defaults">
+                          <span>Defaults follow your architecture selection.</span>
+                          <button type="button"
+                            disabled={Object.values(advanced.components).every((value) => value === null)}
+                            onClick={() => setAdvanced((current) => ({ ...current,
+                              components: createAdvancedConfiguration().components,
+                            }))}>
+                            Reset to defaults
+                          </button>
                         </div>
-                        <div className="architecture-node required">
-                          <small>Optional component</small>
-                          <strong>
-                            {catalog.plannedArchitecture.charts.kataDeploy.chartName}{' '}
-                            {catalog.plannedArchitecture.charts.kataDeploy.version}
-                          </strong>
-                          <span>{components.kataDeploy ? 'Installs Kata runtimes and RuntimeClasses' : 'Disabled'}</span>
-                        </div>
-                        {(components.devicePlugin || components.provisioner || hasHardwareSelection) && (
-                          <>
-                            <div className="architecture-node vendor-specific">
-                              <small>NVIDIA dependency</small>
-                              <strong>
-                                {catalog.plannedArchitecture.charts.devicePlugin.chartName}{' '}
-                                {catalog.plannedArchitecture.charts.devicePlugin.version}
-                              </strong>
-                              <span>{components.devicePlugin ? 'Advertises VFIO devices to kubelet' : 'Disabled'}</span>
-                            </div>
-                            <div className="architecture-node vendor-specific">
-                              <small>NVIDIA dependency</small>
-                              <strong>
-                                {catalog.plannedArchitecture.charts.provisioner.chartName}{' '}
-                                {catalog.plannedArchitecture.charts.provisioner.version}
-                              </strong>
-                              <span>
-                                {components.provisioner ? 'Provisions multiple hardware profiles in one release' : 'Disabled'}
-                              </span>
-                            </div>
-                          </>
-                        )}
                       </div>
                     </div>
                   </details>
