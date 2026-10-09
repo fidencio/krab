@@ -49,7 +49,7 @@ The dependency table is generated from [`Chart.yaml`](charts/krab/Chart.yaml):
 | --- | --- | --- | --- |
 | node-feature-discovery | 0.19.0 | `oci://registry.k8s.io/nfd/charts` | `node-feature-discovery.enabled` |
 | kata-deploy | 4.2.0 | `oci://ghcr.io/kata-containers/kata-deploy-charts` | `kata-deploy.enabled` |
-| kata-device-plugin | 0.2.0-rc.1 | `oci://ghcr.io/kata-containers/kata-device-plugin-charts` | `kata-device-plugin.enabled,nvidia.enabled` |
+| kata-device-plugin | 0.2.0-rc.2 | `oci://ghcr.io/kata-containers/kata-device-plugin-charts` | `kata-device-plugin.enabled,nvidia.enabled` |
 | kata-device-provisioner | 0.1.0-alpha.1 | `oci://ghcr.io/kata-containers/kata-device-provisioner-charts` | `kata-device-provisioner.enabled,nvidia.enabled` |
 
 <!-- chart-dependencies:end -->

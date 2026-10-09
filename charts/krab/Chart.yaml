@@ -33,7 +33,7 @@ dependencies:
     repository: oci://ghcr.io/kata-containers/kata-deploy-charts
     condition: kata-deploy.enabled
   - name: kata-device-plugin
-    version: "0.2.0-rc.1"
+    version: "0.2.0-rc.2"
     repository: oci://ghcr.io/kata-containers/kata-device-plugin-charts
     condition: kata-device-plugin.enabled,nvidia.enabled
   - name: kata-device-provisioner

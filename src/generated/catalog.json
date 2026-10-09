@@ -12,7 +12,7 @@
       },
       "devicePlugin": {
         "repository": "ghcr.io/kata-containers/kata-device-plugin",
-        "tag": "v0.2.0-rc.1"
+        "tag": "v0.2.0-rc.2"
       }
     },
     "cluster": {
@@ -105,10 +105,10 @@
       },
       "devicePlugin": {
         "chartName": "kata-device-plugin",
-        "version": "0.2.0-rc.1",
-        "appVersion": "0.2.0-rc.1",
+        "version": "0.2.0-rc.2",
+        "appVersion": "0.2.0-rc.2",
         "required": false,
-        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/deploy/helm/kata-device-plugin/Chart.yaml"
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
       },
       "provisioner": {
         "chartName": "kata-device-provisioner",
@@ -751,16 +751,16 @@
       "devicePlugin": {
         "chart": {
           "chartName": "kata-device-plugin",
-          "version": "0.2.0-rc.1",
-          "appVersion": "0.2.0-rc.1",
+          "version": "0.2.0-rc.2",
+          "appVersion": "0.2.0-rc.2",
           "required": false,
-          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/deploy/helm/kata-device-plugin/Chart.yaml"
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
         },
         "values": {
           "fullnameOverride": "",
           "image": {
             "repository": "ghcr.io/kata-containers/kata-device-plugin",
-            "tag": "v0.2.0-rc.1",
+            "tag": "v0.2.0-rc.2",
             "pullPolicy": "IfNotPresent"
           },
           "nodeSelector": {
@@ -785,13 +785,13 @@
           "resourceNaming": "alias",
           "logFilter": ""
         },
-        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/deploy/helm/kata-device-plugin/Chart.yaml"
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
       },
       "workload": {
         "resourceName": "nvidia.com/gpu",
         "nvSwitchResourceName": "nvidia.com/nvswitch",
         "resourceNaming": "alias",
-        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/src/vfio.rs"
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/src/vfio.rs"
       }
     },
     {
@@ -1595,16 +1595,16 @@
       "devicePlugin": {
         "chart": {
           "chartName": "kata-device-plugin",
-          "version": "0.2.0-rc.1",
-          "appVersion": "0.2.0-rc.1",
+          "version": "0.2.0-rc.2",
+          "appVersion": "0.2.0-rc.2",
           "required": false,
-          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/deploy/helm/kata-device-plugin/Chart.yaml"
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
         },
         "values": {
           "fullnameOverride": "",
           "image": {
             "repository": "ghcr.io/kata-containers/kata-device-plugin",
-            "tag": "v0.2.0-rc.1",
+            "tag": "v0.2.0-rc.2",
             "pullPolicy": "IfNotPresent"
           },
           "nodeSelector": {
@@ -1629,13 +1629,13 @@
           "resourceNaming": "alias",
           "logFilter": ""
         },
-        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/deploy/helm/kata-device-plugin/Chart.yaml"
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
       },
       "workload": {
         "resourceName": "nvidia.com/gpu",
         "nvSwitchResourceName": "nvidia.com/nvswitch",
         "resourceNaming": "alias",
-        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/src/vfio.rs"
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/src/vfio.rs"
       }
     },
     {
@@ -1765,13 +1765,13 @@
       "devicePlugin": {
         "chart": {
           "chartName": "kata-device-plugin",
-          "version": "0.2.0-rc.1",
-          "appVersion": "0.2.0-rc.1",
+          "version": "0.2.0-rc.2",
+          "appVersion": "0.2.0-rc.2",
           "required": false,
-          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/deploy/helm/kata-device-plugin/Chart.yaml"
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
         },
         "values": {},
-        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/deploy/helm/kata-device-plugin/Chart.yaml"
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
       },
       "workload": {
         "resourceName": "",
@@ -1907,13 +1907,13 @@
       "devicePlugin": {
         "chart": {
           "chartName": "kata-device-plugin",
-          "version": "0.2.0-rc.1",
-          "appVersion": "0.2.0-rc.1",
+          "version": "0.2.0-rc.2",
+          "appVersion": "0.2.0-rc.2",
           "required": false,
-          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/deploy/helm/kata-device-plugin/Chart.yaml"
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
         },
         "values": {},
-        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/deploy/helm/kata-device-plugin/Chart.yaml"
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
       },
       "workload": {
         "resourceName": "",
@@ -2049,13 +2049,13 @@
       "devicePlugin": {
         "chart": {
           "chartName": "kata-device-plugin",
-          "version": "0.2.0-rc.1",
-          "appVersion": "0.2.0-rc.1",
+          "version": "0.2.0-rc.2",
+          "appVersion": "0.2.0-rc.2",
           "required": false,
-          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/deploy/helm/kata-device-plugin/Chart.yaml"
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
         },
         "values": {},
-        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/0e78c3bdfe3aa72ac45dc31922a4fd60178b3335/deploy/helm/kata-device-plugin/Chart.yaml"
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
       },
       "workload": {
         "resourceName": "",
