@@ -81,6 +81,10 @@ const frontPageVersions = [
     ],
   },
   {
+    label: 'Intel TDX',
+    components: [{ name: 'Quote Generation Service', version: chartVersions.qgs.version }],
+  },
+  {
     label: 'Pre-flight',
     components: [{ name: 'KRAB precheck', version: packageData.version }],
   },
@@ -549,7 +553,7 @@ function App() {
     requiresErofs &&
     advanced.erofsSnapshotterMode === 'disk' &&
     advanced.erofsDiskSize.trim().length === 0
-  const components = resolveComponents(selectedVendor, selections, advanced.components)
+  const components = resolveComponents(selectedVendor, selections, advanced.components, runtime)
   const valuesReady =
     cluster.distributionId !== null &&
     (!(components.kataDeploy || components.provisioner) ||
@@ -1268,6 +1272,54 @@ function App() {
                   <ChevronDown size={17} />
                 </summary>
                 <div className="advanced-config-body">
+                  {components.qgs && (
+                    <section className="advanced-group">
+                      <header>
+                        <span>Intel TDX</span>
+                        <strong>Quote Generation Service</strong>
+                        <small>Configure certificate provisioning and SGX device access.</small>
+                      </header>
+                      <div className="advanced-field-grid two-columns">
+                        <label>
+                          <span>Certificate provisioning</span>
+                          <select value={advanced.qgs.mode}
+                            onChange={(event) => {
+                              const mode = event.target.value as AdvancedConfiguration['qgs']['mode']
+                              setAdvanced((current) => ({ ...current, qgs: { ...current.qgs, mode } }))
+                            }}>
+                            <option value="">Chart default (Offline)</option>
+                            <option value="Online">Online — retrieve from Intel PCS</option>
+                            <option value="Offline">Offline — manually provision certificates</option>
+                            <option value="External">External — use externally managed certificates</option>
+                          </select>
+                        </label>
+                        <label>
+                          <span>SGX device plugin</span>
+                          <select value={advanced.qgs.deploySgxPlugin === null ? '' : String(advanced.qgs.deploySgxPlugin)}
+                            onChange={(event) => {
+                              const deploySgxPlugin = event.target.value === '' ? null : event.target.value === 'true'
+                              setAdvanced((current) => ({ ...current, qgs: { ...current.qgs, deploySgxPlugin } }))
+                            }}>
+                            <option value="">Chart default (Deploy)</option>
+                            <option value="true">Deploy with QGS</option>
+                            <option value="false">Use an existing plugin</option>
+                          </select>
+                        </label>
+                        {advanced.qgs.mode === 'Online' && (
+                          <label>
+                            <span>Intel PCS API key secret</span>
+                            <input type="text" value={advanced.qgs.pcsApiKeySecretName}
+                              placeholder="intel-pcs-api-key"
+                              onChange={(event) => {
+                                const pcsApiKeySecretName = event.target.value
+                                setAdvanced((current) => ({ ...current, qgs: { ...current.qgs, pcsApiKeySecretName } }))
+                              }} />
+                            <small>Optional existing secret in the deployment namespace, with an api-key entry. Online mode supports anonymous requests.</small>
+                          </label>
+                        )}
+                      </div>
+                    </section>
+                  )}
                   <section className="advanced-group">
                     <header>
                       <span>Kata runtime</span>
@@ -2643,6 +2695,7 @@ function App() {
                           ['kataDeploy', 'Kata runtime', 'Installs Kata runtimes and RuntimeClasses'],
                           ['devicePlugin', 'NVIDIA device plugin', 'Advertises VFIO devices to kubelet'],
                           ['provisioner', 'NVIDIA device provisioner', 'Provisions the selected hardware profiles'],
+                          ['qgs', 'Intel TDX quote generation', 'Generates attestation quotes for Intel TDX workloads'],
                         ] as const).map(([id, label, description]) => {
                           const chart = catalog.plannedArchitecture.charts[id]
                           return (

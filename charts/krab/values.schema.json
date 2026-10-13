@@ -152,6 +152,38 @@
           "type": "boolean",
           "default": false,
           "description": "Install Intel QGS and its SGX device plugin for TDX quote generation."
+        },
+        "tdxQuoteGenerationService": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "Online",
+                "Offline",
+                "External"
+              ]
+            }
+          }
+        },
+        "intel-sgx-plugin": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        },
+        "pcsApiKey": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "secretName": {
+              "type": "string"
+            }
+          }
         }
       }
     }

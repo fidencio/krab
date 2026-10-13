@@ -78,5 +78,6 @@
   "vendors[].workload.resourceName": "device-plugin-code",
   "vendors[].workload.nvSwitchResourceName": "device-plugin-code",
   "vendors[].workload.resourceNaming": "device-plugin-values",
-  "vendors[].workload.sourceUrl": "device-plugin-code and kata-values"
+  "vendors[].workload.sourceUrl": "device-plugin-code and kata-values",
+  "plannedArchitecture.charts.qgs.**": "qgs-chart"
 }

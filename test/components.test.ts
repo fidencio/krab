@@ -13,6 +13,7 @@ const vendor = catalog.vendors.find(({ id }) => id === 'custom')!
 const keys = {
   nfd: 'node-feature-discovery', kataDeploy: 'kata-deploy',
   devicePlugin: 'kata-device-plugin', provisioner: 'kata-device-provisioner',
+  qgs: 'intel-tdx-qgs',
 } as const
 
 test('device plugin targets NVIDIA GPU hardware independently of Kata deployment', () => {
@@ -37,7 +38,7 @@ test('device plugin targets NVIDIA GPU hardware independently of Kata deployment
 })
 
 test('independent component choices survive GPU values generation and import', () => {
-  for (let mask = 0; mask < 16; mask++) {
+  for (let mask = 0; mask < 32; mask++) {
     const advanced = createAdvancedConfiguration()
     Object.keys(keys).forEach((key, index) => {
       advanced.components[key as keyof typeof keys] = Boolean(mask & (1 << index))
@@ -69,4 +70,41 @@ test('an existing runtime is not required when Kata deployment is disabled', () 
   const imported = importValuesBundle(catalog, source)
   assert.equal(imported.advanced.components.kataDeploy, false)
   assert.deepEqual(imported.runtime.selectedShimIds, [])
+})
+
+test('QGS defaults follow TDX runtimes and explicit choices override them', () => {
+  const runtime = { selectedShimIds: ['qemu-tdx-runtime-rs'], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false }
+  const cluster = { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] }
+  const advanced = createAdvancedConfiguration()
+  const generate = () => parse(buildValuesBundle(catalog, vendor, {}, cluster, runtime, advanced))
+  assert.equal(generate()['intel-tdx-qgs'].enabled, true)
+  advanced.components.qgs = false
+  assert.equal(generate()['intel-tdx-qgs'].enabled, false)
+  advanced.components.qgs = null
+  assert.equal(generate()['intel-tdx-qgs'].enabled, true)
+  runtime.selectedShimIds = ['qemu-snp-runtime-rs']
+  assert.equal(generate()['intel-tdx-qgs'].enabled, false)
+  advanced.components.qgs = true
+  assert.equal(generate()['intel-tdx-qgs'].enabled, true)
+})
+
+test('Custom QGS provisioning and existing SGX plugin settings survive values import', () => {
+  for (const mode of ['Online', 'Offline', 'External'] as const) {
+    const advanced = createAdvancedConfiguration()
+    advanced.qgs = { mode, pcsApiKeySecretName: 'existing-pcs-key', deploySgxPlugin: false }
+    const source = buildValuesBundle(catalog, vendor, {},
+      { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+      { selectedShimIds: ['qemu-tdx-runtime-rs'], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+      advanced)
+    const qgs = parse(source)['intel-tdx-qgs']
+    assert.equal(qgs.enabled, true)
+    assert.equal(qgs.tdxQuoteGenerationService.mode, mode)
+    assert.equal(qgs.pcsApiKey.secretName, 'existing-pcs-key')
+    assert.equal(qgs['intel-sgx-plugin'].enabled, false)
+    const imported = importValuesBundle(catalog, source)
+    assert.deepEqual(imported.advanced.qgs, advanced.qgs)
+    assert.deepEqual(imported.warnings, [])
+    assert.deepEqual(parse(buildValuesBundle(catalog, vendor, imported.selections,
+      imported.cluster, imported.runtime, imported.advanced)), parse(source))
+  }
 })

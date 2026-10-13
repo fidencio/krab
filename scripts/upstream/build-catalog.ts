@@ -216,6 +216,11 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
       },
     },
   )
+  plannedArchitecture.charts.qgs = {
+    chartName: qgsChart.name,
+    version: String(qgsChart.version),
+    sourceUrl: sourceLink('qgs-chart'),
+  }
   plannedArchitecture.charts.nfd = {
     chartName: nfdChart.name,
     version: nfdVersion,

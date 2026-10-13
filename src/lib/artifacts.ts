@@ -192,6 +192,11 @@ export type ExplorerCatalog = {
         }
         sourceUrl: string
       }
+      qgs: {
+        chartName: string
+        version: string
+        sourceUrl: string
+      }
       kataDeploy: {
         chartName: string
         version: string
@@ -263,12 +268,13 @@ export type CustomRuntimeValidationError = {
   message: string
 }
 
-export type ComponentConfiguration = Record<'nfd' | 'kataDeploy' | 'devicePlugin' | 'provisioner', boolean | null>
+export type ComponentConfiguration = Record<'nfd' | 'kataDeploy' | 'devicePlugin' | 'provisioner' | 'qgs', boolean | null>
 
 export function resolveComponents(
   vendor: VendorCatalog,
   selections: FamilySelections,
   components: ComponentConfiguration,
+  runtime: RuntimeConfiguration,
 ): Record<keyof ComponentConfiguration, boolean> {
   const gpuSelected = vendor.hardwareFamilies.some((family) =>
     family.availability === 'available' &&
@@ -278,11 +284,18 @@ export function resolveComponents(
     kataDeploy: components.kataDeploy ?? true,
     devicePlugin: components.devicePlugin ?? gpuSelected,
     provisioner: components.provisioner ?? gpuSelected,
+    qgs: components.qgs ?? resolveRuntimeShimIds(vendor, selections, runtime)
+      .some((shimId) => shimId.includes('-tdx-')),
   }
 }
 
 export type AdvancedConfiguration = {
   components: ComponentConfiguration
+  qgs: {
+    mode: '' | 'Online' | 'Offline' | 'External'
+    pcsApiKeySecretName: string
+    deploySgxPlugin: boolean | null
+  }
   containerdConfigDir: string
   containerdRuntimeSocket: string
   containerdConfigFileName: string
@@ -335,7 +348,8 @@ const createChartImageConfiguration = (): ChartImageConfiguration => ({
 })
 
 export const createAdvancedConfiguration = (): AdvancedConfiguration => ({
-  components: { nfd: null, kataDeploy: null, devicePlugin: null, provisioner: null },
+  qgs: { mode: '', pcsApiKeySecretName: '', deploySgxPlugin: null },
+  components: { nfd: null, kataDeploy: null, devicePlugin: null, provisioner: null, qgs: null },
   containerdConfigDir: '',
   containerdRuntimeSocket: '',
   containerdConfigFileName: '',
@@ -607,12 +621,22 @@ export function importValuesBundle(
     kataDeploy: dependencies.runtimeValuesKey,
     devicePlugin: dependencies.devicePluginValuesKey,
     provisioner: dependencies.provisionerValuesKey,
+    qgs: 'intel-tdx-qgs',
   })) {
     const enabled = asRecord(root[valuesKey]).enabled
     if (typeof enabled === 'boolean') {
       advanced.components[component as keyof ComponentConfiguration] = enabled
     }
   }
+  const qgsValues = asRecord(root['intel-tdx-qgs'])
+  const qgsMode = asRecord(qgsValues.tdxQuoteGenerationService).mode
+  if (qgsMode === 'Online' || qgsMode === 'Offline' || qgsMode === 'External') {
+    advanced.qgs.mode = qgsMode
+  }
+  const pcsSecret = asRecord(qgsValues.pcsApiKey).secretName
+  if (typeof pcsSecret === 'string') advanced.qgs.pcsApiKeySecretName = pcsSecret
+  const sgxEnabled = asRecord(qgsValues['intel-sgx-plugin']).enabled
+  if (typeof sgxEnabled === 'boolean') advanced.qgs.deploySgxPlugin = sgxEnabled
   advanced.debug = runtimeValues.debug === true
   advanced.shimDropIns = Object.fromEntries(
     enabledShimIds.flatMap((id) => {
@@ -1299,7 +1323,7 @@ export function buildValuesBundle(
   const gpuPlatformSelected = vendor.hardwareFamilies.some((family) =>
     family.availability === 'available' &&
     family.modes.some(({ id }) => id === selections[family.id]?.modeId))
-  const components = resolveComponents(vendor, selections, advanced.components)
+  const components = resolveComponents(vendor, selections, advanced.components, runtime)
   const includeDevicePlugin = components.devicePlugin
   const includeProvisioner = components.provisioner
   const nfdImages = advanced.images.nfd
@@ -1364,7 +1388,12 @@ export function buildValuesBundle(
       enabled: gpuPlatformSelected || includeDevicePlugin || includeProvisioner,
     },
     'intel-tdx-qgs': {
-      enabled: [...enabledShims].some((shimId) => shimId.includes('-tdx-')),
+      enabled: components.qgs,
+      ...(advanced.qgs.mode ? { tdxQuoteGenerationService: { mode: advanced.qgs.mode } } : {}),
+      ...(advanced.qgs.pcsApiKeySecretName.trim()
+        ? { pcsApiKey: { secretName: advanced.qgs.pcsApiKeySecretName.trim() } } : {}),
+      ...(advanced.qgs.deploySgxPlugin !== null
+        ? { 'intel-sgx-plugin': { enabled: advanced.qgs.deploySgxPlugin } } : {}),
     },
     [dependencies.nfdValuesKey]: nfdValues,
     [dependencies.runtimeValuesKey]: { enabled: components.kataDeploy, ...orderedRuntimeValues },

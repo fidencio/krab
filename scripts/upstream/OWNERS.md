@@ -124,3 +124,7 @@ The `intel-tdx-qgs` dependency version is owned by `qgs-chart` in
 gate and TDX node selector are KRAB chart policy. Generated deployment values
 enable QGS when the selected runtime shim set includes TDX. Image pins and the
 SGX plugin dependency are supplied by the published Intel chart.
+
+`plannedArchitecture.charts.qgs` metadata comes from `qgs-chart`. The QGS
+component default follows selected TDX runtimes; an explicit Deploy/Skip
+choice overrides that default and survives values import.

@@ -96,3 +96,8 @@ under the `api-key` data key. Online mode also supports anonymous requests.
 Offline and External modes require certificates supplied separately, as described
 in the upstream documentation. If an SGX device plugin is already installed, set
 `intel-tdx-qgs.intel-sgx-plugin.enabled=false`.
+
+The builder exposes QGS as an independent Deploy/Skip component. When enabled,
+Advanced deployment configuration lets you choose the certificate provisioning
+mode, an existing PCS API key secret, and whether to deploy the SGX plugin. These
+settings also apply to Custom deployments and survive values import.

@@ -235,3 +235,24 @@ test('CPU feature rules precede GPU provisioning when Kata deployment is disable
     resource.metadata.name === 'krab-kata-system-tee-capabilities'),
   'do not install NFD custom resources without NFD or its API')
 })
+
+test('NVIDIA plus TDX renders configured Online QGS with an existing SGX plugin', () => {
+  const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
+  const advanced = createAdvancedConfiguration()
+  advanced.qgs = { mode: 'Online', pcsApiKeySecretName: 'existing-pcs-key', deploySgxPlugin: false }
+  const values = buildValuesBundle(catalog, vendor,
+    { hopper: { enabled: true, modeId: 'ppcie', cpuTeeIds: ['tdx'] } },
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+    { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    advanced)
+  const path = join(temporaryDirectory, 'nvidia-tdx-online.yaml')
+  writeFileSync(path, values)
+  const rendered = helm('template', 'krab', packagedChart(chart), '--namespace', 'kata-system', '--values', path)
+  const resources = verifyManifests(rendered, 'NVIDIA TDX Online QGS')
+  assert.ok(resources.some((resource) => resource.kind === 'Deployment' && resource.metadata.name.includes('registrar')))
+  assert.ok(resources.some((resource) => resource.kind === 'DaemonSet' && resource.metadata.name.includes('qgs')))
+  assert.ok(!resources.some((resource) => resource.kind === 'DaemonSet' && resource.metadata.name.includes('sgx')))
+  assert.ok(rendered.includes('name: existing-pcs-key'))
+  assert.ok(rendered.includes('# Source: krab/charts/kata-device-plugin/templates/'))
+  assert.ok(rendered.includes('# Source: krab/charts/kata-device-provisioner/templates/'))
+})
