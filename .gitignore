@@ -13,6 +13,7 @@ dist
 /public/releases/*/
 dist-ssr
 /preflight/target/
+/controller/target/
 *.local
 /upstream/cache/
 

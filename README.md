@@ -78,6 +78,10 @@ available before publishing KRAB.
 
 ## Node pre-check
 
+An opt-in [experimental Rust controller](controller/README.md) can prepare new
+nodes across the enabled stack using one shared reconcile loop. It is separate
+from the published chart workflow and currently intended for fresh test clusters.
+
 Label the Linux nodes to check, then install the published pre-check chart:
 
 ```sh

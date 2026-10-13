@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+script_dir=$(CDPATH= cd -P -- "$(dirname -- "$0")" && pwd)
+task_root=${KRAB_CONTROLLER_ROOT:-$(CDPATH= cd -- "$script_dir/.." && pwd)}
+exec "$task_root/node_modules/.bin/tsx" "$task_root/controller/render.ts"

@@ -17,6 +17,7 @@
     "test": "tsx --test test/*.test.ts",
     "test:chart": "tsx --test test/chart.test.ts",
     "test:helm": "tsx --test test/helm-render.ts",
+    "test:controller:render": "tsc -p controller/tsconfig.json && tsx --test tests-controller/*.test.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },

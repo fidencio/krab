@@ -1,0 +1,9 @@
+apiVersion: v1
+name: krab-controller
+version: 0.1.0
+type: postrenderer/v1
+runtime: subprocess
+config: {}
+runtimeConfig:
+  platformCommand:
+    - command: ${HELM_PLUGIN_DIR}/post-renderer
