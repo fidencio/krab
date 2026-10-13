@@ -51,6 +51,7 @@ The dependency table is generated from [`Chart.yaml`](charts/krab/Chart.yaml):
 | kata-deploy | 4.2.0 | `oci://ghcr.io/kata-containers/kata-deploy-charts` | `kata-deploy.enabled` |
 | kata-device-plugin | 0.2.0-rc.2 | `oci://ghcr.io/kata-containers/kata-device-plugin-charts` | `kata-device-plugin.enabled,nvidia.enabled` |
 | kata-device-provisioner | 0.1.0-alpha.1 | `oci://ghcr.io/kata-containers/kata-device-provisioner-charts` | `kata-device-provisioner.enabled,nvidia.enabled` |
+| intel-tdx-qgs | 0.27.0-alpha.1 | `oci://ghcr.io/intel` | `intel-tdx-qgs.enabled` |
 
 <!-- chart-dependencies:end -->
 
@@ -184,7 +185,7 @@ The utility image is used only when generated values request EROFS setup.
 Updating an upstream version is a reviewed change. For example, run
 `npm run refresh:upstream -- --group kata` to discover the newest Kata release,
 resolve its tag to a commit, and update its locked checksums. The other groups
-are `nfd`, `device-plugin`, and `provisioner`. Then run
+are `nfd`, `device-plugin`, `provisioner`, and `qgs`. Then run
 `npm run sync:upstream` and review the generated diff.
 
 The generator updates the chart dependencies in `charts/krab/Chart.yaml` and
@@ -208,7 +209,7 @@ repository variable to the recipient's Slack user ID.
 
 ### Updating or rolling back an upstream pin
 
-For a source release, choose one group (`kata`, `nfd`, `device-plugin`, or
+For a source release, choose one group (`kata`, `nfd`, `device-plugin`, `qgs`, or
 `provisioner`) and run:
 
 ```sh

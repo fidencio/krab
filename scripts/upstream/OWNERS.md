@@ -118,3 +118,9 @@ To update a value, change its owner and run `npm run generate`. A new upstream
 release goes through `npm run refresh:upstream` and a reviewed lockfile update.
 CI rejects a PR if regeneration changes committed output. To roll back an
 upstream update, revert its lockfile and generated-file commit together.
+
+The `intel-tdx-qgs` dependency version is owned by `qgs-chart` in
+`sources.lock.yaml`; its OCI repository is the generator mapping. Its enabled
+gate and TDX node selector are KRAB chart policy. Generated deployment values
+enable QGS when the selected runtime shim set includes TDX. Image pins and the
+SGX plugin dependency are supplied by the published Intel chart.

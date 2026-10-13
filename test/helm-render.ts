@@ -36,6 +36,7 @@ type Manifest = {
   apiVersion: string
   kind: string
   metadata: { name: string; namespace?: string; annotations?: Record<string, string> }
+  spec?: { template?: { spec?: { nodeSelector?: Record<string, string> } } }
 }
 
 function verifyManifests(rendered: string, caseName: string) {
@@ -69,6 +70,21 @@ function renderCase(caseName: string, archive: string, values?: string) {
   const resources = verifyManifests(rendered, caseName)
   const hasSource = (name: string) => rendered.includes(`# Source: krab/charts/${name}/templates/`)
   assert.ok(hasSource('node-feature-discovery'), `${caseName}: NFD did not render`)
+  const configuration = values ? parseAllDocuments(values)[0].toJS() : null
+  const qgsEnabled = Boolean(configuration?.['intel-tdx-qgs']?.enabled)
+  const tdxSelected = Object.entries(configuration?.['kata-deploy']?.shims ?? {})
+    .some(([id, shim]) => id.includes('-tdx-') && (shim as { enabled?: boolean }).enabled)
+  assert.equal(qgsEnabled, tdxSelected, `${caseName}: TDX enables QGS`)
+  if (qgsEnabled) {
+    const daemonSets = resources.filter((resource) => resource.kind === 'DaemonSet' &&
+      /qgs|sgx/.test(resource.metadata.name))
+    assert.equal(daemonSets.length, 2, `${caseName}: QGS and SGX plugin`)
+    for (const resource of daemonSets) {
+      assert.equal(resource.spec?.template?.spec?.nodeSelector?.['intel.feature.node.kubernetes.io/tdx'],
+        'true', `${caseName}: ${resource.metadata.name} targets TDX nodes`)
+    }
+  }
+  assert.equal(hasSource('intel-tdx-qgs'), qgsEnabled, `${caseName}: QGS gate`)
   assert.ok(hasSource('kata-deploy'), `${caseName}: kata-deploy did not render`)
   const gpuEnabled = values ? Boolean(parseAllDocuments(values)[0].toJS()?.nvidia?.enabled) : false
   assert.equal(hasSource('kata-device-plugin'), gpuEnabled, `${caseName}: device plugin gate`)

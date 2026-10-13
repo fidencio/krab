@@ -225,6 +225,16 @@
       "path": "deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml",
       "sha256": "b06fe38375fe2a2196f33c6e6a4ef8bd945c965a5399476677f314d39fc68c87",
       "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/5a27c86f7f828abbd8c3c1803c2723bfc5e86163/deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml"
+    },
+    {
+      "id": "qgs-chart",
+      "repository": "intel/confidential-computing.tee.dcap.k8s.qgs",
+      "ref": "d21e62cc2d5cba8f886364e75613916c39ece506",
+      "release": "v0.27.0-alpha.1",
+      "draft": false,
+      "path": "charts/intel-tdx-qgs/Chart.yaml",
+      "sha256": "4870202c3a9f563adaaa1f1344381af63f0236d8909e6896ac079f2fa953c0b0",
+      "sourceUrl": "https://github.com/intel/confidential-computing.tee.dcap.k8s.qgs/blob/d21e62cc2d5cba8f886364e75613916c39ece506/charts/intel-tdx-qgs/Chart.yaml"
     }
   ]
 }

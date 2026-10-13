@@ -30,6 +30,7 @@ test('chart dependency gates allow each component to be enabled independently', 
     ]),
   )
 
+  assert.equal(dependencies['intel-tdx-qgs'].condition, 'intel-tdx-qgs.enabled')
   assert.equal(chart.name, 'krab')
   assert.equal(dependencies['node-feature-discovery'].condition, 'node-feature-discovery.enabled')
   assert.equal(dependencies['kata-deploy'].condition, 'kata-deploy.enabled')

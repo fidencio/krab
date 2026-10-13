@@ -1363,6 +1363,9 @@ export function buildValuesBundle(
     [dependencies.nvidiaValuesKey]: {
       enabled: gpuPlatformSelected || includeDevicePlugin || includeProvisioner,
     },
+    'intel-tdx-qgs': {
+      enabled: [...enabledShims].some((shimId) => shimId.includes('-tdx-')),
+    },
     [dependencies.nfdValuesKey]: nfdValues,
     [dependencies.runtimeValuesKey]: { enabled: components.kataDeploy, ...orderedRuntimeValues },
     [dependencies.devicePluginValuesKey]: { ...devicePluginValues, enabled: includeDevicePlugin },

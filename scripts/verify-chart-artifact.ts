@@ -8,7 +8,7 @@ import { groups, type Group } from './refresh-upstream.ts'
 const run = promisify(execFile)
 const argument = process.argv.find((item) => item.startsWith('--group='))?.slice(8) ??
   process.argv[process.argv.indexOf('--group') + 1]
-if (!Object.hasOwn(groups, argument)) throw new Error('Pass --group kata|nfd|device-plugin|provisioner')
+if (!Object.hasOwn(groups, argument)) throw new Error('Pass --group kata|nfd|device-plugin|provisioner|qgs')
 const group = argument as Group
 const expectedName = groups[group].chart
 const chart = parse(await readFile(resolve(import.meta.dirname, '../charts/krab/Chart.yaml'), 'utf8')) as {

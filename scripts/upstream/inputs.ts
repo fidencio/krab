@@ -4,6 +4,7 @@ import { parse } from 'yaml'
 import { readYaml, requireValue } from './sources.ts'
 
 export async function loadInputs(root: string, cachePath: (id: string) => string) {
+  const qgsChart = await readYaml(cachePath('qgs-chart'))
   const kataChart = await readYaml(cachePath('kata-chart'))
   const kataVersions = await readYaml(cachePath('kata-versions'))
   const nfdChart = await readYaml(cachePath('nfd-chart'))
@@ -31,7 +32,7 @@ export async function loadInputs(root: string, cachePath: (id: string) => string
     'Unable to derive the provisioner namespace',
   )
   return {
-    kataChart, kataVersions, nfdChart, nfdValues, plannedArchitecture,
+    qgsChart, kataChart, kataVersions, nfdChart, nfdValues, plannedArchitecture,
     krabChart, krabValues, krabSchema, kataValuesRaw, kataValues,
     kataProfileRaw, kataProfile, provisionerChart, provisionerValues,
     devicePluginChart, provisionerReadme, pluginCode, pluginValues,

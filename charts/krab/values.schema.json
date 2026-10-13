@@ -143,6 +143,17 @@
           "description": "Enable this component independently of other KRAB dependencies."
         }
       }
+    },
+    "intel-tdx-qgs": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Install Intel QGS and its SGX device plugin for TDX quote generation."
+        }
+      }
     }
   },
   "definitions": {

@@ -56,3 +56,10 @@ kata-device-provisioner:
       reference: ghcr.io/kata-containers/k8s-job-dispatcher
       tag: "0.4.0"
   profiles: {}
+
+# Enabled by generated values when a TDX runtime is selected.
+intel-tdx-qgs:
+  enabled: false
+  global:
+    nodeSelector:
+      intel.feature.node.kubernetes.io/tdx: "true"

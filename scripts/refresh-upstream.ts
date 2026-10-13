@@ -9,6 +9,7 @@ export const groups = {
   kata: { repository: 'kata-containers/kata-containers', chart: 'kata-deploy', prereleases: false },
   nfd: { repository: 'kubernetes-sigs/node-feature-discovery', chart: 'node-feature-discovery', prereleases: false },
   'device-plugin': { repository: 'kata-containers/kata-device-plugin', chart: 'kata-device-plugin', prereleases: true },
+  qgs: { repository: 'intel/confidential-computing.tee.dcap.k8s.qgs', chart: 'intel-tdx-qgs', prereleases: true },
   provisioner: { repository: 'kata-containers/kata-device-provisioner', chart: 'kata-device-provisioner', prereleases: true },
 } as const
 
@@ -118,7 +119,7 @@ async function publishedReleases(repository: string) {
 async function main() {
   const argument = process.argv.find((item) => item.startsWith('--group='))?.slice(8) ??
     process.argv[process.argv.indexOf('--group') + 1]
-  if (!Object.hasOwn(groups, argument)) throw new Error('Pass --group kata|nfd|device-plugin|provisioner')
+  if (!Object.hasOwn(groups, argument)) throw new Error('Pass --group kata|nfd|device-plugin|provisioner|qgs')
   const group = argument as Group
   const { repository } = groups[group]
   const lockPath = resolve(import.meta.dirname, '../upstream/sources.lock.yaml')

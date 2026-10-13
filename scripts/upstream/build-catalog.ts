@@ -54,7 +54,7 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
   const { lock, source, sourceById, cachePath, sourceLink } = sources
   const { compatibility, presentation, presentationFor } = policies
   const {
-    kataChart, kataVersions, nfdChart, nfdValues, plannedArchitecture,
+    qgsChart, kataChart, kataVersions, nfdChart, nfdValues, plannedArchitecture,
     krabChart, krabValues, krabSchema, kataValuesRaw, kataValues,
     kataProfile, provisionerChart, provisionerValues, devicePluginChart,
     provisionerReadme, pluginCode, pluginValues, kataChartReference,
@@ -107,11 +107,13 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
     'kata-deploy',
     'kata-device-plugin',
     'kata-device-provisioner',
+    'intel-tdx-qgs',
   ]) {
     requireValue(krabDependencies.get(name), `KRAB chart dependency is missing: ${name}`)
   }
   const plannedDependencies = plannedArchitecture.charts.krab.dependencies
   const expectedValuesKeys = {
+    'intel-tdx-qgs': 'intel-tdx-qgs',
     'node-feature-discovery': plannedDependencies.nfdValuesKey,
     'kata-deploy': plannedDependencies.runtimeValuesKey,
     'kata-device-plugin': plannedDependencies.devicePluginValuesKey,
@@ -144,6 +146,7 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
     'kata-deploy',
     'kata-device-plugin',
     'kata-device-provisioner',
+    'intel-tdx-qgs',
   ]) {
     requireValue(krabSchema.properties?.[property], `KRAB values schema is missing ${property}`)
   }
@@ -180,6 +183,7 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
   }
   const nfdVersion = nfdRelease.slice(1)
   if (
+    qgsChart.name !== 'intel-tdx-qgs' ||
     kataChart.name !== 'kata-deploy' ||
     devicePluginChart.name !== 'kata-device-plugin' ||
     provisionerChart.name !== 'kata-device-provisioner' ||
@@ -190,6 +194,10 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
   const updatedChart = syncChartDependencies(
     await readFile(krabChartPath, 'utf8'),
     {
+      'intel-tdx-qgs': {
+        version: String(requireValue(qgsChart.version, 'QGS chart version is missing')),
+        repository: 'oci://ghcr.io/intel',
+      },
       'node-feature-discovery': {
         version: nfdVersion,
         repository: chartRepositories.nfd,

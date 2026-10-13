@@ -72,3 +72,27 @@ helm upgrade --install krab \
 
 The conditional NVIDIA dependencies are consumed from their published
 prereleases.
+
+For TDX deployments, generated values enable the pinned
+[`intel-tdx-qgs`](https://github.com/intel/confidential-computing.tee.dcap.k8s.qgs)
+dependency, including its Intel SGX device plugin. Both target nodes labeled
+`intel.feature.node.kubernetes.io/tdx=true`. QGS is disabled by default and for
+selections without a TDX runtime.
+
+The upstream default is Offline certificate provisioning. To retrieve
+certificates from Intel PCS, configure Online mode in your values:
+
+```yaml
+intel-tdx-qgs:
+  enabled: true
+  tdxQuoteGenerationService:
+    mode: Online
+  pcsApiKey:
+    secretName: intel-pcs-api-key
+```
+
+An optional PCS API key belongs in an existing Secret in the release namespace,
+under the `api-key` data key. Online mode also supports anonymous requests.
+Offline and External modes require certificates supplied separately, as described
+in the upstream documentation. If an SGX device plugin is already installed, set
+`intel-tdx-qgs.intel-sgx-plugin.enabled=false`.

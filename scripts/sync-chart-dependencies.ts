@@ -6,7 +6,7 @@ type Dependency = {
 }
 
 export type KrabDependencies = Record<
-  'node-feature-discovery' | 'kata-deploy' | 'kata-device-plugin' | 'kata-device-provisioner',
+  'node-feature-discovery' | 'kata-deploy' | 'kata-device-plugin' | 'kata-device-provisioner' | 'intel-tdx-qgs',
   Dependency
 >
 
@@ -17,7 +17,7 @@ export function syncChartDependencies(content: string, expected: KrabDependencie
   }
   const dependencies = document.get('dependencies', true)
   if (!isSeq(dependencies) || dependencies.items.length !== Object.keys(expected).length) {
-    throw new Error('KRAB chart must declare exactly four dependencies')
+    throw new Error(`KRAB chart must declare exactly ${Object.keys(expected).length} dependencies`)
   }
 
   const seen = new Set<string>()
