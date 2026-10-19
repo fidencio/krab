@@ -1,6 +1,6 @@
 # krab-preflight
 
-A small read-only Linux host capability checker, written in Rust without external Cargo dependencies.
+A small read-only Linux host capability checker, written in Rust.
 
 Build a native binary with `cargo build --release` from this directory on the target Linux architecture.
 
@@ -50,6 +50,47 @@ target node that needs IOMMUFD.
 The EROFS check reads the `mkfs.erofs` binary for the `mkfs-time` and `sort` option strings, following [Kata Deploy's option check](https://github.com/kata-containers/kata-containers/blob/main/tools/packaging/kata-deploy/binary/src/main.rs). It does not execute `mkfs.erofs`. Like Kata Deploy's option check, it does not inspect `-T` separately. It does not check kernel EROFS support, containerd version, or whether the snapshotter is configured.
 
 The GPU checks require [`kata-device-provisioner`](https://github.com/kata-containers/kata-device-provisioner) in `PATH`, or at the path in `KRAB_PROVISIONER`. They call its read-only `status --all` command so a GPU already set to another CC mode is still included. These checks report hardware capability for the supported NVIDIA GPUs; they do not call `status --probe`, read live CC/PPCIE modes, or require every GPU on the node to support the feature. The provisioner currently emits human-readable status rather than a machine-readable format, so these checks depend on its current output layout.
+
+## Cluster conformance
+
+Use the same binary to evaluate every node against an explicit CC selection:
+
+```sh
+krab-preflight conformance --run --require tdx --require gpu-cc --output verdict.json
+krab-preflight conformance --report krab-precheck.json --require snp --json
+krab-preflight conformance --help
+```
+
+`--run` uses Helm and kubectl from PATH to run the published pre-check chart and
+collect fresh reports. `--report` evaluates a saved v2 cluster collection offline.
+Every node in the selected inventory must confirm every requirement. Required
+`no`, `unknown`, or `review` states fail the verdict, as do missing/duplicate
+nodes, changed identities, unsupported reports, or failed collection.
+Conformance verdicts are never cached; live runs force the underlying probes to
+refresh their cache.
+
+Choose one of `cc` (any supported CPU TEE per node), `tdx`, `snp`, or `se`, and/or
+`gpu-cc` or `gpu-ppcie`. All selections also require KVM and host EROFS utilities;
+GPU selections require IOMMUFD, NVIDIA hardware, and complete GPU inventory.
+An optional reported runtime layout must pass. `--gpu-model MODEL` restricts GPU
+models; repeated models are alternatives. The full selection, inventory, node
+failures, and source reports are included in the JSON verdict.
+
+Use `--require-any gpu-cc,gpu-ppcie` to allow either GPU capability on each node.
+The shared GPU prerequisites still apply. Optional `--require tdx` remains
+mandatory on every node; separate `--require` flags always combine with AND.
+The JSON verdict includes the OR alternatives and which ones each node matched.
+
+Exit status is 0 for PASS, 1 for confirmed nonconformance after complete checks,
+and 2 for collection failures, incomplete/invalid evidence, invalid CLI options,
+or output-write errors. Required unknown/review capability states are FAIL;
+missing reports and invalid identities are ERROR. Text output lists every node.
+The Helm conformance Job uses these same container exit codes: 0 produces a
+Complete Job, while 1 and 2 produce Failed Jobs. Its termination message and
+JSON logs distinguish FAIL from ERROR, since Helm itself exits nonzero for both.
+This is conformance of reported host
+prerequisites; it does not test workload launch or attestation. See the
+[cluster conformance guide](../README.md#cc-conformance) for scope and context options.
 
 ## Cached checks
 

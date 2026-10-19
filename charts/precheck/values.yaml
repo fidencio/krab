@@ -11,3 +11,10 @@ probeImage:
   repository: ghcr.io/fidencio/krab-preflight
 collectorImage:
   repository: ghcr.io/fidencio/krab-collector
+# Enable a Helm-gated conformance Job. Requirements must be explicitly selected.
+conformance:
+  enabled: false
+  requirements: []
+  # Optional GPU alternatives: every node must satisfy at least one.
+  anyOf: []
+  gpuModels: []

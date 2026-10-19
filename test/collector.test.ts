@@ -70,3 +70,61 @@ test('precheck cache mounts are confined to the cache directory and configured t
     }
   }
 })
+
+test('Helm conformance gates success on the Rust verdict and preserves collection errors for exit 2', () => {
+  const rendered = execFileSync('helm', ['template', 'krab-precheck', 'charts/precheck',
+    '--set', 'conformance.enabled=true', '--set', 'conformance.requirements={tdx,gpu-cc}'],
+  { cwd: root, encoding: 'utf8' })
+  const resources = parseAllDocuments(rendered).map((document) => document.toJS())
+  const jobs = resources.filter((resource) => resource?.kind === 'Job')
+  assert.equal(jobs.length, 2)
+  const dispatcher = jobs.find((job) => job.metadata.name === 'krab-precheck-dispatcher-1')
+  // This must start as a regular resource: a failing dispatcher hook would stop
+  // Helm before it could create the conformance Job and report ERROR.
+  assert.equal(dispatcher.metadata.annotations?.['helm.sh/hook'], undefined)
+  const job = jobs.find((job) => job.metadata.name === 'krab-precheck-conformance')
+  assert.equal(job.metadata.annotations['helm.sh/hook'], 'post-install,post-upgrade')
+  assert.equal(job.metadata.annotations['helm.sh/hook-delete-policy'], 'before-hook-creation')
+  assert.equal(job.spec.backoffLimit, 0)
+  const spec = job.spec.template.spec
+  assert.equal(spec.restartPolicy, 'Never')
+  assert.equal(spec.automountServiceAccountToken, false)
+  const collector = spec.initContainers[0]
+  assert.match(collector.args[0], /collection-error.txt; exit 0$/)
+  assert.equal(collector.env.find((env: { name: string }) => env.name === 'WAIT_FOR_DISPATCHER').value, 'true')
+  assert.equal(collector.env.find((env: { name: string }) => env.name === 'DISPATCHER_JOB_NAME').value, dispatcher.metadata.name)
+  const evaluator = spec.containers[0]
+  assert.deepEqual(evaluator.command, ['/usr/local/bin/krab-preflight'])
+  assert.deepEqual(evaluator.args, ['conformance', '--report', '/work/precheck.json', '--collection-error',
+    '/work/collection-error.txt', '--termination-message', '/dev/termination-log', '--json',
+    '--require', 'tdx', '--require', 'gpu-cc'])
+  assert.equal(evaluator.terminationMessagePath, '/dev/termination-log')
+  assert.equal(evaluator.volumeMounts.some((mount: { name: string }) => mount.name === 'api-access'), false)
+  assert.equal(collector.volumeMounts.some((mount: { name: string }) => mount.name === 'api-access'), true)
+  const configmap = resources.find((resource) => resource?.kind === 'ConfigMap')
+  assert.ok(parse(configmap.data['node-job.yaml']).spec.template.spec.containers[0].args.includes('--force-refresh'))
+})
+
+test('Helm conformance refuses an empty, unknown, or conflicting selection before creating Jobs', () => {
+  for (const requirements of ['', 'conformance.requirements={unsupported}', 'conformance.requirements={tdx,snp}']) {
+    const args = ['template', 'krab-precheck', 'charts/precheck', '--set', 'conformance.enabled=true',
+      ...(requirements ? ['--set', requirements] : [])]
+    assert.throws(() => execFileSync('helm', args, { cwd: root, encoding: 'utf8', stdio: 'pipe' }), /requirements|requirement/)
+  }
+})
+
+test('Helm supports a GPU OR selection by itself or alongside mandatory CPU requirements', () => {
+  for (const withCpu of [false, true]) {
+    const rendered = execFileSync('helm', ['template', 'krab-precheck', 'charts/precheck',
+      '--set', 'conformance.enabled=true', '--set', 'conformance.anyOf={gpu-cc,gpu-ppcie}',
+      ...(withCpu ? ['--set', 'conformance.requirements={tdx}'] : [])], { cwd: root, encoding: 'utf8' })
+    const resources = parseAllDocuments(rendered).map((document) => document.toJS())
+    const args = resources.find((r) => r?.kind === 'Job' && r.metadata.name.endsWith('-conformance'))
+      .spec.template.spec.containers[0].args
+    assert.deepEqual(args.slice(-2), ['--require-any', 'gpu-cc,gpu-ppcie'])
+    assert.equal(args.includes('tdx'), withCpu)
+  }
+  assert.throws(() => execFileSync('helm', ['template', 'krab-precheck', 'charts/precheck',
+    '--set', 'conformance.enabled=true', '--set', 'conformance.anyOf={tdx,snp}'],
+  { cwd: root, encoding: 'utf8', stdio: 'pipe' }), /anyOf accepts gpu-cc and gpu-ppcie/)
+})

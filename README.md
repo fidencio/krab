@@ -78,6 +78,11 @@ available before publishing KRAB.
 
 ## Node pre-check
 
+This development version uses Helm values format 2 and pre-check schema v2.
+Regenerate values and rerun pre-flight checks: format 1 values, unversioned
+values, and v1 pre-check reports are not accepted. Archived builders remain
+available for older releases.
+
 An opt-in [experimental Rust controller](controller/README.md) can prepare new
 nodes across the enabled stack using one shared reconcile loop. It is separate
 from the published chart workflow and currently intended for fresh test clusters.
@@ -119,7 +124,7 @@ Only the cache directory is mounted writable; host inspection mounts remain
 read-only, and probes do not receive Kubernetes credentials.
 
 The probe image builds
-the dependency-free Rust checker in [`preflight/`](preflight/) for amd64, arm64,
+the Rust checker in [`preflight/`](preflight/) for amd64, arm64,
 ppc64le, and s390x. It uses pinned, published kata-device-provisioner binaries
 for NVIDIA capability and device inventory on amd64 and arm64; no provisioner
 source build, GPU mode change, or NFD installation is involved. On ppc64le and
@@ -132,7 +137,10 @@ PCI addresses, and kernel version.
 
 The browser reads reports locally. Definite incompatibilities disable matching
 choices, while unknown probes remain selectable and require operator review.
-The v1 report shape is defined in [`contracts/precheck-v1.schema.json`](contracts/precheck-v1.schema.json).
+The v2 report shape is defined in [`contracts/precheck-v2.schema.json`](contracts/precheck-v2.schema.json).
+It records the selected node inventory, node UID, host machine/boot identities,
+checker version, and collection time. The collector rejects identity changes
+and incomplete node coverage.
 The install command above and the builder use [`upstream/precheck-command.json`](upstream/precheck-command.json).
 An uploaded report is a snapshot, not a launch or attestation test. Add reports
 from every target node, particularly for clusters with mixed hardware. Select
@@ -167,6 +175,119 @@ image digest is kept in `upstream/precheck-image.lock.json`. Run
 updates the Dockerfile and the precheck chart's dispatcher image. The probe
 checks the host EROFS binary without executing it, so new reports leave the
 optional `erofsVersion` field empty.
+
+## CC conformance
+
+The Rust checker can give a strict cluster verdict for the requirements you
+choose. Every selected node must pass: one `no`, `unknown`, or `review` on a
+required check fails the cluster. KVM and host EROFS utilities are prerequisites
+for every profile; a reported runtime layout must also be confirmed.
+
+Run fresh pre-flight checks, collect all Linux nodes, and save the verdict with
+its complete evidence:
+
+```sh
+krab-preflight conformance --run \
+  --require tdx --require gpu-cc \
+  --output krab-conformance.json
+```
+
+Choose requirements explicitly: `tdx`, `snp`, `se`, `gpu-cc`, or `gpu-ppcie`.
+`--require cc` allows any supported CPU TEE on each node, including mixed Intel
+and AMD clusters. CPU and GPU requirements combine with AND. GPU profiles also
+require IOMMUFD and a complete NVIDIA GPU inventory. Optional `--gpu-model H100`
+restricts the GPU model; repeat it to allow alternatives. No profile is assumed.
+
+To allow either GPU CC or PPCIE on each node, use an explicit OR selection:
+
+```sh
+krab-preflight conformance --run --require-any gpu-cc,gpu-ppcie --output verdict.json
+```
+
+Each node must confirm at least one alternative and all shared GPU prerequisites.
+Different nodes can match different alternatives. Add `--require tdx`, for example,
+to also require TDX on every node. Two separate `--require` flags still mean AND.
+JSON records the OR selection as `anyOfRequirements` and each node's matching
+alternatives as `matchedAnyOfRequirements`.
+
+`--run` needs Helm and kubectl on the machine running the binary. It uses the
+pre-check chart matching the binary version, forces fresh probes, pins one Kubernetes context, and
+compares node identities before and after collection. Use `--context NAME` to
+choose a context, `--node-selector 'pool=cc'` to choose a subset of Linux nodes,
+or `--chart ./charts/precheck` to test a local chart. Namespace and release both
+default to `krab-conformance`; the probe Jobs remain available for diagnostics.
+The command installs only the pre-check chart.
+
+To evaluate an existing v2 collection without accessing Kubernetes:
+
+```sh
+krab-preflight conformance --report krab-precheck.json \
+  --require snp --json > krab-conformance.json
+```
+
+The saved report's embedded inventory must match every report and host identity.
+Optionally pass `--nodes nodes.json` containing the corresponding
+`kubectl get nodes --selector kubernetes.io/os=linux -o json` inventory for an
+independent coverage comparison. Saved reports describe their collection-time
+snapshot; use `--run` to check current configuration.
+
+Exit code 0 means all nodes passed, 1 means complete checks show nonconformance,
+and 2 means collection, evidence, CLI, or output errors. Text output names every
+node, with PASS, FAIL, or ERROR. JSON verdicts include all
+failed nodes, reasons, selected requirements, the node inventory, and the
+pre-check reports; their contract is
+[`contracts/conformance-v1.schema.json`](contracts/conformance-v1.schema.json).
+Conformance verifies reported host prerequisites; workload launch and attestation
+remain untested. Build the binary as described in [`preflight/`](preflight/).
+
+Helm can gate installation on the same verdict. Save your selection as
+`conformance-values.yaml`:
+
+```yaml
+conformance:
+  enabled: true
+  requirements: [tdx, gpu-cc]
+```
+
+For the GPU OR selection instead, use `anyOf: [gpu-cc, gpu-ppcie]` under
+`conformance`. It can be used alone or alongside mandatory `requirements: [tdx]`.
+
+```sh
+helm upgrade --install krab-conformance \
+  oci://ghcr.io/fidencio/krab-precheck \
+  --version 0.1.7 \
+  --namespace krab-conformance --create-namespace \
+  --timeout 35m --values conformance-values.yaml
+```
+
+The chart launches fresh probes and a `krab-conformance-conformance` hook Job.
+It retains both successful and failed verdicts until the next run. The collector
+waits for the dispatcher and passes collection errors to the evaluator, so a
+failed dispatcher cannot become a passing verdict.
+
+| Outcome | Binary/container exit | Conformance Job | Helm command |
+| --- | --- | --- | --- |
+| PASS: all nodes meet the selection | 0 | Complete | exits 0 |
+| FAIL: required capability is not confirmed | 1 | Failed | exits nonzero |
+| ERROR: incomplete/invalid evidence or collection failure | 2 | Failed | exits nonzero |
+
+Kubernetes Jobs have Complete and Failed conditions; distinguish FAIL from ERROR
+using the evaluator container's exit code or JSON verdict. Helm does not preserve
+the container's distinct exit codes in its own exit status. After Helm returns:
+
+```sh
+kubectl -n krab-conformance logs job/krab-conformance-conformance \
+  -c conformance > verdict.json
+kubectl -n krab-conformance get pods \
+  -l batch.kubernetes.io/job-name=krab-conformance-conformance -o json \
+  | jq '.items[].status.containerStatuses[]? | select(.name == "conformance") | .state.terminated | {exitCode, message}'
+```
+
+The termination message is a compact JSON summary containing `verdict`,
+`exitCode`, node counts, and `coverageVerified`; full logs contain all evidence.
+If a container cannot start, the Job times out, or Helm fails before creating the
+Job, automation must treat the absent verdict as ERROR. Any unexpected exit code
+is also ERROR; only exit 0 and a completed Job establish success.
 
 ## Development
 

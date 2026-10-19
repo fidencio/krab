@@ -1,6 +1,6 @@
 import type { HardwareFamilyCatalog, VendorCatalog } from './artifacts'
 import Ajv from 'ajv'
-import precheckSchema from '../../contracts/precheck-v1.schema.json' with { type: 'json' }
+import precheckSchema from '../../contracts/precheck-v2.schema.json' with { type: 'json' }
 import catalog from '../generated/catalog.json' with { type: 'json' }
 
 export type ProbeStatus = 'yes' | 'no' | 'unknown' | 'review'
@@ -11,9 +11,9 @@ export const needsGpuType = (checks: RequestedCheck[], gpuModels: string[]) =>
 type Probe = { status: ProbeStatus; reason: string }
 
 export type NodePrecheck = {
-  schemaVersion: 1
+  schemaVersion: 2
   kind: 'krab-node-precheck'
-  node: { architecture: string; kernel: string }
+  node: { architecture: string; kernel: string; machineID: string; bootID: string; checkerVersion: string; checkedAtUnixSeconds: number }
   checks: Record<'kvm' | 'tdx' | 'snp' | 'se' | 'iommufd' | 'erofs', Probe>
   erofsVersion?: string | null
   runtime?: { detected: string[]; layout: Probe }
@@ -59,13 +59,21 @@ export function parsePrecheckUpload(text: string, filename: string): Array<{ nam
     if (!validateClusterReport(data))
       throw new Error('Invalid KRAB cluster pre-check collection.')
     const collection = data as unknown as { nodes: Array<{ nodeName: string; report: NodePrecheck }> }
+    const scope = (data as unknown as { scope: { nodes: Array<{ name: string; uid: string; machineID: string; bootID: string }> } }).scope
+    const expected = new Map(scope.nodes.map((node) => [node.name, node]))
+    if (expected.size !== scope.nodes.length || new Set(scope.nodes.map((node) => node.uid)).size !== scope.nodes.length ||
+        collection.nodes.length !== expected.size) throw new Error('Invalid or incomplete node inventory in cluster report.')
     const names = new Set<string>()
     return collection.nodes.map((entry: unknown) => {
       if (typeof entry !== 'object' || entry === null || !('nodeName' in entry) ||
           typeof entry.nodeName !== 'string' || !entry.nodeName || names.has(entry.nodeName) ||
           !('report' in entry)) throw new Error('Invalid or repeated node in cluster report.')
       names.add(entry.nodeName)
-      return { name: entry.nodeName, report: parseNodePrecheck(JSON.stringify(entry.report)) }
+      const report = parseNodePrecheck(JSON.stringify(entry.report))
+      const identity = expected.get(entry.nodeName)
+      if (!identity || report.node.machineID !== identity.machineID || report.node.bootID !== identity.bootID)
+        throw new Error('Node report does not match the selected node inventory.')
+      return { name: entry.nodeName, report }
     })
   }
   return [{ name: filename, report: parseNodePrecheck(text) }]

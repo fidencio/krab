@@ -2,6 +2,32 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Native CC conformance with explicit CPU/GPU requirements, an all-node verdict,
+  complete evidence, and per-node failure reasons. Evaluate saved reports or run
+  fresh pre-flight collection through Helm and kubectl.
+- Helm conformance Job with consistent PASS/FAIL/ERROR outcomes and container
+  exit codes 0/1/2. Helm succeeds only when every selected node passes; JSON logs
+  and termination summaries distinguish nonconformance from collection errors.
+- Explicit per-node GPU alternatives with `--require-any gpu-cc,gpu-ppcie`
+  and Helm `conformance.anyOf`, preserving mandatory prerequisites.
+- Host-local caching in the Rust pre-flight checker, with force refresh,
+  corruption recovery, and serialization of concurrent probes.
+- Experimental shared node controller for preparing newly eligible nodes.
+- Intel TDX QGS deployment and certificate provisioning controls.
+
+### Changed
+
+- Check every Linux node by default; a label selector can restrict the scope.
+- Start a new compatibility boundary: Helm values use format 2, and pre-flight
+  reports use schema v2 with selected node inventory, machine/boot identities,
+  checker version, and collection time. Regenerate values and rerun checks;
+  format 1 and unversioned values and v1 reports are rejected.
+- Reject incomplete or changing node coverage when collecting cluster reports.
+
 ## [0.1.7] - 2026-10-09
 
 ### Changed

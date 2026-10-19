@@ -2,6 +2,14 @@
 {{- printf "%s" .Release.Name | trunc 45 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "krab-precheck.dispatcherName" -}}
+{{- if .Values.conformance.enabled -}}
+{{- printf "%s-dispatcher-%d" (include "krab-precheck.name" .) .Release.Revision -}}
+{{- else -}}
+{{- printf "%s-dispatcher" (include "krab-precheck.name" .) -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "krab-precheck.nodeSelector" -}}
 {{- if .Values.nodeSelector -}}
 {{- printf "%s,kubernetes.io/os=linux" .Values.nodeSelector -}}

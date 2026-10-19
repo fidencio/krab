@@ -1,7 +1,26 @@
 Pre-flight checks completed for every Linux node{{ if .Values.nodeSelector }} matching {{ .Values.nodeSelector }}{{ else }} in the cluster{{ end }}.
 
+{{ if .Values.conformance.enabled -}}
+Fetch the JSON conformance verdict (pass/exit 0, fail/exit 1, error/exit 2):
+
+  kubectl -n {{ .Release.Namespace }} logs job/{{ include "krab-precheck.name" . }}-conformance -c conformance > krab-conformance.json
+
+The Job completes only for pass. Both fail and error produce a Failed Job;
+inspect the conformance container exit code or JSON verdict to distinguish them.
+
+Extract the underlying pre-check report for upload to KRAB:
+
+  jq '.precheck' krab-conformance.json > krab-precheck.json
+{{ else -}}
 Fetch the complete JSON report:
 
   kubectl -n {{ .Release.Namespace }} logs job/{{ include "krab-precheck.name" . }}-results > krab-precheck.json
+{{ end }}
 
 Upload krab-precheck.json on the first page of KRAB.
+
+For a strict verdict, choose your requirements explicitly, for example:
+
+  krab-preflight conformance --report krab-precheck.json --require tdx --require gpu-cc --output krab-conformance.json
+
+Every selected node must confirm every requirement. Use conformance --help for all selections.

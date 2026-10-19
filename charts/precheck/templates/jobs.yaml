@@ -2,12 +2,17 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ $name }}-dispatcher
+  name: {{ include "krab-precheck.dispatcherName" . }}
+  {{- if not .Values.conformance.enabled }}
   annotations:
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "0"
     helm.sh/hook-delete-policy: before-hook-creation
+  {{- end }}
 spec:
+  {{- if .Values.conformance.enabled }}
+  ttlSecondsAfterFinished: 3600
+  {{- end }}
   backoffLimit: 0
   activeDeadlineSeconds: 1200
   template:
@@ -22,7 +27,7 @@ spec:
             - --name-prefix={{ $name }}
             - --namespace={{ .Release.Namespace }}
             - --parallelism={{ .Values.parallelism }}
-            - --owner-job-name={{ $name }}-dispatcher
+            - --owner-job-name={{ include "krab-precheck.dispatcherName" . }}
             - --tracking-label-prefix={{ $name }}
             - {{ printf "--node-selector=%s" (include "krab-precheck.nodeSelector" .) | quote }}
             - --wait-for-nodes-secs=0
@@ -31,6 +36,7 @@ spec:
       volumes:
         - name: scripts
           configMap: {name: {{ $name }}-files}
+{{- if not .Values.conformance.enabled }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -56,9 +62,11 @@ spec:
               valueFrom:
                 fieldRef: {fieldPath: metadata.namespace}
             - {name: OWNER_LABEL, value: {{ $name | quote }}}
+            - {name: CHECKER_VERSION, value: {{ .Chart.Version | quote }}}
             - {name: NODE_SELECTOR, value: {{ include "krab-precheck.nodeSelector" . | quote }}}
           volumeMounts:
             - {name: scripts, mountPath: /etc/krab, readOnly: true}
       volumes:
         - name: scripts
           configMap: {name: {{ $name }}-files}
+{{- end }}

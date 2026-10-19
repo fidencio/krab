@@ -29,7 +29,7 @@ data:
                 {{- if .Values.cache.enabled }}
                 - --cache-dir
                 - /var/cache/krab-preflight
-                {{- if .Values.cache.forceRefresh }}
+                {{- if or .Values.cache.forceRefresh .Values.conformance.enabled }}
                 - --force-refresh
                 {{- end }}
                 {{- else }}

@@ -24,14 +24,14 @@ import {
 } from '../src/lib/precheck.ts'
 import type { HardwareFamilyCatalog, VendorCatalog } from '../src/lib/artifacts.ts'
 import { precheckCommand } from '../src/lib/precheck-command.ts'
-import precheckSchema from '../contracts/precheck-v1.schema.json' with { type: 'json' }
+import precheckSchema from '../contracts/precheck-v2.schema.json' with { type: 'json' }
 import commandConfig from '../upstream/precheck-command.json' with { type: 'json' }
 import packageData from '../package.json' with { type: 'json' }
 
 const probe = (status: 'yes' | 'no' | 'unknown') => ({ status, reason: 'fixture' })
 const report = (arch = 'amd64'): NodePrecheck => ({
-  kind: 'krab-node-precheck', schemaVersion: 1,
-  node: { architecture: arch, kernel: '6.12.0' },
+  kind: 'krab-node-precheck', schemaVersion: 2,
+  node: { architecture: arch, kernel: '6.12.0', machineID: 'machine-fixture', bootID: 'boot-fixture', checkerVersion: packageData.version, checkedAtUnixSeconds: 1 },
   checks: { kvm: probe('yes'), tdx: probe('unknown'), snp: probe('no'), se: probe('no'),
     iommufd: probe('yes'), erofs: probe('yes') },
   gpus: { present: probe('yes'), nvidia: probe('yes'), cc: probe('unknown'), ppcie: probe('unknown'),
@@ -42,9 +42,13 @@ const family = {
   id: 'hopper', displayName: 'NVIDIA HGX Hx00', supportedArches: ['amd64'], models: ['H100'],
 } as HardwareFamilyCatalog
 
+const scope = (names: string[]) => ({ nodeSelector: 'kubernetes.io/os=linux', nodes: names.map((name) => ({
+  name, uid: `uid-${name}`, machineID: 'machine-fixture', bootID: 'boot-fixture',
+})) })
+
 test('parses a versioned node report and rejects incomplete reports', () => {
   assert.deepEqual(parseNodePrecheck(JSON.stringify(report())), report())
-  assert.throws(() => parseNodePrecheck('{"kind":"krab-node-precheck","schemaVersion":1}'))
+  assert.throws(() => parseNodePrecheck('{"kind":"krab-node-precheck","schemaVersion":2}'))
   const invalid = report()
   invalid.gpus.devices[0].name = 3 as unknown as string
   assert.throws(() => parseNodePrecheck(JSON.stringify(invalid)))
@@ -54,12 +58,25 @@ test('parses a versioned node report and rejects incomplete reports', () => {
 })
 
 test('accepts one complete cluster collection', () => {
-  const collection = { kind: 'krab-cluster-precheck', schemaVersion: 1,
+  const collection = { kind: 'krab-cluster-precheck', schemaVersion: 2,
+    scope: scope(['worker-1', 'worker-2']),
     nodes: [{ nodeName: 'worker-1', report: report() }, { nodeName: 'worker-2', report: report('arm64') }] }
   assert.deepEqual(parsePrecheckUpload(JSON.stringify(collection), 'cluster.json').map(({ name }) => name),
     ['worker-1', 'worker-2'])
   collection.nodes[1].nodeName = 'worker-1'
   assert.throws(() => parsePrecheckUpload(JSON.stringify(collection), 'cluster.json'))
+})
+
+test('v2 collections reject legacy reports, missing coverage, and mismatched host identities', () => {
+  const collection = { kind: 'krab-cluster-precheck', schemaVersion: 2,
+    scope: scope(['worker-1']), nodes: [{ nodeName: 'worker-1', report: report() }] }
+  assert.throws(() => parsePrecheckUpload(JSON.stringify({ ...collection, schemaVersion: 1 }), 'legacy.json'))
+  assert.throws(() => parseNodePrecheck(JSON.stringify({ ...report(), schemaVersion: 1 })))
+  collection.scope.nodes.push({ name: 'worker-2', uid: 'uid-2', machineID: 'machine-fixture', bootID: 'boot-fixture' })
+  assert.throws(() => parsePrecheckUpload(JSON.stringify(collection), 'incomplete.json'), /incomplete node inventory/)
+  collection.scope.nodes.pop()
+  collection.nodes[0].report.node.bootID = 'old-boot'
+  assert.throws(() => parsePrecheckUpload(JSON.stringify(collection), 'stale.json'), /does not match/)
 })
 
 test('accepts the existing example report', async () => {
@@ -71,7 +88,8 @@ test('accepts the existing example report', async () => {
 
 test('accepts a 500-node collection within the upload limit', () => {
   const collection = {
-    kind: 'krab-cluster-precheck', schemaVersion: 1,
+    kind: 'krab-cluster-precheck', schemaVersion: 2,
+    scope: scope(Array.from({ length: 500 }, (_, index) => `worker-${index + 1}`)),
     nodes: Array.from({ length: 500 }, (_, index) => ({
       nodeName: `worker-${index + 1}`,
       report: report(),

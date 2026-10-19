@@ -73,12 +73,15 @@ export async function syncReleaseVersion(root = resolve(import.meta.dirname, '..
     if (section < 0 || start < 0 || end < 0) throw new Error('README.md: precheck command is missing')
     return content.slice(0, start) + precheckCommand(version) + content.slice(end)
   })
-  for (const [path, count] of [['README.md', 2], ['charts/krab/README.md', 1]] as const) {
+  for (const [path, count] of [['README.md', 3], ['charts/krab/README.md', 1]] as const) {
     await updateFile(root, path, (content) =>
       replaceLines(content, /^  --version \S+ \\$/gm, `  --version ${version} \\`, count, path))
   }
   await updateFile(root, 'CHANGELOG.md', (content) => {
     if (content.includes(`## [${version}]`)) return content
+    if (content.includes('## [Unreleased]')) {
+      return content.replace('## [Unreleased]', `## [${version}] - Unreleased`)
+    }
     const heading = /^## \[/m
     if (!heading.test(content)) throw new Error('CHANGELOG.md has no release heading')
     return content.replace(heading, `## [${version}] - Unreleased\n\n## [`)

@@ -335,7 +335,7 @@ export type ImportedValuesConfiguration = {
   warnings: string[]
 }
 
-const valuesFormatVersion = 1
+const valuesFormatVersion = 2
 const validateValues = new Ajv({ allErrors: true }).compile(valuesSchema)
 
 const createChartImageConfiguration = (): ChartImageConfiguration => ({
@@ -471,16 +471,11 @@ export function importValuesBundle(
 ): ImportedValuesConfiguration {
   const format = source.match(/^# KRAB values format: (.+)$/m)?.[1]
   const sourceVersion = source.match(/^# KRAB chart version: (.+)$/m)?.[1]
-  if (format && format !== String(valuesFormatVersion)) {
-    throw new Error(`Unsupported KRAB values format ${format}.`)
-  }
-  if (Boolean(format) !== Boolean(sourceVersion)) {
-    throw new Error('The KRAB values file has incomplete version information.')
+  if (format !== String(valuesFormatVersion) || !sourceVersion) {
+    throw new Error('Unsupported KRAB values format. Regenerate values with this builder.')
   }
   const warnings: string[] = []
-  if (!format) {
-    warnings.push('This file has no KRAB version marker. Its fields were checked against the current chart; review the generated values before deploying.')
-  } else if (sourceVersion !== catalog.plannedArchitecture.charts.krab.version) {
+  if (sourceVersion !== catalog.plannedArchitecture.charts.krab.version) {
     warnings.push(`This file was made for KRAB ${sourceVersion}; this builder uses ${catalog.plannedArchitecture.charts.krab.version}. Review the generated values before deploying.`)
   }
   const parsed = parse(source)

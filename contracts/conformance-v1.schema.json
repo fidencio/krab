@@ -1,0 +1,208 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/fidencio/krab/blob/main/contracts/conformance-v1.schema.json",
+  "title": "KRAB CC pre-flight conformance verdict v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "schemaVersion",
+    "evaluatedAtUnixSeconds",
+    "verdict",
+    "requirements",
+    "gpuModels",
+    "source",
+    "coverageVerified",
+    "totalNodes",
+    "passedNodes",
+    "failedNodes",
+    "errorNodes",
+    "failures",
+    "nodes",
+    "nodeInventory",
+    "precheck",
+    "anyOfRequirements"
+  ],
+  "properties": {
+    "kind": {
+      "const": "krab-cc-conformance"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "evaluatedAtUnixSeconds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "verdict": {
+      "enum": [
+        "pass",
+        "fail",
+        "error"
+      ]
+    },
+    "requirements": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "cc",
+          "tdx",
+          "snp",
+          "se",
+          "gpu-cc",
+          "gpu-ppcie"
+        ]
+      }
+    },
+    "gpuModels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source": {
+      "enum": [
+        "saved-report",
+        "live-cluster",
+        "cluster-job"
+      ]
+    },
+    "coverageVerified": {
+      "type": "boolean"
+    },
+    "totalNodes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "passedNodes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failedNodes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "errorNodes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/finding"
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "nodeName",
+          "verdict",
+          "failures",
+          "matchedAnyOfRequirements"
+        ],
+        "properties": {
+          "nodeName": {
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "pass",
+              "fail",
+              "error"
+            ]
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/finding"
+            }
+          },
+          "matchedAnyOfRequirements": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "gpu-cc",
+                "gpu-ppcie"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "nodeInventory": {
+      "type": "array",
+      "items": {
+        "$ref": "precheck-v2.schema.json#/definitions/identity"
+      }
+    },
+    "precheck": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "precheck-v2.schema.json#/definitions/clusterReport"
+        }
+      ]
+    },
+    "anyOfRequirements": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "gpu-cc",
+          "gpu-ppcie"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "check",
+        "status",
+        "reason"
+      ],
+      "properties": {
+        "check": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "no",
+            "unknown",
+            "review"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "anyOf": [
+    {
+      "properties": {
+        "requirements": {
+          "minItems": 1,
+          "type": "array"
+        }
+      }
+    },
+    {
+      "properties": {
+        "anyOfRequirements": {
+          "minItems": 1,
+          "type": "array"
+        }
+      }
+    }
+  ]
+}

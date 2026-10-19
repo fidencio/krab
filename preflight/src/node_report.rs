@@ -5,6 +5,7 @@ use std::fs;
 use std::io;
 use std::path::Path;
 use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 struct Probe {
     status: &'static str,
@@ -165,6 +166,11 @@ pub fn render(paths: &Paths, architecture: &str) -> io::Result<(String, bool)> {
         ));
     }
     let kernel = fs::read_to_string(paths.host_root.join("proc/sys/kernel/osrelease"))?;
+    let machine_id = fs::read_to_string(paths.host_root.join("etc/machine-id"))?;
+    let boot_id = fs::read_to_string(paths.host_root.join("proc/sys/kernel/random/boot_id"))?;
+    if machine_id.trim().is_empty() || boot_id.trim().is_empty() {
+        return Err(io::Error::other("host machine ID and boot ID are required"));
+    }
     if std::env::var_os("KRAB_PROVISIONER").is_none() {
         std::env::set_var(
             "KRAB_PROVISIONER",
@@ -215,11 +221,24 @@ pub fn render(paths: &Paths, architecture: &str) -> io::Result<(String, bool)> {
     }
 
     let mut output = String::from(
-        "{\"schemaVersion\":1,\"kind\":\"krab-node-precheck\",\"node\":{\"architecture\":",
+        "{\"schemaVersion\":2,\"kind\":\"krab-node-precheck\",\"node\":{\"architecture\":",
     );
     json_string(&mut output, architecture);
     output.push_str(",\"kernel\":");
     json_string(&mut output, kernel.trim());
+    output.push_str(",\"machineID\":");
+    json_string(&mut output, machine_id.trim());
+    output.push_str(",\"bootID\":");
+    json_string(&mut output, boot_id.trim());
+    output.push_str(",\"checkerVersion\":");
+    json_string(&mut output, env!("CARGO_PKG_VERSION"));
+    output.push_str(&format!(
+        ",\"checkedAtUnixSeconds\":{}",
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+    ));
     output.push_str("},\"checks\":{");
     for (index, (name, check)) in checks.iter().enumerate() {
         if index != 0 {

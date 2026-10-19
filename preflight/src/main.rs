@@ -1,4 +1,5 @@
 mod cache;
+mod conformance;
 mod erofs;
 mod gpu;
 mod ibm_se;
@@ -8,6 +9,7 @@ mod node_report;
 mod output;
 mod platform;
 mod probe;
+mod report;
 mod snp;
 mod tdx;
 
@@ -81,7 +83,8 @@ struct Options {
 }
 
 fn usage() -> &'static str {
-    "Usage: krab-preflight --node-report\n\
+    "Usage: krab-preflight conformance --help\n\
+     or: krab-preflight --node-report\n\
      or: krab-preflight [--json] [--kvm] [--tdx] [--snp] [--ibm-se] [--iommufd] [--erofs] [--gpu] [--gpu-cc] [--gpu-ppcie]\n\
      Select one or more host checks. They do not launch a VM or test a VFIO device.\n\
      --kvm       /dev/kvm exists as a character device\n\
@@ -134,6 +137,9 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> std::result::Result<Opt
 
 fn main() -> ExitCode {
     let args = env::args().skip(1).collect::<Vec<_>>();
+    if args.first().is_some_and(|arg| arg == "conformance") {
+        return conformance::run(&args[1..]);
+    }
     if args.len() == 1 && (args[0] == "--help" || args[0] == "-h") {
         println!("{}", usage());
         return ExitCode::SUCCESS;

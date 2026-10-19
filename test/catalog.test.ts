@@ -472,7 +472,7 @@ test('Custom artifacts install only the selected upstream RuntimeClasses', async
   )
   const importedValues = importValuesBundle(
     catalog,
-    stringify(configuredValues),
+    `# KRAB values format: 2\n# KRAB chart version: ${krabVersion}\n${stringify(configuredValues)}`,
     `local-lab-${krabVersion}-values.yaml`,
   )
   assert.equal(importedValues.vendorId, 'custom')

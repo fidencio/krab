@@ -1,0 +1,109 @@
+{{- if .Values.conformance.enabled -}}
+{{- $name := include "krab-precheck.name" . -}}
+{{- $requirements := .Values.conformance.requirements -}}
+{{- $anyOf := .Values.conformance.anyOf | uniq -}}
+{{- if and (not $requirements) (not $anyOf) -}}
+{{- fail "conformance.enabled requires explicit conformance.requirements or conformance.anyOf" -}}
+{{- end -}}
+{{- $cpu := 0 -}}
+{{- $gpu := false -}}
+{{- range $requirement := $anyOf -}}
+{{- if not (has $requirement (list "gpu-cc" "gpu-ppcie")) -}}
+{{- fail "conformance.anyOf accepts gpu-cc and gpu-ppcie" -}}
+{{- end -}}
+{{- $gpu = true -}}
+{{- end -}}
+{{- range $requirement := $requirements -}}
+{{- if not (has $requirement (list "cc" "tdx" "snp" "se" "gpu-cc" "gpu-ppcie")) -}}
+{{- fail (printf "Unknown conformance requirement: %s" $requirement) -}}
+{{- end -}}
+{{- if has $requirement (list "gpu-cc" "gpu-ppcie") -}}
+{{- $gpu = true -}}
+{{- else -}}
+{{- $cpu = add $cpu 1 -}}
+{{- end -}}
+{{- end -}}
+{{- if gt (int $cpu) 1 -}}
+{{- fail "Choose one CPU TEE requirement, or cc to allow any supported CPU TEE" -}}
+{{- end -}}
+{{- if and .Values.conformance.gpuModels (not $gpu) -}}
+{{- fail "conformance.gpuModels requires gpu-cc or gpu-ppcie" -}}
+{{- end -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}-conformance
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 1800
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ $name }}-collector
+      automountServiceAccountToken: false
+      initContainers:
+        - name: collect
+          image: {{ printf "%s:%s" .Values.collectorImage.repository .Chart.Version | quote }}
+          command: [/bin/bash, -c]
+          args:
+            # Let the Rust evaluator report collection failures as ERROR/exit 2.
+            - bash /etc/krab/collect.sh > /work/precheck.json 2> /work/collection-error.txt; exit 0
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef: {fieldPath: metadata.namespace}
+            - {name: OWNER_LABEL, value: {{ $name | quote }}}
+            - {name: CHECKER_VERSION, value: {{ .Chart.Version | quote }}}
+            - {name: NODE_SELECTOR, value: {{ include "krab-precheck.nodeSelector" . | quote }}}
+            - {name: DISPATCHER_JOB_NAME, value: {{ include "krab-precheck.dispatcherName" . | quote }}}
+            - {name: WAIT_FOR_DISPATCHER, value: "true"}
+          volumeMounts:
+            - {name: scripts, mountPath: /etc/krab, readOnly: true}
+            - {name: reports, mountPath: /work}
+            - {name: api-access, mountPath: /var/run/secrets/kubernetes.io/serviceaccount, readOnly: true}
+      containers:
+        - name: conformance
+          image: {{ printf "%s:%s" .Values.probeImage.repository .Chart.Version | quote }}
+          command: [/usr/local/bin/krab-preflight]
+          args:
+            - conformance
+            - --report
+            - /work/precheck.json
+            - --collection-error
+            - /work/collection-error.txt
+            - --termination-message
+            - /dev/termination-log
+            - --json
+            {{- range $requirement := $requirements }}
+            - --require
+            - {{ $requirement | quote }}
+            {{- end }}
+            {{- range $model := .Values.conformance.gpuModels }}
+            - --gpu-model
+            - {{ $model | quote }}
+            {{- end }}
+            {{- if $anyOf }}
+            - --require-any
+            - {{ join "," $anyOf | quote }}
+            {{- end }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - {name: reports, mountPath: /work, readOnly: true}
+      volumes:
+        - name: reports
+          emptyDir: {}
+        - name: scripts
+          configMap: {name: {{ $name }}-files}
+        - name: api-access
+          projected:
+            sources:
+              - serviceAccountToken: {path: token, expirationSeconds: 3600}
+              - configMap:
+                  name: kube-root-ca.crt
+                  items: [{key: ca.crt, path: ca.crt}]
+{{- end }}

@@ -59,6 +59,9 @@ kata-device-provisioner:
 
 ## Installation
 
+The development builder uses generated-values format 2. Regenerate values
+with this builder; format 1 and unversioned values are not imported.
+
 Install the chart with:
 
 ```sh
