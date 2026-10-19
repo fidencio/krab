@@ -59,7 +59,7 @@ kata-device-provisioner:
 
 ## Installation
 
-The development builder uses generated-values format 2. Regenerate values
+The KRAB 0.2.0 builder uses generated-values format 2. Regenerate values
 with this builder; format 1 and unversioned values are not imported.
 
 Install the chart with:
@@ -67,7 +67,7 @@ Install the chart with:
 ```sh
 helm upgrade --install krab \
   oci://ghcr.io/fidencio/krab \
-  --version 0.1.7 \
+  --version 0.2.0 \
   --namespace kata-system \
   --create-namespace \
   --values values.yaml

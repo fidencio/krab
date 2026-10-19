@@ -3,7 +3,7 @@
   "plannedArchitecture": {
     "schemaVersion": 1,
     "status": "stable",
-    "notice": "KRAB 0.1.7. Review generated values before deploying.",
+    "notice": "KRAB 0.2.0. Review generated values before deploying.",
     "namespace": "kata-system",
     "images": {
       "kubectl": {
@@ -80,8 +80,8 @@
           "nfdValuesKey": "node-feature-discovery",
           "nfdRequired": false
         },
-        "version": "0.1.7",
-        "appVersion": "0.1.7"
+        "version": "0.2.0",
+        "appVersion": "0.2.0"
       },
       "qgs": {
         "chartName": "intel-tdx-qgs",
