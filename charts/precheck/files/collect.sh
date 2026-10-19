@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Assemble one report from every explicitly labeled Linux node.
+# Assemble one report from every Linux node matching the configured selector.
 set -euo pipefail
 
 api=https://kubernetes.default.svc
@@ -24,7 +24,7 @@ dispatcher=$(get "/apis/batch/v1/namespaces/$namespace/jobs/$owner-dispatcher")
 dispatcher_uid=$(jq -r '.metadata.uid' <<<"$dispatcher")
 expected=$(jq -c '[.items[].metadata.name] | sort' <<<"$nodes")
 if [[ $(jq length <<<"$expected") == 0 ]]; then
-  echo 'No Linux nodes have the requested pre-flight label' >&2
+  echo "No Linux nodes match the pre-flight selector: $selector" >&2
   exit 1
 fi
 

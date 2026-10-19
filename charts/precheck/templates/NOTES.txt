@@ -1,4 +1,4 @@
-Pre-flight checks completed for every Linux node labeled krab/preflight=true.
+Pre-flight checks completed for every Linux node{{ if .Values.nodeSelector }} matching {{ .Values.nodeSelector }}{{ else }} in the cluster{{ end }}.
 
 Fetch the complete JSON report:
 

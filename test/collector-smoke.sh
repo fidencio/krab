@@ -20,7 +20,10 @@ for arg in "$@"; do
 done
 case "$url" in
   */api/v1/nodes)
-    if [[ $SCENARIO == missing ]]; then
+    [[ " $* " == *" labelSelector=$NODE_SELECTOR "* ]] || exit 1
+    if [[ $SCENARIO == empty ]]; then
+      echo '{"items":[]}'
+    elif [[ $SCENARIO == missing ]]; then
       echo '{"items":[{"metadata":{"name":"node-1"}},{"metadata":{"name":"node-2"}}]}'
     else
       echo '{"items":[{"metadata":{"name":"node-1"}}]}'
@@ -49,12 +52,15 @@ MOCK
 chmod +x "$fixture_dir/bin/curl"
 export PATH="$fixture_dir/bin:$PATH"
 export SERVICE_ACCOUNT_DIR="$fixture_dir/serviceaccount"
-export POD_NAMESPACE=krab-precheck OWNER_LABEL=krab-precheck NODE_SELECTOR='krab/preflight=true,kubernetes.io/os=linux'
+export POD_NAMESPACE=krab-precheck OWNER_LABEL=krab-precheck
 export SCENARIO=success
-bash "$collector" > "$fixture_dir/report.json"
-jq -e '.kind == "krab-cluster-precheck" and .schemaVersion == 1 and (.nodes | length) == 1 and .nodes[0].nodeName == "node-1"' "$fixture_dir/report.json" >/dev/null
+for NODE_SELECTOR in 'kubernetes.io/os=linux' 'krab/preflight=true,kubernetes.io/os=linux'; do
+  export NODE_SELECTOR
+  bash "$collector" > "$fixture_dir/report.json"
+  jq -e '.kind == "krab-cluster-precheck" and .schemaVersion == 1 and (.nodes | length) == 1 and .nodes[0].nodeName == "node-1"' "$fixture_dir/report.json" >/dev/null
+done
 
-for SCENARIO in failed missing duplicate invalid; do
+for SCENARIO in failed missing duplicate invalid empty; do
   export SCENARIO
   if bash "$collector" > "$fixture_dir/report.json" 2> "$fixture_dir/error"; then
     printf 'Collector unexpectedly accepted %s\n' "$SCENARIO" >&2
@@ -65,6 +71,7 @@ for SCENARIO in failed missing duplicate invalid; do
     missing) expected='Node coverage mismatch' ;;
     duplicate) expected='Expected one pod for node-job' ;;
     invalid) expected='Invalid report from node-1' ;;
+    empty) expected='No Linux nodes match the pre-flight selector' ;;
   esac
   grep -F "$expected" "$fixture_dir/error" >/dev/null
 done

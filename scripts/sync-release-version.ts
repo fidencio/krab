@@ -67,10 +67,10 @@ export async function syncReleaseVersion(root = resolve(import.meta.dirname, '..
     return replaceLines(next, /^notice:.*$/gm, `notice: ${notice}`, 1, 'upstream/architecture.yaml')
   })
   await updateFile(root, 'README.md', (content) => {
-    const labelCommand = content.indexOf('kubectl label nodes NODE_1 NODE_2 krab/preflight=true')
-    const start = content.indexOf('helm install ', labelCommand)
+    const section = content.indexOf('## Node pre-check')
+    const start = content.indexOf('helm install ', section)
     const end = content.indexOf('\n```', start)
-    if (labelCommand < 0 || start < 0 || end < 0) throw new Error('README.md: precheck command is missing')
+    if (section < 0 || start < 0 || end < 0) throw new Error('README.md: precheck command is missing')
     return content.slice(0, start) + precheckCommand(version) + content.slice(end)
   })
   for (const [path, count] of [['README.md', 2], ['charts/krab/README.md', 1]] as const) {

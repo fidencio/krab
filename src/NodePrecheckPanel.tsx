@@ -238,8 +238,8 @@ export function NodePrecheckPanel({
       <div className="precheck-step">
         <span className="precheck-step-number" aria-hidden="true">1</span>
         <div>
-          <strong>Choose nodes</strong>
-          <p>Add <code>krab/preflight=true</code> to the Linux nodes you want to check.</p>
+          <strong>Choose nodes (optional)</strong>
+          <p>All Linux nodes in the cluster are checked by default. To check selected nodes, label them <code>krab/preflight=true</code> and add <code>--set-string nodeSelector=krab/preflight=true</code> to the Helm command.</p>
         </div>
       </div>
       <div className="precheck-step">

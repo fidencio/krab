@@ -82,10 +82,9 @@ An opt-in [experimental Rust controller](controller/README.md) can prepare new
 nodes across the enabled stack using one shared reconcile loop. It is separate
 from the published chart workflow and currently intended for fresh test clusters.
 
-Label the Linux nodes to check, then install the published pre-check chart:
+Install the published pre-check chart to check every Linux node in the cluster:
 
 ```sh
-kubectl label nodes NODE_1 NODE_2 krab/preflight=true
 helm install krab-precheck \
   oci://ghcr.io/fidencio/krab-precheck \
   --version 0.1.7 \
@@ -96,11 +95,15 @@ kubectl --namespace krab-precheck logs \
 ```
 
 The Helm install waits for the existing job dispatcher to run one privileged,
-node-pinned probe Job on every labeled Linux node, and for a collector Job to assemble
+node-pinned probe Job on every Linux node, and for a collector Job to assemble
 their logs into one versioned JSON document. The collector fails if any node
-Job fails or no labeled nodes are covered. The aggregate remains available as the
+Job fails or no Linux nodes match the selector. The aggregate remains available as the
 `krab-precheck-results` Job log. Upload `krab-precheck.json` on the first page
-of the builder. To check one node, label only that node. Helm creates the
+of the builder. To restrict the check to selected nodes, run
+`kubectl label nodes NODE_1 NODE_2 krab/preflight=true` and add
+`--set-string nodeSelector=krab/preflight=true` to the Helm install command.
+Any Kubernetes label selector can be supplied through `nodeSelector`; the chart
+always restricts checks to Linux nodes. Helm creates the
 `krab-precheck` namespace if needed; to use another namespace, change both
 `--namespace` flags. The probe image builds
 the dependency-free Rust checker in [`preflight/`](preflight/) for amd64, arm64,

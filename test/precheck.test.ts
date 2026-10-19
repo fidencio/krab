@@ -224,9 +224,8 @@ test('pre-check chart reuses the pinned dispatcher and aggregates all node repor
   const provisioner = catalog.vendors.find((vendor) => vendor.id === 'nvidia')!.provisioner
   const dispatcher = provisioner.values.job.dispatcherImage
   assert.equal(values.dispatcherImage, `${dispatcher.reference}:${dispatcher.tag}`)
-  assert.equal(values.nodeSelector, undefined)
+  assert.equal(values.nodeSelector, '')
   assert.match(jobs, /--job-template=\/etc\/krab\/node-job\.yaml/)
-  assert.match(jobs, /--node-selector=krab\/preflight=true,kubernetes\.io\/os=linux/)
   assert.match(jobs, /helm\.sh\/hook-weight: "10"/)
   assert.match(configmap, /automountServiceAccountToken: false/)
   assert.match(configmap, /privileged: true/)
