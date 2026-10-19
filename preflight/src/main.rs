@@ -1,3 +1,4 @@
+mod cache;
 mod erofs;
 mod gpu;
 mod ibm_se;
@@ -94,6 +95,9 @@ fn usage() -> &'static str {
      --gpu-ppcie A supported NVIDIA GPU is PPCIE capable\n\
      --json      Write one JSON object to stdout\n\
      --node-report  Write a complete KRAB node report\n\
+     --cache-dir DIR  Store results in DIR (default: $XDG_CACHE_HOME/krab/preflight or $HOME/.cache/krab/preflight)\n\
+     --force-refresh  Repeat checks and replace the cached result\n\
+     --no-cache     Run checks without reading or writing cached results\n\
      --help      Show this help"
 }
 
@@ -129,53 +133,100 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> std::result::Result<Opt
 }
 
 fn main() -> ExitCode {
-    let mut args = env::args().skip(1).collect::<Vec<_>>();
+    let args = env::args().skip(1).collect::<Vec<_>>();
     if args.len() == 1 && (args[0] == "--help" || args[0] == "-h") {
         println!("{}", usage());
         return ExitCode::SUCCESS;
     }
-    if args.len() == 1 && args[0] == "--node-report" {
-        let paths = Paths::default();
-        match node_report::render(&paths, platform::architecture()) {
-            Ok(report) => {
-                println!("{report}");
-                return ExitCode::SUCCESS;
-            }
-            Err(error) => {
-                eprintln!("cannot collect node report: {error}");
-                return ExitCode::FAILURE;
-            }
-        }
-    }
-
-    let options = match parse_args(args.drain(..)) {
-        Ok(options) => options,
+    let (mut cache_options, args) = match cache::parse_args(args) {
+        Ok(parsed) => parsed,
         Err(error) => {
             eprintln!("{error}\n\n{}", usage());
             return ExitCode::from(2);
         }
     };
-
+    let node_report = args.len() == 1 && args[0] == "--node-report";
+    cache_options.quiet = node_report;
+    let options = if node_report {
+        None
+    } else {
+        match parse_args(args.clone()) {
+            Ok(options) => Some(options),
+            Err(error) => {
+                eprintln!("{error}\n\n{}", usage());
+                return ExitCode::from(2);
+            }
+        }
+    };
     let paths = Paths::default();
     let architecture = platform::architecture();
+    // Set the node report's bundled provisioner before deriving the cache identity.
+    if node_report && env::var_os("KRAB_PROVISIONER").is_none() {
+        env::set_var(
+            "KRAB_PROVISIONER",
+            format!("/opt/krab/kata-device-provisioner-{architecture}"),
+        );
+    }
+    let result = cache::run(
+        &cache_options,
+        || cache::identity(&paths, &args, architecture),
+        || execute(options.as_ref(), &paths, architecture),
+    );
+    print!("{}", result.stdout);
+    eprint!("{}", result.stderr);
+    ExitCode::from(result.status)
+}
+
+fn execute(options: Option<&Options>, paths: &Paths, architecture: &str) -> cache::Output {
+    let Some(options) = options else {
+        match node_report::render(paths, architecture) {
+            Ok((report, cacheable)) => {
+                return cache::Output {
+                    stdout: format!("{report}\n"),
+                    stderr: String::new(),
+                    status: 0,
+                    cacheable,
+                };
+            }
+            Err(error) => {
+                return cache::Output {
+                    stdout: String::new(),
+                    stderr: format!("cannot collect node report: {error}\n"),
+                    status: 1,
+                    cacheable: false,
+                };
+            }
+        }
+    };
     let results: Vec<_> = options
         .checks
-        .into_iter()
-        .map(|check| (check, check.run(&paths, architecture)))
+        .iter()
+        .map(|&check| (check, check.run(paths, architecture)))
         .collect();
-    if options.json {
-        println!("{}", output::json(architecture, &results));
+    let (stdout, stderr) = if options.json {
+        (
+            format!("{}\n", output::json(architecture, &results)),
+            String::new(),
+        )
     } else {
-        output::text(architecture, &results);
-    }
+        output::text(architecture, &results)
+    };
 
-    if results
+    let status = if results
         .iter()
         .any(|(_, result)| matches!(result, Result::Unavailable(_) | Result::Error(_)))
     {
-        ExitCode::FAILURE
+        1
     } else {
-        ExitCode::SUCCESS
+        0
+    };
+    cache::Output {
+        stdout,
+        stderr,
+        status,
+        cacheable: !results
+            .iter()
+            .any(|(_, result)| matches!(result, Result::Error(_))),
     }
 }
 

@@ -51,6 +51,38 @@ The EROFS check reads the `mkfs.erofs` binary for the `mkfs-time` and `sort` opt
 
 The GPU checks require [`kata-device-provisioner`](https://github.com/kata-containers/kata-device-provisioner) in `PATH`, or at the path in `KRAB_PROVISIONER`. They call its read-only `status --all` command so a GPU already set to another CC mode is still included. These checks report hardware capability for the supported NVIDIA GPUs; they do not call `status --probe`, read live CC/PPCIE modes, or require every GPU on the node to support the feature. The provisioner currently emits human-readable status rather than a machine-readable format, so these checks depend on its current output layout.
 
+## Cached checks
+
+Caching is enabled by default for both `--node-report` and individually selected
+checks, including text and JSON output. Results live in
+`$XDG_CACHE_HOME/krab/preflight`, or `$HOME/.cache/krab/preflight` when
+`XDG_CACHE_HOME` is unset. Select another location with `--cache-dir DIR`.
+
+```sh
+krab-preflight --node-report --cache-dir /var/cache/krab-preflight
+krab-preflight --node-report --cache-dir /var/cache/krab-preflight --force-refresh
+krab-preflight --json --snp --tdx --no-cache
+```
+
+The cache matches the host machine ID, boot ID, checker version and binary,
+architecture, host root, caller credentials, requested checks, output format,
+`PATH`, and `KRAB_PROVISIONER`. A hit returns the original output and exit status,
+including confirmed unavailable capabilities. Reboots and checker changes
+automatically require fresh checks. Changes made to a running host, such as
+loading modules or installing tools, require `--force-refresh`. Use `--no-cache`
+to bypass all cache reads and writes.
+
+Collection errors are not cached. If host identity cannot be read or the cache
+directory is unavailable, the checker runs fresh checks. Individual check mode
+reports cache diagnostics on stderr; `--node-report` suppresses them so Kubernetes
+logs contain only the JSON report. Cache files use private permissions, integrity checks, atomic writes,
+and a file lock so simultaneous invocations sharing a cache do not repeat probes.
+The cache writes only to its selected directory; it does not change host capabilities.
+
+The Helm chart mounts a writable host cache directory and passes `--cache-dir`
+to this same binary. It adds no separate cache implementation. Probe Jobs still
+run on every selected node, returning cached reports when valid.
+
 ## Container image
 
 The repository's `Dockerfile.precheck` builds Linux amd64, arm64, ppc64le, and s390x images. It includes pinned, published amd64 and arm64 `kata-device-provisioner` binaries; GPU checks are skipped on the other architectures. The runtime image deliberately does not contain `mkfs.erofs`: the EROFS check must inspect the host's utility, not a copy in the image. Its entrypoint is `krab-preflight --node-report`, which uses this Rust binary and emits the versioned node report consumed by the KRAB chart and UI.

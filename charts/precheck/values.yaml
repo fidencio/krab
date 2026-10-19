@@ -1,6 +1,11 @@
 parallelism: 20
 # Optional label selector to restrict checks; empty checks every Linux node.
 nodeSelector: ""
+# Reuse host-local reports until the host reboots or the checker changes.
+cache:
+  enabled: true
+  hostPath: /var/lib/krab/preflight
+  forceRefresh: false
 dispatcherImage: ghcr.io/kata-containers/k8s-job-dispatcher:0.4.0
 probeImage:
   repository: ghcr.io/fidencio/krab-preflight

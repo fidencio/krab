@@ -105,7 +105,20 @@ of the builder. To restrict the check to selected nodes, run
 Any Kubernetes label selector can be supplied through `nodeSelector`; the chart
 always restricts checks to Linux nodes. Helm creates the
 `krab-precheck` namespace if needed; to use another namespace, change both
-`--namespace` flags. The probe image builds
+`--namespace` flags.
+
+The Rust checker saves reports on each node under `/var/lib/krab/preflight`.
+Later runs still launch one Job per selected node, but reuse valid reports
+without repeating the checks. Reports are invalidated when the machine, boot ID,
+checker binary, requested checks, or execution context changes. Probe errors
+are retried rather than cached. After changing host configuration without
+rebooting, pass `--set cache.forceRefresh=true` to get fresh results; set it
+back to `false` for later runs. Use `--set cache.enabled=false` to disable caching,
+or `--set cache.hostPath=/your/cache/path` to change the host cache location.
+Only the cache directory is mounted writable; host inspection mounts remain
+read-only, and probes do not receive Kubernetes credentials.
+
+The probe image builds
 the dependency-free Rust checker in [`preflight/`](preflight/) for amd64, arm64,
 ppc64le, and s390x. It uses pinned, published kata-device-provisioner binaries
 for NVIDIA capability and device inventory on amd64 and arm64; no provisioner

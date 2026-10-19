@@ -9,6 +9,7 @@ use std::process::Command;
 struct Probe {
     status: &'static str,
     reason: String,
+    cacheable: bool,
 }
 
 impl Probe {
@@ -16,6 +17,7 @@ impl Probe {
         Self {
             status,
             reason: reason.into(),
+            cacheable: true,
         }
     }
 
@@ -23,7 +25,11 @@ impl Probe {
         match result {
             Result::Available => Self::new("yes", &format!("{} is available", check.id())),
             Result::Unavailable(reason) => Self::new("no", &reason),
-            Result::Skipped(reason) | Result::Error(reason) => Self::new("unknown", &reason),
+            Result::Skipped(reason) => Self::new("unknown", &reason),
+            Result::Error(reason) => Self {
+                cacheable: false,
+                ..Self::new("unknown", &reason)
+            },
         }
     }
 
@@ -129,21 +135,29 @@ fn pci_fallback(sys: &Path) -> (Probe, Probe) {
     (present, nvidia)
 }
 
-fn inventory(paths: &Paths, architecture: &str) -> Option<Inventory> {
+fn inventory(paths: &Paths, architecture: &str) -> (Option<Inventory>, bool) {
     let default = format!("/opt/krab/kata-device-provisioner-{architecture}");
     let program = std::env::var_os("KRAB_PROVISIONER").unwrap_or_else(|| default.into());
-    let output = Command::new(program)
+    let output = match Command::new(program)
         .args(["status", "--all", "--sysfs"])
         .arg(&paths.sys)
         .output()
-        .ok()?;
-    output
-        .status
-        .success()
-        .then(|| parse_inventory(&String::from_utf8_lossy(&output.stdout)))
+    {
+        Ok(output) => output,
+        // An absent optional provisioner is a stable unknown, rather than
+        // a transient collection error. Installing it requires a refresh.
+        Err(error) => return (None, error.kind() == io::ErrorKind::NotFound),
+    };
+    if !output.status.success() {
+        return (None, false);
+    }
+    match String::from_utf8(output.stdout) {
+        Ok(stdout) => (Some(parse_inventory(&stdout)), true),
+        Err(_) => (None, false),
+    }
 }
 
-pub fn render(paths: &Paths, architecture: &str) -> io::Result<String> {
+pub fn render(paths: &Paths, architecture: &str) -> io::Result<(String, bool)> {
     if !paths.host_root.join("proc/cpuinfo").is_file() || !paths.sys.join("devices").is_dir() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
@@ -170,7 +184,8 @@ pub fn render(paths: &Paths, architecture: &str) -> io::Result<String> {
     let mut ppcie = Probe::from_check(Check::GpuPpcie, Check::GpuPpcie.run(paths, architecture));
     let gpu = Probe::from_check(Check::Gpu, Check::Gpu.run(paths, architecture));
     let mut nvswitch = Probe::new("unknown", "Provisioner inventory unavailable");
-    let inventory = inventory(paths, architecture);
+    let (inventory, inventory_cacheable) = inventory(paths, architecture);
+    let mut cacheable = cc.cacheable && ppcie.cacheable && gpu.cacheable && inventory_cacheable;
     if let Some(ref inventory) = inventory {
         if inventory.cc_yes && inventory.cc_no {
             cc = Probe::new(
@@ -212,7 +227,9 @@ pub fn render(paths: &Paths, architecture: &str) -> io::Result<String> {
         }
         json_string(&mut output, name);
         output.push(':');
-        Probe::from_check(*check, check.run(paths, architecture)).json(&mut output);
+        let probe = Probe::from_check(*check, check.run(paths, architecture));
+        cacheable &= probe.cacheable;
+        probe.json(&mut output);
     }
     output.push_str("},\"erofsVersion\":null,\"gpus\":{");
     for (index, (name, probe)) in [
@@ -252,7 +269,7 @@ pub fn render(paths: &Paths, architecture: &str) -> io::Result<String> {
         }
     }
     output.push_str("]}}");
-    Ok(output)
+    Ok((output, cacheable))
 }
 
 #[cfg(test)]

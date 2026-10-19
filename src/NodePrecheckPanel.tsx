@@ -240,6 +240,7 @@ export function NodePrecheckPanel({
         <div>
           <strong>Choose nodes (optional)</strong>
           <p>All Linux nodes in the cluster are checked by default. To check selected nodes, label them <code>krab/preflight=true</code> and add <code>--set-string nodeSelector=krab/preflight=true</code> to the Helm command.</p>
+          <p>Previous results are reused until the node reboots or the checker changes. After changing host configuration, add <code>--set cache.forceRefresh=true</code> to refresh the results.</p>
         </div>
       </div>
       <div className="precheck-step">

@@ -57,6 +57,18 @@ jobs:
           npm run test:helm
           npm run test:controller:render
 
+  preflight:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install pre-flight Rust toolchain
+        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt
+      - name: Check pre-flight binary and cache
+        working-directory: preflight
+        run: |
+          cargo +1.95.0 fmt --check
+          cargo +1.95.0 test --locked
+
   controller:
     runs-on: ubuntu-24.04
     steps:

@@ -1,16 +1,24 @@
 use crate::{probe::Result, Check};
 use std::fmt::Write;
 
-pub fn text(architecture: &str, results: &[(Check, Result)]) {
-    println!("Architecture: {architecture}");
+pub fn text(architecture: &str, results: &[(Check, Result)]) -> (String, String) {
+    let mut stdout = format!("Architecture: {architecture}\n");
+    let mut stderr = String::new();
     for (check, result) in results {
         match result {
-            Result::Available => println!("{}: available", check.name()),
-            Result::Unavailable(reason) => println!("{}: unavailable ({reason})", check.name()),
-            Result::Skipped(reason) => println!("{}: skipped ({reason})", check.name()),
-            Result::Error(reason) => eprintln!("{}: error ({reason})", check.name()),
+            Result::Available => writeln!(stdout, "{}: available", check.name()).unwrap(),
+            Result::Unavailable(reason) => {
+                writeln!(stdout, "{}: unavailable ({reason})", check.name()).unwrap()
+            }
+            Result::Skipped(reason) => {
+                writeln!(stdout, "{}: skipped ({reason})", check.name()).unwrap()
+            }
+            Result::Error(reason) => {
+                writeln!(stderr, "{}: error ({reason})", check.name()).unwrap()
+            }
         }
     }
+    (stdout, stderr)
 }
 
 pub fn json(architecture: &str, results: &[(Check, Result)]) -> String {
