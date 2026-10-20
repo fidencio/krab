@@ -2,6 +2,12 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.2.1] - 2026-10-20
+
+### Changed
+
+- Update the Node Feature Discovery chart and image from v0.19.0 to v0.20.0.
+
 ## [0.2.0] - 2026-10-19
 
 ### Added

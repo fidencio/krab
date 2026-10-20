@@ -28,10 +28,11 @@ test('generated values carry a format and chart version', () => {
 })
 
 test('compatible v2 values retain their deployment name while unversioned values are rejected', () => {
-  const older = values.replace(`# KRAB chart version: ${version}`, '# KRAB chart version: 0.2.1')
-  const imported = importValuesBundle(catalog, older, 'demo-0.2.1-values.yaml')
+  const importedVersion = `${version}-import-test`
+  const older = values.replace(`# KRAB chart version: ${version}`, `# KRAB chart version: ${importedVersion}`)
+  const imported = importValuesBundle(catalog, older, `demo-${importedVersion}-values.yaml`)
   assert.equal(imported.deploymentName, 'demo')
-  assert.match(imported.warnings[0], /made for KRAB 0.2.1/)
+  assert.ok(imported.warnings[0]?.includes(`made for KRAB ${importedVersion}`))
   const legacy = values.replace(/^# KRAB (?:values format|chart version): .*\n/gm, '')
   assert.throws(() => importValuesBundle(catalog, legacy), /Unsupported KRAB values format/)
 })
