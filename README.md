@@ -180,8 +180,9 @@ optional `erofsVersion` field empty.
 
 The Rust checker can give a strict cluster verdict for the requirements you
 choose. Every selected node must pass: one `no`, `unknown`, or `review` on a
-required check fails the cluster. KVM and host EROFS utilities are prerequisites
-for every profile; a reported runtime layout must also be confirmed.
+required check fails the cluster. KVM is a prerequisite for every profile;
+host EROFS utilities are required only with `--require erofs`. A reported runtime
+layout must also be confirmed.
 
 Run fresh pre-flight checks, collect all Linux nodes, and save the verdict with
 its complete evidence:
@@ -193,6 +194,9 @@ krab-preflight conformance --run \
 ```
 
 Choose requirements explicitly: `tdx`, `snp`, `se`, `gpu-cc`, or `gpu-ppcie`.
+Add `--require erofs` for runtime classes that need host EROFS utilities.
+Each node’s `checks` reports probe status and whether it is `required`, an
+`alternative`, or `not-required` for the selected policy.
 `--require cc` allows any supported CPU TEE on each node, including mixed Intel
 and AMD clusters. CPU and GPU requirements combine with AND. GPU profiles also
 require IOMMUFD and a complete NVIDIA GPU inventory. Optional `--gpu-model H100`

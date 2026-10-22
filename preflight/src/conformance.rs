@@ -12,9 +12,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub const HELP: &str = "Usage: krab-preflight conformance [--require REQUIREMENT ...] [--require-any gpu-cc,gpu-ppcie]
   (--report FILE | --run) [--json] [--output FILE]
 
-Requirements: cc (any supported CPU TEE), tdx, snp, se, gpu-cc, gpu-ppcie.
+Requirements: cc (any supported CPU TEE), tdx, snp, se, gpu-cc, gpu-ppcie, erofs.
 Choose one CPU requirement and/or GPU requirements. Every node must pass all
-selected requirements, KVM, and host EROFS utilities. Unknown/review means fail.
+selected requirements and KVM. Require erofs only for runtime classes that need it.
+Unknown/review on required checks means fail.
 --require-any LIST  Allow either GPU capability on each node: gpu-cc,gpu-ppcie
 --gpu-model MODEL   Require a matching GPU model (repeat for alternatives)
 --report FILE       Evaluate a v2 cluster pre-check report; '-' reads stdin
@@ -42,6 +43,7 @@ pub enum Requirement {
     Se,
     GpuCc,
     GpuPpcie,
+    Erofs,
 }
 
 impl Requirement {
@@ -53,6 +55,7 @@ impl Requirement {
             "se" => Ok(Self::Se),
             "gpu-cc" => Ok(Self::GpuCc),
             "gpu-ppcie" => Ok(Self::GpuPpcie),
+            "erofs" => Ok(Self::Erofs),
             _ => Err(format!("Unknown conformance requirement: {value}")),
         }
     }
@@ -67,6 +70,7 @@ impl Requirement {
             Self::Se => "se",
             Self::GpuCc => "gpu-cc",
             Self::GpuPpcie => "gpu-ppcie",
+            Self::Erofs => "erofs",
         }
     }
 }
@@ -186,7 +190,18 @@ impl Options {
                 "Choose --require or --require-any; conformance never assumes a CC profile".into(),
             );
         }
-        if options.requirements.iter().filter(|r| !r.gpu()).count() > 1 {
+        if options
+            .requirements
+            .iter()
+            .filter(|r| {
+                matches!(
+                    r,
+                    Requirement::Cc | Requirement::Tdx | Requirement::Snp | Requirement::Se
+                )
+            })
+            .count()
+            > 1
+        {
             return Err(
                 "Choose one CPU TEE requirement, or cc to allow any supported CPU TEE".into(),
             );
@@ -261,6 +276,7 @@ pub struct NodeVerdict {
     verdict: Decision,
     failures: Vec<Finding>,
     matched_any_of_requirements: Vec<Requirement>,
+    checks: Vec<CheckEvidence>,
 }
 
 #[derive(Debug, Serialize)]
@@ -283,6 +299,84 @@ pub struct Verdict {
     nodes: Vec<NodeVerdict>,
     node_inventory: Vec<Identity>,
     precheck: Option<ClusterReport>,
+}
+
+/// Probe evidence and its role in the selected conformance policy.
+/// A not-required probe may have been collected; its result cannot fail the node.
+#[derive(Debug, Serialize)]
+struct CheckEvidence {
+    check: &'static str,
+    evaluation: &'static str,
+    status: Status,
+    reason: String,
+}
+
+fn check_evidence(options: &Options, report: &NodeReport) -> Vec<CheckEvidence> {
+    let selected = |requirement| options.requirements.contains(&requirement);
+    let gpu =
+        options.requirements.iter().any(|r| r.gpu()) || !options.any_of_requirements.is_empty();
+    let cpu_alternative =
+        |architecture| selected(Requirement::Cc) && report.node.architecture == architecture;
+    let role = |required, alternative| {
+        if required {
+            "required"
+        } else if alternative {
+            "alternative"
+        } else {
+            "not-required"
+        }
+    };
+    let gpu_role = |requirement| {
+        role(
+            selected(requirement),
+            options.any_of_requirements.contains(&requirement),
+        )
+    };
+    let mut probes = vec![
+        ("kvm", &report.checks.kvm, "required"),
+        (
+            "erofs",
+            &report.checks.erofs,
+            role(selected(Requirement::Erofs), false),
+        ),
+        (
+            "tdx",
+            &report.checks.tdx,
+            role(selected(Requirement::Tdx), cpu_alternative("amd64")),
+        ),
+        (
+            "snp",
+            &report.checks.snp,
+            role(selected(Requirement::Snp), cpu_alternative("amd64")),
+        ),
+        (
+            "se",
+            &report.checks.se,
+            role(selected(Requirement::Se), cpu_alternative("s390x")),
+        ),
+        ("iommufd", &report.checks.iommufd, role(gpu, false)),
+        ("gpu-present", &report.gpus.present, role(gpu, false)),
+        ("nvidia", &report.gpus.nvidia, role(gpu, false)),
+        ("gpu-cc", &report.gpus.cc, gpu_role(Requirement::GpuCc)),
+        (
+            "gpu-ppcie",
+            &report.gpus.ppcie,
+            gpu_role(Requirement::GpuPpcie),
+        ),
+        ("nvswitch", &report.gpus.nvswitch, "not-required"),
+    ];
+    if let Some(runtime) = &report.runtime {
+        probes.push(("runtime-layout", &runtime.layout, "required"));
+    }
+    probes
+        .into_iter()
+        .map(|(check, probe, evaluation)| CheckEvidence {
+            check,
+            evaluation,
+            status: probe.status,
+            reason: probe.reason.clone(),
+        })
+        .collect()
 }
 
 fn require(failures: &mut Vec<Finding>, check: &str, probe: &Probe) {
@@ -334,7 +428,6 @@ fn evaluate_node(
 ) -> (Vec<Finding>, Vec<Requirement>) {
     let mut failures = Vec::new();
     require(&mut failures, "kvm", &report.checks.kvm);
-    require(&mut failures, "erofs", &report.checks.erofs);
     if let Some(runtime) = &report.runtime {
         require(&mut failures, "runtime-layout", &runtime.layout);
     }
@@ -366,6 +459,7 @@ fn evaluate_node(
     for requirement in &options.requirements {
         let architecture = report.node.architecture.as_str();
         match requirement {
+            Requirement::Erofs => require(&mut failures, "erofs", &report.checks.erofs),
             Requirement::Cc => {
                 let probes: Vec<(&str, &Probe)> = match architecture {
                     "amd64" => vec![("tdx", &report.checks.tdx), ("snp", &report.checks.snp)],
@@ -521,6 +615,7 @@ pub fn evaluate(
                 },
                 failures: issues,
                 matched_any_of_requirements,
+                checks: check_evidence(options, &entry.report),
             });
         }
     } else {
@@ -807,6 +902,12 @@ pub fn run(args: &[String]) -> ExitCode {
         }
         for node in &verdict.nodes {
             println!("  {}: {}", node.node_name, node.verdict.label());
+            for check in &node.checks {
+                println!(
+                    "    {} [{}]: {:?}: {}",
+                    check.check, check.evaluation, check.status, check.reason
+                );
+            }
             for issue in &node.failures {
                 println!(
                     "  {} / {}: {:?}: {}",

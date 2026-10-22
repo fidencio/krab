@@ -14,12 +14,12 @@
 {{- $gpu = true -}}
 {{- end -}}
 {{- range $requirement := $requirements -}}
-{{- if not (has $requirement (list "cc" "tdx" "snp" "se" "gpu-cc" "gpu-ppcie")) -}}
+{{- if not (has $requirement (list "cc" "tdx" "snp" "se" "gpu-cc" "gpu-ppcie" "erofs")) -}}
 {{- fail (printf "Unknown conformance requirement: %s" $requirement) -}}
 {{- end -}}
 {{- if has $requirement (list "gpu-cc" "gpu-ppcie") -}}
 {{- $gpu = true -}}
-{{- else -}}
+{{- else if has $requirement (list "cc" "tdx" "snp" "se") -}}
 {{- $cpu = add $cpu 1 -}}
 {{- end -}}
 {{- end -}}

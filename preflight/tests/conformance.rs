@@ -200,7 +200,7 @@ fn all_required_prerequisites_are_checked_and_failure_details_are_collected() {
         evidence["nodes"][1]["report"]["checks"][check]["status"] = "unknown".into();
     }
     evidence["nodes"][1]["report"]["gpus"]["devices"] = json!([]);
-    let (output, verdict) = fixture.offline(&evidence, &["tdx", "gpu-cc"]);
+    let (output, verdict) = fixture.offline(&evidence, &["tdx", "gpu-cc", "erofs"]);
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(verdict["nodes"][1]["failures"].as_array().unwrap().len(), 4);
     assert!(
@@ -391,4 +391,54 @@ fn gpu_or_is_satisfied_on_each_node_and_preserves_mandatory_prerequisites() {
             .code(),
         Some(2)
     );
+}
+
+#[test]
+fn erofs_is_only_required_when_selected_and_probe_scope_is_visible() {
+    let fixture = Fixture::new();
+    for status in ["no", "unknown", "review"] {
+        let mut evidence = report();
+        evidence["nodes"][1]["report"]["checks"]["erofs"] = json!({
+            "status": status, "reason": "mkfs.erofs executable was not found"
+        });
+        fixture.write("report.json", &evidence);
+        let output = fixture.run(&[
+            "--report",
+            "report.json",
+            "--json",
+            "--require-any",
+            "gpu-cc,gpu-ppcie",
+        ]);
+        assert!(output.status.success());
+        let verdict: Value = serde_json::from_slice(&output.stdout).unwrap();
+        let node = &verdict["nodes"][1];
+        assert_eq!(node["verdict"], "pass");
+        assert_eq!(node["failures"], json!([]));
+        assert_eq!(
+            node["matchedAnyOfRequirements"],
+            json!(["gpu-cc", "gpu-ppcie"])
+        );
+        let checks = node["checks"].as_array().unwrap();
+        let check = |name| checks.iter().find(|c| c["check"] == name).unwrap();
+        assert_eq!(check("erofs")["evaluation"], "not-required");
+        assert_eq!(check("erofs")["status"], status);
+        assert_eq!(
+            check("erofs")["reason"],
+            "mkfs.erofs executable was not found"
+        );
+        assert_eq!(check("gpu-cc")["evaluation"], "alternative");
+        assert_eq!(check("kvm")["evaluation"], "required");
+        assert_eq!(check("kvm")["status"], "yes");
+        assert_eq!(check("tdx")["evaluation"], "not-required");
+        let (output, verdict) = fixture.offline(&evidence, &["tdx", "gpu-cc", "erofs"]);
+        assert_eq!(output.status.code(), Some(1));
+        assert_eq!(verdict["nodes"][1]["failures"][0]["check"], "erofs");
+        let erofs = verdict["nodes"][1]["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["check"] == "erofs")
+            .unwrap();
+        assert_eq!(erofs["evaluation"], "required");
+    }
 }

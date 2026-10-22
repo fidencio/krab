@@ -70,7 +70,8 @@ Conformance verdicts are never cached; live runs force the underlying probes to
 refresh their cache.
 
 Choose one of `cc` (any supported CPU TEE per node), `tdx`, `snp`, or `se`, and/or
-`gpu-cc` or `gpu-ppcie`. All selections also require KVM and host EROFS utilities;
+`gpu-cc` or `gpu-ppcie`. All selections also require KVM;
+add `--require erofs` only for runtime classes that need host EROFS utilities;
 GPU selections require IOMMUFD, NVIDIA hardware, and complete GPU inventory.
 An optional reported runtime layout must pass. `--gpu-model MODEL` restricts GPU
 models; repeated models are alternatives. The full selection, inventory, node
@@ -80,6 +81,14 @@ Use `--require-any gpu-cc,gpu-ppcie` to allow either GPU capability on each node
 The shared GPU prerequisites still apply. Optional `--require tdx` remains
 mandatory on every node; separate `--require` flags always combine with AND.
 The JSON verdict includes the OR alternatives and which ones each node matched.
+Each node's `checks` lists every collected probe's `status` and `reason`, alongside
+its `evaluation`: `required`, `alternative` (one allowed option must pass), or
+`not-required` (reported evidence that does not affect this verdict). Collection
+status and conformance policy are separate: an EROFS `no` can accompany a PASS.
+`failures` also includes policy and evidence checks such as GPU inventory,
+architecture, host identity, and report freshness. A PASS covers the selected
+capabilities; it does not certify every runtime class or its snapshotter setup.
+In Helm values, add `erofs` to `conformance.requirements` to enforce it.
 
 Exit status is 0 for PASS, 1 for confirmed nonconformance after complete checks,
 and 2 for collection failures, incomplete/invalid evidence, invalid CLI options,

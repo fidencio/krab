@@ -14,6 +14,7 @@ collectorImage:
 # Enable a Helm-gated conformance Job. Requirements must be explicitly selected.
 conformance:
   enabled: false
+  # Add erofs only for runtime classes that require host EROFS utilities.
   requirements: []
   # Optional GPU alternatives: every node must satisfy at least one.
   anyOf: []
