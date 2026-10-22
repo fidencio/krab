@@ -15,6 +15,19 @@ export async function loadInputs(root: string, cachePath: (id: string) => string
   const krabSchema = JSON.parse(await readFile(resolve(root, 'charts/krab/values.schema.json'), 'utf8'))
   const kataValuesRaw = await readFile(cachePath('kata-values'), 'utf8')
   const kataValues = parse(kataValuesRaw)
+  // Specialized shims live in complete example profiles as of Kata 4.3.
+  // Import their shim blocks without replacing the base chart's global defaults.
+  const kataShimSources: Record<string, string> = Object.fromEntries(
+    Object.keys(kataValues.shims).map(id => [id, 'kata-values']),
+  )
+  for (const sourceId of ['kata-nvidia-cpu-profile', 'kata-tee-profile']) {
+    const profile = await readYaml(cachePath(sourceId))
+    for (const [id, config] of Object.entries(profile.shims)) {
+      if (id === 'disableAll') continue
+      kataValues.shims[id] = config
+      kataShimSources[id] = sourceId
+    }
+  }
   const kataProfileRaw = await readFile(cachePath('kata-nvidia-profile'), 'utf8')
   const kataProfile = parse(kataProfileRaw)
   const provisionerChart = await readYaml(cachePath('provisioner-chart'))
@@ -33,7 +46,7 @@ export async function loadInputs(root: string, cachePath: (id: string) => string
   )
   return {
     qgsChart, kataChart, kataVersions, nfdChart, nfdValues, plannedArchitecture,
-    krabChart, krabValues, krabSchema, kataValuesRaw, kataValues,
+    krabChart, krabValues, krabSchema, kataValuesRaw, kataValues, kataShimSources,
     kataProfileRaw, kataProfile, provisionerChart, provisionerValues,
     devicePluginChart, provisionerReadme, pluginCode, pluginValues,
     kataChartReference, provisionerNamespace,

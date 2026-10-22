@@ -9,52 +9,52 @@
     {
       "id": "kata-chart",
       "repository": "kata-containers/kata-containers",
-      "ref": "c7351e797efff8bfc6bd73da0eb1909be12e2cfe",
-      "release": "4.2.0",
+      "ref": "03cf2ec06a5d302f23af811744f6bcea49988bfb",
+      "release": "4.3.1",
       "draft": false,
       "path": "tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml",
-      "sha256": "67a1820c792411ac0497f5881168939135a2011f0e003334c9da105eaddf80a4",
-      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
+      "sha256": "b0aa8cb446c13582e53310117f89d1f782adf1727f8f3bb68150a1a1d084cfe4",
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
     },
     {
       "id": "kata-values",
       "repository": "kata-containers/kata-containers",
-      "ref": "c7351e797efff8bfc6bd73da0eb1909be12e2cfe",
-      "release": "4.2.0",
+      "ref": "03cf2ec06a5d302f23af811744f6bcea49988bfb",
+      "release": "4.3.1",
       "draft": false,
       "path": "tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml",
-      "sha256": "9f5a43a2cc9f9e0f19006c1d9ded0ebb9b067dabb97b636bc939ac95c683898e",
-      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+      "sha256": "7fb3da0bf7f81d6dab6477481a1ff3945d2de493d872ac487b79888b0371e674",
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
     },
     {
       "id": "kata-node-feature-rule",
       "repository": "kata-containers/kata-containers",
-      "ref": "c7351e797efff8bfc6bd73da0eb1909be12e2cfe",
-      "release": "4.2.0",
+      "ref": "03cf2ec06a5d302f23af811744f6bcea49988bfb",
+      "release": "4.3.1",
       "draft": false,
       "path": "tools/packaging/kata-deploy/helm-chart/kata-deploy/templates/node-feature-rules.yaml",
       "sha256": "78f4a3c50079d90a4362b7380bf231ba841e32cf7084372e5493ba43d83956b0",
-      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/templates/node-feature-rules.yaml"
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/templates/node-feature-rules.yaml"
     },
     {
       "id": "kata-versions",
       "repository": "kata-containers/kata-containers",
-      "ref": "c7351e797efff8bfc6bd73da0eb1909be12e2cfe",
-      "release": "4.2.0",
+      "ref": "03cf2ec06a5d302f23af811744f6bcea49988bfb",
+      "release": "4.3.1",
       "draft": false,
       "path": "versions.yaml",
-      "sha256": "aa845a2e362b4b2d55bf7be513634237b24a2ad9f69e07be6e99cbb4bd620b2d",
-      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/versions.yaml"
+      "sha256": "ec97b60fe417a6cd74904c59b828d33a1189fe1547a7fd35d95331fb47a0bd52",
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/versions.yaml"
     },
     {
       "id": "kata-nvidia-profile",
       "repository": "kata-containers/kata-containers",
-      "ref": "c7351e797efff8bfc6bd73da0eb1909be12e2cfe",
-      "release": "4.2.0",
+      "ref": "03cf2ec06a5d302f23af811744f6bcea49988bfb",
+      "release": "4.3.1",
       "draft": false,
       "path": "tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml",
-      "sha256": "277a081cfb5220886b77e2553ad5dc6b40cc1628bfadcba85b7f41ea031c6450",
-      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/c7351e797efff8bfc6bd73da0eb1909be12e2cfe/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+      "sha256": "c9e4f0666ed389660455b68da0366ad328e0fb4221987d90a9f0eafe7035fe9d",
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
     },
     {
       "id": "nfd-chart",
@@ -235,6 +235,26 @@
       "path": "charts/intel-tdx-qgs/Chart.yaml",
       "sha256": "4870202c3a9f563adaaa1f1344381af63f0236d8909e6896ac079f2fa953c0b0",
       "sourceUrl": "https://github.com/intel/confidential-computing.tee.dcap.k8s.qgs/blob/d21e62cc2d5cba8f886364e75613916c39ece506/charts/intel-tdx-qgs/Chart.yaml"
+    },
+    {
+      "id": "kata-nvidia-cpu-profile",
+      "repository": "kata-containers/kata-containers",
+      "ref": "03cf2ec06a5d302f23af811744f6bcea49988bfb",
+      "release": "4.3.1",
+      "draft": false,
+      "path": "tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-cpu.values.yaml",
+      "sha256": "4157bdd5ccd009f62e3fdfa2f4fbccf73003c5f018c2276a4574f3e524a52427",
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-cpu.values.yaml"
+    },
+    {
+      "id": "kata-tee-profile",
+      "repository": "kata-containers/kata-containers",
+      "ref": "03cf2ec06a5d302f23af811744f6bcea49988bfb",
+      "release": "4.3.1",
+      "draft": false,
+      "path": "tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml",
+      "sha256": "3933d05d5d105c9e118c9aaf561513c9efb63ac4163dee60cb855182218885b9",
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml"
     }
   ]
 }

@@ -53,7 +53,7 @@ test('multiple GPU profile templates share the controller and preserve the devic
 })
 
 test('unsafe or unsupported combinations fail before applying resources', () => {
-  assert.throws(() => render(helm(), options), /deploymentMode=job/)
+  assert.throws(() => render(helm('--set', 'kata-deploy.deploymentMode=daemonset'), options), /deploymentMode=job/)
   assert.throws(() => render(helm(...kata, '--set', 'kata-deploy.job.reconcile.enabled=true'), options), /Disable/)
   assert.throws(() => render(helm(...kata).replaceAll('--parallelism=100', '--unknown-flag=100'), options), /Unsupported dispatcher argument/)
   assert.throws(() => render(helm(...kata), { ...options, parallelism: 0 }), /Parallelism/)

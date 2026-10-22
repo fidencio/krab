@@ -76,9 +76,9 @@ test('generated catalog carries accurate upstream chart data', async () => {
       'clh-azure-runtime-rs',
       'dragonball',
       'qemu-runtime-rs',
+      'openvmm-azure-runtime-rs',
       'qemu-nvidia-cpu-runtime-rs',
       'qemu-coco-dev-runtime-rs',
-      'openvmm-azure-runtime-rs',
       'qemu-snp-runtime-rs',
       'qemu-se-runtime-rs',
       'qemu-tdx-runtime-rs',
@@ -90,6 +90,19 @@ test('generated catalog carries accurate upstream chart data', async () => {
   const nvidiaCpuRuntime = local.runtime.shims.find(
     ({ id }) => id === 'qemu-nvidia-cpu-runtime-rs',
   )!
+  const cpuProfile = await pinned('kata-nvidia-cpu-profile')
+  assert.deepEqual(
+    vendor.runtime.chart.values.shims['qemu-nvidia-cpu-runtime-rs'],
+    cpuProfile.values.shims['qemu-nvidia-cpu-runtime-rs'],
+  )
+  assert.ok(nvidiaCpuRuntime.sourceUrl.endsWith(cpuProfile.source.path))
+  const teeProfile = await pinned('kata-tee-profile')
+  for (const id of ['amd', 'ibm', 'intel']) {
+    const runtime = catalog.vendors.find(vendor => vendor.id === id)!.runtime
+    const shim = runtime.shims[0]
+    assert.deepEqual(runtime.chart.values.shims[shim.id], teeProfile.values.shims[shim.id])
+    assert.ok(shim.sourceUrl.endsWith(teeProfile.source.path))
+  }
   assert.equal(nvidiaCpuRuntime.snapshotter, 'erofs')
   assert.deepEqual(nvidiaCpuRuntime.snapshotterConfiguration, {
     erofsSnapshotterMode: 'memory',

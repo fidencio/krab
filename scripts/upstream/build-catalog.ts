@@ -55,7 +55,7 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
   const { compatibility, presentation, presentationFor } = policies
   const {
     qgsChart, kataChart, kataVersions, nfdChart, nfdValues, plannedArchitecture,
-    krabChart, krabValues, krabSchema, kataValuesRaw, kataValues,
+    krabChart, krabValues, krabSchema, kataValuesRaw, kataValues, kataShimSources,
     kataProfile, provisionerChart, provisionerValues, devicePluginChart,
     provisionerReadme, pluginCode, pluginValues, kataChartReference,
     provisionerNamespace,
@@ -444,7 +444,7 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
         ? { snapshotterConfiguration: nvidiaCpuSnapshotterConfiguration }
         : {}),
       nodeSelector: shimConfig.runtimeClass?.nodeSelector ?? {},
-      sourceUrl: sourceLink('kata-values'),
+      sourceUrl: sourceLink(kataShimSources[name]),
     }
   })
 
@@ -484,7 +484,7 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
       nodeSelector:
         (config as { runtimeClass?: { nodeSelector?: Record<string, string> } })
           .runtimeClass?.nodeSelector ?? {},
-      sourceUrl: sourceLink('kata-values'),
+      sourceUrl: sourceLink(kataShimSources[name]),
     }))
 
   if (localShims.length === 0) {
@@ -537,13 +537,13 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
       nodeSelector:
         (config as { runtimeClass?: { nodeSelector?: Record<string, string> } })
           .runtimeClass?.nodeSelector ?? {},
-      sourceUrl: sourceLink('kata-values'),
+      sourceUrl: sourceLink(kataShimSources[shimId]),
     }
     return {
       id,
       ...presentationFor(id),
       capabilities: [{ id: 'confidential-computing' }],
-      sourceUrl: sourceLink('kata-values'),
+      sourceUrl: sourceLink(kataShimSources[shimId]),
       hardwareFamilies: [],
       runtime: {
         chart: {

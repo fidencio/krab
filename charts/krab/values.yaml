@@ -20,7 +20,7 @@ kata-deploy:
     enabled: false
   image:
     reference: quay.io/kata-containers/kata-deploy
-    tag: "4.2.0"
+    tag: "4.3.1"
   kubectlImage:
     reference: quay.io/kata-containers/kubectl
     tag: v1.37.0

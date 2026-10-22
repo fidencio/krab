@@ -63,7 +63,7 @@ generator itself owns derived labels, links, ordering, and schema versions.
 | `vendors[].runtime.chart.valuesFileName`, `.sourceUrl` | Generator contract | Output filename and pinned chart link. |
 | `vendors[].runtime.chart.values.debug`, `.deploymentMode`, `.snapshotter.*`, `.defaultShim.*`, `.runtimeClasses.*`, `.node-feature-discovery.*` | `kata-values` for Custom and CPU TEE paths; `kata-nvidia-profile` for NVIDIA | Pinned Kata defaults. |
 | `vendors[nvidia].runtime.chart.values.containerd.*` and other inherited NVIDIA fields | `kata-nvidia-profile` | Pinned NVIDIA example values. |
-| `vendors[].runtime.chart.values.shims.*` except the overrides below | `kata-values` for CPU/local shims; `kata-nvidia-profile` for NVIDIA GPU shims | Pinned Kata shim defaults. |
+| `vendors[].runtime.chart.values.shims.*` except the overrides below | `kata-values`, `kata-nvidia-cpu-profile`, or `kata-tee-profile` for CPU/local shims; `kata-nvidia-profile` for NVIDIA GPU shims | Pinned Kata shim defaults. |
 | `vendors[].runtime.chart.values.shims.disableAll` | Generator contract | KRAB enables only the selected shims. |
 | `vendors[custom].runtime.chart.values.shims.{qemu-snp-runtime-rs,qemu-tdx-runtime-rs,qemu-se-runtime-rs}.runtimeClass.nodeSelector.*` | `upstream/compatibility.json` | Reviewed TEE selectors, checked against Kata or NFD rules. |
 | `vendors[].runtime.chart.values.shims.qemu-nvidia-cpu-runtime-rs.containerd.snapshotter` | Generator contract | KRAB's EROFS choice for that shim. |
@@ -71,7 +71,7 @@ generator itself owns derived labels, links, ordering, and schema versions.
 | `vendors[].runtime.chart.values.kubectlImage.*` | `upstream/architecture.yaml` | KRAB's selected kubectl image. |
 | `vendors[].runtime.chart.values.job.dispatcherImage.*` | `kata-values` | Kata dispatcher image. |
 | `vendors[nvidia].runtime.chart.values.job.*` except `dispatcherImage` | `kata-nvidia-profile` | Other pinned NVIDIA job fields. |
-| `vendors[].runtime.shims[].id`, `.supportedArches[]`, `.snapshotter`, `.nodeSelector.*` | `kata-values` or `kata-nvidia-profile`, according to the shim | Pinned shim settings, with the two overrides below. |
+| `vendors[].runtime.shims[].id`, `.supportedArches[]`, `.snapshotter`, `.nodeSelector.*` | `kata-values`, `kata-nvidia-cpu-profile`, `kata-tee-profile`, or `kata-nvidia-profile`, according to the shim | Pinned shim settings, with the two overrides below. |
 | `vendors[].runtime.shims[qemu-nvidia-cpu-runtime-rs].snapshotter` | Generator contract | KRAB's EROFS choice. |
 | `vendors[custom].runtime.shims[{qemu-snp-runtime-rs,qemu-tdx-runtime-rs,qemu-se-runtime-rs}].nodeSelector.*` | `upstream/compatibility.json` | Reviewed TEE selectors. |
 | `vendors[].runtime.shims[].runtimeClass`, `.selectionGroup`, `.userSelectable`, `.snapshotterConfiguration.*`, `.sourceUrl` | Generator contract | RuntimeClass naming, UI grouping, KRAB's EROFS setup, and pinned source link. |
