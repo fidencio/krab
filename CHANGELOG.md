@@ -2,6 +2,19 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.2.2] - 2026-10-22
+
+### Fixed
+
+- Missing host EROFS utilities no longer fail every conformance profile. Require
+  them explicitly with `--require erofs` or `conformance.requirements` for runtime
+  classes that need them.
+
+### Added
+
+- Per-node probe results show whether each check is required, an allowed
+  alternative, or outside the selected conformance requirements.
+
 ## [0.2.1] - 2026-10-20
 
 ### Changed

@@ -12,7 +12,7 @@
           "kernel": "6.12.0",
           "machineID": "machine-worker-h100",
           "bootID": "boot-worker-h100",
-          "checkerVersion": "0.2.1",
+          "checkerVersion": "0.2.2",
           "checkedAtUnixSeconds": 1790000000
         },
         "checks": {
@@ -91,7 +91,7 @@
           "kernel": "6.8.0",
           "machineID": "machine-worker-amd",
           "bootID": "boot-worker-amd",
-          "checkerVersion": "0.2.1",
+          "checkerVersion": "0.2.2",
           "checkedAtUnixSeconds": 1790000000
         },
         "checks": {
