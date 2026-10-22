@@ -2,8 +2,8 @@ apiVersion: v2
 name: krab
 description: Kata Reference Architecture Builder umbrella chart
 type: application
-version: 0.2.2
-appVersion: "0.2.2"
+version: 0.2.3
+appVersion: "0.2.3"
 home: https://github.com/fidencio/krab
 icon: https://fidencio.github.io/krab/favicon.png
 sources:
@@ -21,7 +21,7 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
     - kind: changed
-      description: Update Node Feature Discovery chart and image to v0.20.0.
+      description: Update Kata Containers chart and image to 4.3.1, including dedicated CPU and TEE runtime profiles.
 # Run npm run generate to refresh these dependencies from pinned charts.
 dependencies:
   - name: node-feature-discovery

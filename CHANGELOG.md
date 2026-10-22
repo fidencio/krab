@@ -2,6 +2,15 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.2.3] - 2026-10-22
+
+### Changed
+
+- Update the Kata Containers chart and image from 4.2.0 to 4.3.1, including
+  upstream's default Job-based deployment.
+- Import NVIDIA CPU and confidential runtime definitions from their dedicated
+  upstream profiles, preserving the available runtime choices and provenance.
+
 ## [0.2.2] - 2026-10-22
 
 ### Fixed
