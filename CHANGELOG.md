@@ -2,6 +2,15 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.2.4] - 2026-11-01
+
+### Fixed
+
+- Apply DCGM metrics settings only to NVIDIA GPU runtimes. CPU-only NVIDIA
+  runtimes no longer receive the unsupported `nvrc.enableDCGM` setting.
+- Remove the invalid CPU-only DCGM setting when importing older generated
+  values, with a warning, so they can be regenerated for installation.
+
 ## [0.2.3] - 2026-10-22
 
 ### Changed
