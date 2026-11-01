@@ -654,6 +654,44 @@ test('NVIDIA artifacts pin every component image version', async () => {
   assert.equal(cpuValues['kata-device-provisioner'].enabled, false)
 })
 
+test('DCGM is only generated for NVIDIA GPU guests', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  for (const vendorId of ['nvidia', 'custom']) {
+    const vendor = catalog.vendors.find(({ id }) => id === vendorId)!
+    for (const dcgmEnabled of [false, true]) {
+      const values = buildValuesBundle(
+        catalog,
+        vendor,
+        { blackwell: { modeId: 'on', cpuTeeIds: ['snp', 'tdx'] } },
+        { distributionId: 'kubeadm', selinuxEnabled: false },
+        {
+          selectedShimIds: ['qemu-nvidia-cpu-runtime-rs'],
+          runtimeHttpsProxy: '',
+          runtimeNoProxy: '',
+          nvidiaDcgmEnabled: dcgmEnabled,
+        },
+        createAdvancedConfiguration(),
+      )
+      const shims = parse(values)['kata-deploy'].shims
+      assert.equal(shims['qemu-nvidia-cpu-runtime-rs'].nvrc?.enableDCGM, undefined)
+      for (const id of ['qemu-nvidia-gpu-snp-runtime-rs', 'qemu-nvidia-gpu-tdx-runtime-rs']) {
+        assert.equal(shims[id].nvrc.enableDCGM, dcgmEnabled)
+      }
+      const imported = importValuesBundle(catalog, values)
+      assert.equal(imported.runtime.nvidiaDcgmEnabled, dcgmEnabled)
+
+      const legacy = parse(values)
+      legacy['kata-deploy'].shims['qemu-nvidia-cpu-runtime-rs'].nvrc = {
+        enableDCGM: !dcgmEnabled,
+      }
+      const legacyValues = `${values.match(/^# KRAB .*$/gm)!.join('\n')}\n${stringify(legacy)}`
+      const repaired = importValuesBundle(catalog, legacyValues)
+      assert.equal(repaired.runtime.nvidiaDcgmEnabled, dcgmEnabled)
+      assert.ok(repaired.warnings.some((warning) => warning.includes('DCGM requires an NVIDIA GPU guest')))
+    }
+  }
+})
+
 test('custom runtimes generate independent RuntimeClasses and snapshotters', async () => {
   const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
   const local = catalog.vendors.find(({ id }) => id === 'custom')!

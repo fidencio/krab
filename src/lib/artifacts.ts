@@ -491,6 +491,15 @@ export function importValuesBundle(
   const dependencies = catalog.plannedArchitecture.charts.krab.dependencies
   const runtimeValues = asRecord(root[dependencies.runtimeValuesKey])
   const configuredShims = asRecord(runtimeValues.shims)
+  for (const [id, configuration] of Object.entries(configuredShims)) {
+    const shim = asRecord(configuration)
+    const nvrc = asRecord(shim.nvrc)
+    if (id.includes('nvidia-cpu') && 'enableDCGM' in nvrc) {
+      delete nvrc.enableDCGM
+      if (Object.keys(nvrc).length === 0) delete shim.nvrc
+      warnings.push(`Removed ${dependencies.runtimeValuesKey}.shims.${id}.nvrc.enableDCGM: DCGM requires an NVIDIA GPU guest.`)
+    }
+  }
   const enabledShimIds = Object.entries(configuredShims).flatMap(
     ([id, configuration]) =>
       id !== 'disableAll' && asRecord(configuration).enabled === true ? [id] : [],
@@ -605,8 +614,9 @@ export function importValuesBundle(
           ),
     runtimeHttpsProxy: String(firstAgent.httpsProxy ?? ''),
     runtimeNoProxy: String(firstAgent.noProxy ?? ''),
-    nvidiaDcgmEnabled: selectedShimConfigs.some(
-      ({ nvrc }) => asRecord(nvrc).enableDCGM === true,
+    nvidiaDcgmEnabled: enabledShimIds.some(
+      (id) => id.includes('nvidia-gpu') &&
+        asRecord(asRecord(configuredShims[id]).nvrc).enableDCGM === true,
     ),
   }
 
@@ -1058,7 +1068,7 @@ export function buildValuesBundle(
           noProxy: runtime.runtimeNoProxy.trim(),
         }
       }
-      if (shimId.includes('nvidia-')) {
+      if (shimId.includes('nvidia-gpu')) {
         selectedShim.nvrc = {
           ...(selectedShim.nvrc ?? {}),
           enableDCGM: runtime.nvidiaDcgmEnabled,

@@ -1546,10 +1546,10 @@ function App() {
                   {selectedVendor.id === 'nvidia' && (
                     <section className="advanced-group component-toggle-group">
                     <div>
-                      <span>Kata runtime · NVIDIA RuntimeClasses</span>
+                      <span>Kata runtime · NVIDIA GPU RuntimeClasses</span>
                       <strong>DCGM metrics</strong>
                       <small>
-                        Starts nv-hostengine and dcgm-exporter for NVIDIA pod sandboxes.
+                        Starts nv-hostengine and dcgm-exporter in NVIDIA GPU guests.
                       </small>
                     </div>
                     <label className="selinux-toggle">
@@ -1557,7 +1557,7 @@ function App() {
                         <strong>
                           {runtime.nvidiaDcgmEnabled ? 'Enabled' : 'Disabled'}
                         </strong>
-                        <small>Applied to every selected NVIDIA RuntimeClass.</small>
+                        <small>Applied to selected NVIDIA GPU RuntimeClasses. CPU-only runtimes do not support DCGM.</small>
                       </span>
                       <input
                         type="checkbox"
