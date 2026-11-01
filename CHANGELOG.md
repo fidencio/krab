@@ -2,6 +2,19 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.2.6] - 2026-11-01
+
+### Fixed
+
+- Update kata-device-provisioner to 0.1.0-alpha.3 so supported noncoherent
+  NVIDIA CC GPUs and NVSwitches can use generic VFIO without a device-specific
+  module alias, including GPUs already in CC mode and bound to vfio-pci.
+
+### Changed
+
+- Refresh the provisioner chart, image, source pins, and the immutable image
+  digest used by the pre-flight checker.
+
 ## [0.2.5] - 2026-11-01
 
 ### Fixed

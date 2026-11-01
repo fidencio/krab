@@ -1,6 +1,6 @@
 # Use the released read-only inventory command; do not rebuild its Rust sources.
-FROM --platform=linux/amd64 ghcr.io/kata-containers/kata-device-provisioner:0.1.0-alpha.2@sha256:b9ee0c162a629281bdc0b27734989f1200eaf4cb48d35aa2d615311c34f4ef0b AS provisioner-amd64
-FROM --platform=linux/arm64 ghcr.io/kata-containers/kata-device-provisioner:0.1.0-alpha.2@sha256:b9ee0c162a629281bdc0b27734989f1200eaf4cb48d35aa2d615311c34f4ef0b AS provisioner-arm64
+FROM --platform=linux/amd64 ghcr.io/kata-containers/kata-device-provisioner:0.1.0-alpha.3@sha256:51e611b31ac6f447b7fd71e57ea74f6d85c65bafaaaccb6827ede779d71cf2c3 AS provisioner-amd64
+FROM --platform=linux/arm64 ghcr.io/kata-containers/kata-device-provisioner:0.1.0-alpha.3@sha256:51e611b31ac6f447b7fd71e57ea74f6d85c65bafaaaccb6827ede779d71cf2c3 AS provisioner-arm64
 
 # Build KRAB's host checks for the target architecture.
 FROM --platform=$TARGETPLATFORM rust:1.95-slim AS preflight-builder
