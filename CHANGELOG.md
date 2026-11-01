@@ -2,6 +2,18 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.2.5] - 2026-11-01
+
+### Fixed
+
+- Update kata-device-provisioner to 0.1.0-alpha.2 so Blackwell GPUs can enable
+  confidential computing when firmware returns an unpadded 22-byte knob reply.
+
+### Changed
+
+- Refresh the provisioner chart, image, source pins, and the immutable image
+  digest used by the pre-flight checker.
+
 ## [0.2.4] - 2026-11-01
 
 ### Fixed

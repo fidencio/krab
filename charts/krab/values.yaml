@@ -50,7 +50,7 @@ kata-device-provisioner:
     enabled: false
   image:
     reference: ghcr.io/kata-containers/kata-device-provisioner
-    tag: 0.1.0-alpha.1
+    tag: 0.1.0-alpha.2
   job:
     dispatcherImage:
       reference: ghcr.io/kata-containers/k8s-job-dispatcher

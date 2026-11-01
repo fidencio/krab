@@ -50,7 +50,7 @@ The dependency table is generated from [`Chart.yaml`](charts/krab/Chart.yaml):
 | node-feature-discovery | 0.20.0 | `oci://registry.k8s.io/nfd/charts` | `node-feature-discovery.enabled` |
 | kata-deploy | 4.3.1 | `oci://ghcr.io/kata-containers/kata-deploy-charts` | `kata-deploy.enabled` |
 | kata-device-plugin | 0.2.0-rc.2 | `oci://ghcr.io/kata-containers/kata-device-plugin-charts` | `kata-device-plugin.enabled,nvidia.enabled` |
-| kata-device-provisioner | 0.1.0-alpha.1 | `oci://ghcr.io/kata-containers/kata-device-provisioner-charts` | `kata-device-provisioner.enabled,nvidia.enabled` |
+| kata-device-provisioner | 0.1.0-alpha.2 | `oci://ghcr.io/kata-containers/kata-device-provisioner-charts` | `kata-device-provisioner.enabled,nvidia.enabled` |
 | intel-tdx-qgs | 0.27.0-alpha.1 | `oci://ghcr.io/intel` | `intel-tdx-qgs.enabled` |
 
 <!-- chart-dependencies:end -->
@@ -92,7 +92,7 @@ Install the published pre-check chart to check every Linux node in the cluster:
 ```sh
 helm install krab-precheck \
   oci://ghcr.io/fidencio/krab-precheck \
-  --version 0.2.4 \
+  --version 0.2.5 \
   --timeout 35m \
   --namespace krab-precheck --create-namespace &&
 kubectl --namespace krab-precheck logs \
@@ -259,7 +259,7 @@ For the GPU OR selection instead, use `anyOf: [gpu-cc, gpu-ppcie]` under
 ```sh
 helm upgrade --install krab-conformance \
   oci://ghcr.io/fidencio/krab-precheck \
-  --version 0.2.4 \
+  --version 0.2.5 \
   --namespace krab-conformance --create-namespace \
   --timeout 35m --values conformance-values.yaml
 ```
@@ -442,7 +442,7 @@ For a prerelease, specify its version explicitly when installing with Helm:
 
 ```sh
 helm upgrade --install krab oci://ghcr.io/fidencio/krab \
-  --version 0.2.4 \
+  --version 0.2.5 \
   --namespace kata-system \
   --create-namespace \
   --values values.yaml

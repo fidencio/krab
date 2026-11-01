@@ -79,78 +79,78 @@ sources:
     sha256: 13655d528c6c1158715aa53007287db382c9bd90293be4da88030a68c54e42a7
   - id: provisioner-chart
     repository: kata-containers/kata-device-provisioner
-    ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163
-    release: v0.1.0-alpha.1
+    ref: 593b74d294bfe0abf5672e5db1d411a697996ccf
+    release: v0.1.0-alpha.2
     path: deploy/helm/kata-device-provisioner/Chart.yaml
     cache: kata-device-provisioner/Chart.yaml
-    sha256: 9dcfa54c23d01684debfbc5c5a1553b1c9654e098a4b627f65c780d4af515e88
+    sha256: 3b7c2e25baa8ff8ad8e9d9b0bea62dc63b8933d25db2763f74c122ecc140e465
   - id: provisioner-values
     repository: kata-containers/kata-device-provisioner
-    ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163
-    release: v0.1.0-alpha.1
+    ref: 593b74d294bfe0abf5672e5db1d411a697996ccf
+    release: v0.1.0-alpha.2
     path: deploy/helm/kata-device-provisioner/values.yaml
     cache: kata-device-provisioner/values.yaml
     sha256: f8169d4314a6641caf83009e856f8da05841a57dd2726e9432bf050bfadc6750
   - id: provisioner-node-feature-rule
     repository: kata-containers/kata-device-provisioner
-    ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163
-    release: v0.1.0-alpha.1
+    ref: 593b74d294bfe0abf5672e5db1d411a697996ccf
+    release: v0.1.0-alpha.2
     path: deploy/helm/kata-device-provisioner/templates/node-feature-rule.yaml
     cache: kata-device-provisioner/node-feature-rule.yaml
     sha256: e544758fbe93eec57085146d6a35a58360342b3df1b23f70caee2ca307a0c56f
   - id: provisioner-profiles
     repository: kata-containers/kata-device-provisioner
-    ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163
-    release: v0.1.0-alpha.1
+    ref: 593b74d294bfe0abf5672e5db1d411a697996ccf
+    release: v0.1.0-alpha.2
     path: deploy/helm/kata-device-provisioner/profiles/README.md
     cache: kata-device-provisioner/profiles-README.md
-    sha256: 88e89f4a78d7556526e82856567634035be8f83302924eb7961b58fc021cbd48
+    sha256: 6f7911a82641bde36fb7c6e40387b93a5a5f7dfd3d45a140d9d3d997ca0885f6
   - id: hopper-passthrough
     repository: kata-containers/kata-device-provisioner
-    ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163
-    release: v0.1.0-alpha.1
+    ref: 593b74d294bfe0abf5672e5db1d411a697996ccf
+    release: v0.1.0-alpha.2
     path: deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml
     cache: kata-device-provisioner/HGX-Hx00.values.yaml
     sha256: 631b8e5819a6566a598e50d5838826483d39333ad76d588c517c2ad51ecbc0bb
   - id: hopper-confidential
     repository: kata-containers/kata-device-provisioner
-    ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163
-    release: v0.1.0-alpha.1
+    ref: 593b74d294bfe0abf5672e5db1d411a697996ccf
+    release: v0.1.0-alpha.2
     path: deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml
     cache: kata-device-provisioner/HGX-Hx00-PPCIE.values.yaml
     sha256: 58cd68dbad5a29622212c8ddddaefa1620270831217e11209673def8c572b832
   - id: blackwell-passthrough
     repository: kata-containers/kata-device-provisioner
-    ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163
-    release: v0.1.0-alpha.1
+    ref: 593b74d294bfe0abf5672e5db1d411a697996ccf
+    release: v0.1.0-alpha.2
     path: deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml
     cache: kata-device-provisioner/HGX-Bx00.values.yaml
     sha256: f63c4668d6be4f502ad59abf1c03f4ba49cbc26cf81724a5f578915d22c893ba
   - id: blackwell-confidential
     repository: kata-containers/kata-device-provisioner
-    ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163
-    release: v0.1.0-alpha.1
+    ref: 593b74d294bfe0abf5672e5db1d411a697996ccf
+    release: v0.1.0-alpha.2
     path: deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml
     cache: kata-device-provisioner/HGX-Bx00-CC.values.yaml
     sha256: f3b30d14b4302f866f201afeb6df817ebdcb4fc8c694bb20406858752edd37e9
   - id: pcie-gpu-passthrough
     repository: kata-containers/kata-device-provisioner
-    ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163
-    release: v0.1.0-alpha.1
+    ref: 593b74d294bfe0abf5672e5db1d411a697996ccf
+    release: v0.1.0-alpha.2
     path: deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml
     cache: kata-device-provisioner/PCIE-GPU.values.yaml
     sha256: 58305ba45c3351029848d8314f68cc7b33381d900db9962ac5ba57b94e661888
   - id: pcie-gpu-confidential
     repository: kata-containers/kata-device-provisioner
-    ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163
-    release: v0.1.0-alpha.1
+    ref: 593b74d294bfe0abf5672e5db1d411a697996ccf
+    release: v0.1.0-alpha.2
     path: deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml
     cache: kata-device-provisioner/PCIE-GPU-CC.values.yaml
     sha256: 69213efb25c8788a88814ec32174dc493689cc2fa1e6ea21d7bb0b353379fae9
   - id: grace-blackwell-passthrough
     repository: kata-containers/kata-device-provisioner
-    ref: 5a27c86f7f828abbd8c3c1803c2723bfc5e86163
-    release: v0.1.0-alpha.1
+    ref: 593b74d294bfe0abf5672e5db1d411a697996ccf
+    release: v0.1.0-alpha.2
     path: deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml
     cache: kata-device-provisioner/GBx00.values.yaml
     sha256: b06fe38375fe2a2196f33c6e6a4ef8bd945c965a5399476677f314d39fc68c87
