@@ -90,17 +90,17 @@
       },
       "nfd": {
         "chartName": "node-feature-discovery",
-        "version": "0.20.0",
-        "appVersion": "v0.20.0",
+        "version": "0.20.1",
+        "appVersion": "v0.20.1",
         "repository": "oci://registry.k8s.io/nfd/charts",
         "valuesKey": "node-feature-discovery",
         "required": false,
         "image": {
           "repository": "registry.k8s.io/nfd/node-feature-discovery",
           "pullPolicy": "IfNotPresent",
-          "tag": "v0.20.0"
+          "tag": "v0.20.1"
         },
-        "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/469c89e008c7498c49e3615ce3859fe7ccbfd0ae/deployment/helm/node-feature-discovery/Chart.yaml"
+        "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/848df700cb6438122b0ede644b4ca6bf2ac4234f/deployment/helm/node-feature-discovery/Chart.yaml"
       },
       "kataDeploy": {
         "chartName": "kata-deploy",

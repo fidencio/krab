@@ -37,22 +37,22 @@ sources:
     sha256: c9e4f0666ed389660455b68da0366ad328e0fb4221987d90a9f0eafe7035fe9d
   - id: nfd-chart
     repository: kubernetes-sigs/node-feature-discovery
-    ref: 469c89e008c7498c49e3615ce3859fe7ccbfd0ae
-    release: v0.20.0
+    ref: 848df700cb6438122b0ede644b4ca6bf2ac4234f
+    release: v0.20.1
     path: deployment/helm/node-feature-discovery/Chart.yaml
     cache: node-feature-discovery/Chart.yaml
-    sha256: 68b212fa1032a21fd7caf38005820cb08837d132a41a2bca14a9ccefa341820f
+    sha256: 436266aa70f75212a628f5deb0bda21bb826c26af08da6edfc2085bcf8c4a480
   - id: nfd-values
     repository: kubernetes-sigs/node-feature-discovery
-    ref: 469c89e008c7498c49e3615ce3859fe7ccbfd0ae
-    release: v0.20.0
+    ref: 848df700cb6438122b0ede644b4ca6bf2ac4234f
+    release: v0.20.1
     path: deployment/helm/node-feature-discovery/values.yaml
     cache: node-feature-discovery/values.yaml
     sha256: dab4fabefd5bed1874cfe2b543de13f6c705307ce02b399e1db442976b4c5856
   - id: nfd-feature-labels
     repository: kubernetes-sigs/node-feature-discovery
-    ref: 469c89e008c7498c49e3615ce3859fe7ccbfd0ae
-    release: v0.20.0
+    ref: 848df700cb6438122b0ede644b4ca6bf2ac4234f
+    release: v0.20.1
     path: docs/usage/features.md
     cache: node-feature-discovery/features.md
     sha256: a05ce292e2b104e4690bc02255ac3ce3a63e5850a43d68dd99dd7c5684a5ca33
