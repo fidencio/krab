@@ -5,6 +5,87 @@ use std::process::Command;
 
 const PROGRAM: &str = "kata-device-provisioner";
 
+pub struct LocalDevice {
+    pub address: String,
+    pub name: String,
+    pub chip: Option<&'static str>,
+    pub ppcie: bool,
+}
+
+pub struct LocalInventory {
+    pub devices: Vec<LocalDevice>,
+    pub switch_found: bool,
+}
+
+impl LocalInventory {
+    pub fn check(&self, kind: Check) -> Result {
+        if self.devices.is_empty() {
+            return Result::Unavailable("PCI inventory found no supported NVIDIA GPUs".into());
+        }
+        if kind == Check::Gpu
+            || self.devices.iter().any(|device| match kind {
+                Check::Cc => device.chip.is_some(),
+                Check::Ppcie => device.ppcie,
+                Check::Gpu => true,
+            })
+        {
+            Result::Available
+        } else {
+            Result::Unavailable("No supported GPU confirms the requested capability".into())
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub fn local_inventory(paths: &Paths) -> io::Result<LocalInventory> {
+    let sysfs = pcilibs_rs::Sysfs::new(&paths.sys);
+    let manager = pcilibs_rs::PCIDeviceManager::new(sysfs.clone());
+    let mut cache = std::collections::HashMap::new();
+    let mut inventory = LocalInventory {
+        devices: Vec::new(),
+        switch_found: false,
+    };
+    // get_all_devices silently skips unreadable entries, which could hide a nonconforming GPU.
+    for entry in std::fs::read_dir(sysfs.devices())? {
+        let address = entry?.file_name().to_string_lossy().into_owned();
+        let device = manager
+            .get_device_by_pci_bus_id(&address, Some(0x10de), &mut cache)
+            .map_err(|error| {
+                io::Error::new(
+                    error.kind(),
+                    format!("Cannot inspect PCI device {address}: {error}"),
+                )
+            })?;
+        let Some(device) = device else {
+            continue;
+        };
+        match device.class >> 8 {
+            0x0302 => {
+                // Only the static capability lookup is used: no Gpu::open, mode query or reset.
+                let chip = pcilibs_rs::cc::chip_for(device.device);
+                inventory.devices.push(LocalDevice {
+                    address: device.address,
+                    name: device.device_name,
+                    chip: chip.map(|chip| chip.name),
+                    ppcie: chip.is_some_and(|chip| chip.hopper),
+                });
+            }
+            0x0680 => inventory.switch_found = true,
+            _ => {}
+        }
+    }
+    inventory.devices.sort_by(|a, b| a.address.cmp(&b.address));
+    Ok(inventory)
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn local_inventory(_: &Paths) -> io::Result<LocalInventory> {
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "native PCI inventory requires Linux",
+    ))
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Check {
     Gpu,

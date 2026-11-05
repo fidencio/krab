@@ -1,10 +1,13 @@
 mod cache;
 mod conformance;
+#[cfg(target_os = "linux")]
+mod daemon;
 mod erofs;
 mod gpu;
 mod ibm_se;
 mod iommufd;
 mod kvm;
+mod nfd;
 mod node_report;
 mod output;
 mod platform;

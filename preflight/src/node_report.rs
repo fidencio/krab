@@ -159,6 +159,18 @@ fn inventory(paths: &Paths, architecture: &str) -> (Option<Inventory>, bool) {
 }
 
 pub fn render(paths: &Paths, architecture: &str) -> io::Result<(String, bool)> {
+    render_with_inventory(paths, architecture, false)
+}
+
+pub fn render_local(paths: &Paths, architecture: &str) -> io::Result<(String, bool)> {
+    render_with_inventory(paths, architecture, true)
+}
+
+fn render_with_inventory(
+    paths: &Paths,
+    architecture: &str,
+    local: bool,
+) -> io::Result<(String, bool)> {
     if !paths.host_root.join("proc/cpuinfo").is_file() || !paths.sys.join("devices").is_dir() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
@@ -171,7 +183,7 @@ pub fn render(paths: &Paths, architecture: &str) -> io::Result<(String, bool)> {
     if machine_id.trim().is_empty() || boot_id.trim().is_empty() {
         return Err(io::Error::other("host machine ID and boot ID are required"));
     }
-    if std::env::var_os("KRAB_PROVISIONER").is_none() {
+    if !local && std::env::var_os("KRAB_PROVISIONER").is_none() {
         std::env::set_var(
             "KRAB_PROVISIONER",
             format!("/opt/krab/kata-device-provisioner-{architecture}"),
@@ -186,11 +198,52 @@ pub fn render(paths: &Paths, architecture: &str) -> io::Result<(String, bool)> {
         ("erofs", Check::Erofs),
     ];
     let (mut present, mut nvidia) = pci_fallback(&paths.sys);
-    let mut cc = Probe::from_check(Check::GpuCc, Check::GpuCc.run(paths, architecture));
-    let mut ppcie = Probe::from_check(Check::GpuPpcie, Check::GpuPpcie.run(paths, architecture));
-    let gpu = Probe::from_check(Check::Gpu, Check::Gpu.run(paths, architecture));
-    let mut nvswitch = Probe::new("unknown", "Provisioner inventory unavailable");
-    let (inventory, inventory_cacheable) = inventory(paths, architecture);
+    let (mut cc, mut ppcie, gpu, inventory, inventory_cacheable) = if local {
+        match crate::gpu::local_inventory(paths) {
+            Ok(native) => {
+                let cc = Probe::from_check(Check::GpuCc, native.check(crate::gpu::Check::Cc));
+                let ppcie =
+                    Probe::from_check(Check::GpuPpcie, native.check(crate::gpu::Check::Ppcie));
+                let gpu = Probe::from_check(Check::Gpu, native.check(crate::gpu::Check::Gpu));
+                let inventory = Inventory {
+                    cc_yes: native.devices.iter().any(|d| d.chip.is_some()),
+                    cc_no: native.devices.iter().any(|d| d.chip.is_none()),
+                    ppcie_yes: native.devices.iter().any(|d| d.ppcie),
+                    ppcie_no: native.devices.iter().any(|d| !d.ppcie),
+                    switch_found: native.switch_found,
+                    devices: native
+                        .devices
+                        .into_iter()
+                        .map(|d| GpuDevice {
+                            bus: d.address,
+                            name: d.name,
+                            chip: d.chip.map(str::to_owned),
+                        })
+                        .collect(),
+                };
+                (cc, ppcie, gpu, Some(inventory), true)
+            }
+            Err(error) => {
+                let failed = || {
+                    Probe::from_check(
+                        Check::Gpu,
+                        Result::Error(format!("Cannot read PCI inventory: {error}")),
+                    )
+                };
+                (failed(), failed(), failed(), None, false)
+            }
+        }
+    } else {
+        let (inventory, cacheable) = inventory(paths, architecture);
+        (
+            Probe::from_check(Check::GpuCc, Check::GpuCc.run(paths, architecture)),
+            Probe::from_check(Check::GpuPpcie, Check::GpuPpcie.run(paths, architecture)),
+            Probe::from_check(Check::Gpu, Check::Gpu.run(paths, architecture)),
+            inventory,
+            cacheable,
+        )
+    };
+    let mut nvswitch = Probe::new("unknown", "GPU inventory unavailable");
     let mut cacheable = cc.cacheable && ppcie.cacheable && gpu.cacheable && inventory_cacheable;
     if let Some(ref inventory) = inventory {
         if inventory.cc_yes && inventory.cc_no {
@@ -206,18 +259,18 @@ pub fn render(paths: &Paths, architecture: &str) -> io::Result<(String, bool)> {
             );
         }
         nvswitch = if inventory.switch_found {
-            Probe::new("yes", "Kata device provisioner found an NVSwitch")
+            Probe::new("yes", "GPU inventory found an NVSwitch")
         } else {
             Probe::new("no", "No NVSwitch in provisioner inventory")
         };
         if !inventory.devices.is_empty() {
-            present = Probe::new("yes", "Kata device provisioner found a GPU");
-            nvidia = Probe::new("yes", "Kata device provisioner found an NVIDIA GPU");
+            present = Probe::new("yes", "GPU inventory found a GPU");
+            nvidia = Probe::new("yes", "GPU inventory found an NVIDIA GPU");
         }
     }
     if gpu.status == "yes" {
-        present = Probe::new("yes", "Kata device provisioner found a GPU");
-        nvidia = Probe::new("yes", "Kata device provisioner found an NVIDIA GPU");
+        present = Probe::new("yes", "GPU inventory found a GPU");
+        nvidia = Probe::new("yes", "GPU inventory found an NVIDIA GPU");
     }
 
     let mut output = String::from(

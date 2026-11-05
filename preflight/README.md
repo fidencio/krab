@@ -49,7 +49,7 @@ target node that needs IOMMUFD.
 
 The EROFS check reads the `mkfs.erofs` binary for the `mkfs-time` and `sort` option strings, following [Kata Deploy's option check](https://github.com/kata-containers/kata-containers/blob/main/tools/packaging/kata-deploy/binary/src/main.rs). It does not execute `mkfs.erofs`. Like Kata Deploy's option check, it does not inspect `-T` separately. It does not check kernel EROFS support, containerd version, or whether the snapshotter is configured.
 
-The GPU checks require [`kata-device-provisioner`](https://github.com/kata-containers/kata-device-provisioner) in `PATH`, or at the path in `KRAB_PROVISIONER`. They call its read-only `status --all` command so a GPU already set to another CC mode is still included. These checks report hardware capability for the supported NVIDIA GPUs; they do not call `status --probe`, read live CC/PPCIE modes, or require every GPU on the node to support the feature. The provisioner currently emits human-readable status rather than a machine-readable format, so these checks depend on its current output layout.
+The individual GPU flags and cluster node-report GPU checks require [`kata-device-provisioner`](https://github.com/kata-containers/kata-device-provisioner) in `PATH`, or at the path in `KRAB_PROVISIONER`. They call its read-only `status --all` command so a GPU already set to another CC mode is still included. These checks report hardware capability for the supported NVIDIA GPUs; they do not call `status --probe`, read live CC/PPCIE modes, or require every GPU on the node to support the feature. The provisioner currently emits human-readable status rather than a machine-readable format, so these checks depend on its current output layout.
 
 ## Cluster conformance
 
@@ -69,7 +69,7 @@ nodes, changed identities, unsupported reports, or failed collection.
 Conformance verdicts are never cached; live runs force the underlying probes to
 refresh their cache.
 
-Choose one of `cc` (any supported CPU TEE per node), `tdx`, `snp`, or `se`, and/or
+Choose `kvm` for basic virtualization, or one of `cc` (any supported CPU TEE per node), `tdx`, `snp`, or `se`, and/or
 `gpu-cc` or `gpu-ppcie`. All selections also require KVM;
 add `--require erofs` only for runtime classes that need host EROFS utilities;
 GPU selections require IOMMUFD, NVIDIA hardware, and complete GPU inventory.
@@ -100,6 +100,25 @@ JSON logs distinguish FAIL from ERROR, since Helm itself exits nonzero for both.
 This is conformance of reported host
 prerequisites; it does not test workload launch or attestation. See the
 [cluster conformance guide](../README.md#cc-conformance) for scope and context options.
+
+## Local conformance and NFD
+
+The same checker can collect and evaluate this host without Kubernetes or a cache:
+
+```sh
+krab-preflight conformance --local --require kvm \
+  --output /var/lib/krab/conformance.json \
+  --nfd-output /run/krab/features/conformance \
+  --result-ttl-seconds 180
+```
+
+Local mode reuses the conformance policy and exit codes above. NFD output is an
+atomically replaced raw feature file with an expiry deadline based on collection
+start. NFD can consume that file through its local feature source. The JSON uses
+`kind: krab-local-conformance` and includes full node evidence.
+Local GPU checks read PCI inventory using the pinned shared `pcilibs-rs` library;
+they do not execute or require `kata-device-provisioner` on the host. They use
+static capability lookup and never open BAR0, set GPU modes, or reset devices.
 
 ## Cached checks
 

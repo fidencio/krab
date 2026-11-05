@@ -9,10 +9,12 @@ use std::path::PathBuf;
 use std::process::{Command, ExitCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub const HELP: &str = "Usage: krab-preflight conformance [--require REQUIREMENT ...] [--require-any gpu-cc,gpu-ppcie]
-  (--report FILE | --run) [--json] [--output FILE]
+pub(crate) const VERIFICATION_TIMEOUT_SECONDS: u64 = 15;
 
-Requirements: cc (any supported CPU TEE), tdx, snp, se, gpu-cc, gpu-ppcie, erofs.
+pub const HELP: &str = "Usage: krab-preflight conformance [--require REQUIREMENT ...] [--require-any gpu-cc,gpu-ppcie]
+  (--report FILE | --run | --local) [--json] [--output FILE]
+
+Requirements: kvm (basic virtualization), cc (any supported CPU TEE), tdx, snp, se, gpu-cc, gpu-ppcie, erofs.
 Choose one CPU requirement and/or GPU requirements. Every node must pass all
 selected requirements and KVM. Require erofs only for runtime classes that need it.
 Unknown/review on required checks means fail.
@@ -21,6 +23,13 @@ Unknown/review on required checks means fail.
 --report FILE       Evaluate a v2 cluster pre-check report; '-' reads stdin
 --nodes FILE        Also verify coverage against kubectl get nodes -o json
 --run               Run fresh pre-flight probes through Helm, then evaluate
+--local             Collect and evaluate this host directly, without cache or Kubernetes
+--daemon            Keep running local checks under a host service manager
+--interval-seconds N  Cadence of daemon checks (default: 60)
+--timeout-seconds N   Bound each daemon check (default: 30)
+--integrity-manifest FILE  Verify the checker before each daemon check
+--nfd-output FILE   Atomically publish an expiring NFD feature file (requires --local)
+--result-ttl-seconds N  Lifetime of local NFD evidence (default: 180, maximum: 86400)
 --node-selector S   Restrict --run to matching Linux nodes (default: all Linux nodes)
 --chart PATH_OR_OCI  Pre-check chart (default: oci://ghcr.io/fidencio/krab-precheck)
 --version VERSION   Chart version (default: this binary's version)
@@ -37,6 +46,7 @@ This verifies reported host prerequisites; it does not launch confidential workl
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum Requirement {
+    Kvm,
     Cc,
     Tdx,
     Snp,
@@ -49,6 +59,7 @@ pub enum Requirement {
 impl Requirement {
     fn parse(value: &str) -> Result<Self, String> {
         match value {
+            "kvm" => Ok(Self::Kvm),
             "cc" => Ok(Self::Cc),
             "tdx" => Ok(Self::Tdx),
             "snp" => Ok(Self::Snp),
@@ -64,6 +75,7 @@ impl Requirement {
     }
     fn name(self) -> &'static str {
         match self {
+            Self::Kvm => "kvm",
             Self::Cc => "cc",
             Self::Tdx => "tdx",
             Self::Snp => "snp",
@@ -82,6 +94,13 @@ pub struct Options {
     report: Option<String>,
     nodes: Option<String>,
     run: bool,
+    local: bool,
+    daemon: bool,
+    interval_seconds: u64,
+    timeout_seconds: u64,
+    integrity_manifest: Option<PathBuf>,
+    nfd_output: Option<PathBuf>,
+    result_ttl_seconds: u64,
     json: bool,
     output: Option<PathBuf>,
     collection_error: Option<PathBuf>,
@@ -103,6 +122,13 @@ impl Options {
             report: None,
             nodes: None,
             run: false,
+            local: false,
+            daemon: false,
+            interval_seconds: 60,
+            timeout_seconds: 30,
+            integrity_manifest: None,
+            nfd_output: None,
+            result_ttl_seconds: 180,
             json: false,
             output: None,
             collection_error: None,
@@ -114,10 +140,21 @@ impl Options {
             context: None,
             node_selector: String::new(),
         };
+        let daemon_settings = args
+            .iter()
+            .any(|arg| arg == "--interval-seconds" || arg == "--timeout-seconds");
         let mut args = args.iter();
         let mut live_options = false;
         while let Some(arg) = args.next() {
             match arg.as_str() {
+                "--daemon" => {
+                    options.daemon = true;
+                    continue;
+                }
+                "--local" => {
+                    options.local = true;
+                    continue;
+                }
                 "--run" => {
                     options.run = true;
                     continue;
@@ -140,6 +177,11 @@ impl Options {
                 | "--node-selector"
                 | "--collection-error"
                 | "--termination-message" => {}
+                "--nfd-output"
+                | "--result-ttl-seconds"
+                | "--interval-seconds"
+                | "--timeout-seconds"
+                | "--integrity-manifest" => {}
                 _ => return Err(format!("Unknown conformance option: {arg}")),
             }
             let value = args
@@ -167,6 +209,29 @@ impl Options {
                     }
                 }
                 "--report" => options.report = Some(value),
+                "--integrity-manifest" => options.integrity_manifest = Some(value.into()),
+                "--interval-seconds" | "--timeout-seconds" => {
+                    let seconds = value
+                        .parse::<u64>()
+                        .map_err(|_| format!("{arg} requires a positive integer"))?;
+                    if seconds == 0 || seconds > 86400 {
+                        return Err(format!("{arg} must be between 1 and 86400"));
+                    }
+                    if arg == "--interval-seconds" {
+                        options.interval_seconds = seconds;
+                    } else {
+                        options.timeout_seconds = seconds;
+                    }
+                }
+                "--nfd-output" => options.nfd_output = Some(value.into()),
+                "--result-ttl-seconds" => {
+                    options.result_ttl_seconds = value
+                        .parse()
+                        .map_err(|_| "--result-ttl-seconds requires a positive integer")?;
+                    if options.result_ttl_seconds == 0 || options.result_ttl_seconds > 86400 {
+                        return Err("--result-ttl-seconds must be between 1 and 86400".into());
+                    }
+                }
                 "--nodes" => options.nodes = Some(value),
                 "--output" => options.output = Some(value.into()),
                 "--collection-error" => options.collection_error = Some(value.into()),
@@ -212,8 +277,12 @@ impl Options {
         {
             return Err("--gpu-model requires gpu-cc or gpu-ppcie".into());
         }
-        if options.run == options.report.is_some() {
-            return Err("Choose exactly one of --run or --report FILE".into());
+        if usize::from(options.run)
+            + usize::from(options.local)
+            + usize::from(options.report.is_some())
+            != 1
+        {
+            return Err("Choose exactly one of --run, --local or --report FILE".into());
         }
         if !options.run && live_options {
             return Err("Cluster/Helm options require --run".into());
@@ -222,6 +291,38 @@ impl Options {
             return Err(
                 "--run obtains its own live node inventory; --nodes is for saved reports".into(),
             );
+        }
+        if options.local
+            && (options.nodes.is_some()
+                || options.collection_error.is_some()
+                || options.termination_message.is_some())
+        {
+            return Err("--local does not accept cluster inventory, collection status or termination messages".into());
+        }
+        if options.nfd_output.is_some() && !options.local {
+            return Err("--nfd-output requires --local".into());
+        }
+        if options.nfd_output.is_some() && options.nfd_output == options.output {
+            return Err("JSON evidence and NFD features must use different output files".into());
+        }
+        if options.daemon
+            && (!options.local
+                || options.nfd_output.is_none()
+                || options.integrity_manifest.is_none()
+                || options.output.is_none())
+        {
+            return Err(
+                "--daemon requires --local, --output, --nfd-output and --integrity-manifest".into(),
+            );
+        }
+        if !options.daemon && (options.integrity_manifest.is_some() || daemon_settings) {
+            return Err("Daemon settings require --daemon".into());
+        }
+        if options.daemon
+            && options.result_ttl_seconds
+                <= options.interval_seconds + options.timeout_seconds + VERIFICATION_TIMEOUT_SECONDS
+        {
+            return Err("Result TTL must exceed the daemon interval, check timeout and verification deadline".into());
         }
         Ok(options)
     }
@@ -459,6 +560,7 @@ fn evaluate_node(
     for requirement in &options.requirements {
         let architecture = report.node.architecture.as_str();
         match requirement {
+            Requirement::Kvm => {} // KVM is checked for every conformance policy.
             Requirement::Erofs => require(&mut failures, "erofs", &report.checks.erofs),
             Requirement::Cc => {
                 let probes: Vec<(&str, &Probe)> = match architecture {
@@ -800,6 +902,123 @@ fn collect(options: &Options) -> Result<(String, Vec<Identity>, Vec<String>), St
     Ok((text, before, errors))
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LocalVerdict {
+    kind: &'static str,
+    schema_version: u32,
+    verdict: Decision,
+    requirements: Vec<Requirement>,
+    any_of_requirements: Vec<Requirement>,
+    gpu_models: Vec<String>,
+    failures: Vec<Finding>,
+    checks: Vec<CheckEvidence>,
+    precheck: Option<NodeReport>,
+}
+
+fn local(options: &Options) -> ExitCode {
+    let started = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let paths = crate::probe::Paths::default();
+    let identity = || -> Result<(String, String), String> {
+        let machine = fs::read_to_string(paths.host_root.join("etc/machine-id"))
+            .map_err(|e| e.to_string())?;
+        let boot = fs::read_to_string(paths.host_root.join("proc/sys/kernel/random/boot_id"))
+            .map_err(|e| e.to_string())?;
+        if machine.trim().is_empty() || boot.trim().is_empty() {
+            return Err("Host machine ID and boot ID are required".into());
+        }
+        Ok((machine.trim().into(), boot.trim().into()))
+    };
+    let collected = (|| -> Result<NodeReport, String> {
+        let before = identity()?;
+        let (text, _) = crate::node_report::render_local(&paths, crate::platform::architecture())
+            .map_err(|e| e.to_string())?;
+        let report: NodeReport = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+        if before != identity()?
+            || before != (report.node.machine_id.clone(), report.node.boot_id.clone())
+        {
+            return Err("Host identity changed during collection".into());
+        }
+        Ok(report)
+    })();
+    let mut verdict = LocalVerdict {
+        kind: "krab-local-conformance",
+        schema_version: 1,
+        verdict: Decision::Error,
+        requirements: options.requirements.clone(),
+        any_of_requirements: options.any_of_requirements.clone(),
+        gpu_models: options.gpu_models.clone(),
+        failures: Vec::new(),
+        checks: Vec::new(),
+        precheck: None,
+    };
+    match collected {
+        Ok(report) => {
+            let (failures, _) = evaluate_node(options, &report, None);
+            verdict.verdict = if failures.iter().any(|issue| {
+                matches!(
+                    issue.check.as_str(),
+                    "host-evidence" | "checker-version" | "host-identity"
+                )
+            }) {
+                Decision::Error
+            } else if failures.is_empty() {
+                Decision::Pass
+            } else {
+                Decision::Fail
+            };
+            verdict.failures = failures;
+            verdict.checks = check_evidence(options, &report);
+            verdict.precheck = Some(report);
+        }
+        Err(error) => verdict.failures.push(Finding::unknown("collection", error)),
+    }
+    let json = match serde_json::to_string_pretty(&verdict) {
+        Ok(json) => json,
+        Err(error) => {
+            eprintln!("Cannot serialize local verdict: {error}");
+            return ExitCode::from(2);
+        }
+    };
+    if let Some(path) = &options.output {
+        if let Err(error) = crate::nfd::atomic_write(path, format!("{json}\n").as_bytes()) {
+            eprintln!("Cannot write verdict to {}: {error}", path.display());
+            if let Some(nfd_path) = &options.nfd_output {
+                let _ = crate::nfd::publish(
+                    nfd_path,
+                    Decision::Error,
+                    started,
+                    options.result_ttl_seconds,
+                );
+            }
+            return ExitCode::from(2);
+        }
+    }
+    if let Some(path) = &options.nfd_output {
+        if let Err(error) =
+            crate::nfd::publish(path, verdict.verdict, started, options.result_ttl_seconds)
+        {
+            eprintln!("Cannot publish NFD result to {}: {error}", path.display());
+            return ExitCode::from(2);
+        }
+    }
+    if options.json {
+        println!("{json}");
+    } else {
+        println!(
+            "{}: Local host capability conformance",
+            verdict.verdict.label()
+        );
+        for issue in &verdict.failures {
+            println!("  {}: {}", issue.check, issue.reason);
+        }
+    }
+    ExitCode::from(verdict.verdict.exit_code())
+}
+
 pub fn run(args: &[String]) -> ExitCode {
     if args == ["--help"] || args == ["-h"] {
         println!("{HELP}");
@@ -812,6 +1031,57 @@ pub fn run(args: &[String]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    if options.daemon {
+        #[cfg(not(target_os = "linux"))]
+        {
+            eprintln!("The host conformance daemon requires Linux");
+            return ExitCode::from(2);
+        }
+        #[cfg(target_os = "linux")]
+        {
+            let feature = options.nfd_output.as_ref().unwrap();
+            let manifest = options.integrity_manifest.as_ref().unwrap();
+            let output = options.output.as_ref().unwrap();
+            let child_args = args
+                .iter()
+                .enumerate()
+                .filter_map(|(index, arg)| {
+                    if arg == "--daemon"
+                        || matches!(
+                            arg.as_str(),
+                            "--interval-seconds" | "--timeout-seconds" | "--integrity-manifest"
+                        )
+                        || (index > 0
+                            && matches!(
+                                args[index - 1].as_str(),
+                                "--interval-seconds" | "--timeout-seconds" | "--integrity-manifest"
+                            ))
+                    {
+                        None
+                    } else {
+                        Some(arg.clone())
+                    }
+                })
+                .collect::<Vec<_>>();
+            return match crate::daemon::run(
+                &child_args,
+                feature,
+                manifest,
+                output,
+                options.interval_seconds,
+                options.timeout_seconds,
+            ) {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(error) => {
+                    eprintln!("Conformance daemon failed: {error}");
+                    ExitCode::from(2)
+                }
+            };
+        }
+    }
+    if options.local {
+        return local(&options);
+    }
     let mut errors = Vec::new();
     if let Some(path) = &options.collection_error {
         match fs::read_to_string(path) {
@@ -885,7 +1155,7 @@ pub fn run(args: &[String]) -> ExitCode {
         println!("{json}");
     } else {
         println!(
-            "{}: CC pre-flight capability conformance ({})",
+            "{}: Pre-flight capability conformance ({})",
             verdict.verdict.label(),
             verdict.source
         );

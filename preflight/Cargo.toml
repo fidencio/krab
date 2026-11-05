@@ -5,5 +5,10 @@ edition = "2021"
 description = "Read-only checks for Linux virtualization host capabilities"
 
 [dependencies]
+libc = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Shared PCI enumeration and capability tables; local checks never open BAR0 or mutate devices.
+pcilibs-rs = { git = "https://github.com/kata-containers/pcilibs-rs", rev = "f6831fa878ec315ab477ccb88fbf8ec6cbd4cdca", features = ["cc"] }
