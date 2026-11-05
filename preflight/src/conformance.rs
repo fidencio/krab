@@ -13,6 +13,8 @@ pub(crate) const VERIFICATION_TIMEOUT_SECONDS: u64 = 15;
 
 pub const HELP: &str = "Usage: krab-preflight conformance [--require REQUIREMENT ...] [--require-any gpu-cc,gpu-ppcie]
   (--report FILE | --run | --local) [--json] [--output FILE]
+  or: krab-preflight conformance install --help
+  or: krab-preflight conformance remove --help
 
 Requirements: kvm (basic virtualization), cc (any supported CPU TEE), tdx, snp, se, gpu-cc, gpu-ppcie, erofs.
 Choose one CPU requirement and/or GPU requirements. Every node must pass all
@@ -1020,6 +1022,18 @@ fn local(options: &Options) -> ExitCode {
 }
 
 pub fn run(args: &[String]) -> ExitCode {
+    if args
+        .first()
+        .is_some_and(|arg| matches!(arg.as_str(), "install" | "remove"))
+    {
+        #[cfg(target_os = "linux")]
+        return crate::service::run(args);
+        #[cfg(not(target_os = "linux"))]
+        {
+            eprintln!("Host conformance service management requires Linux");
+            return ExitCode::from(2);
+        }
+    }
     if args == ["--help"] || args == ["-h"] {
         println!("{HELP}");
         return ExitCode::SUCCESS;

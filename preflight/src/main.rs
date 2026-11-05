@@ -13,6 +13,8 @@ mod output;
 mod platform;
 mod probe;
 mod report;
+#[cfg(target_os = "linux")]
+mod service;
 mod snp;
 mod tdx;
 
