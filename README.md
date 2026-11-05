@@ -178,6 +178,10 @@ optional `erofsVersion` field empty.
 
 ## CC conformance
 
+For periodic host checks using the existing binary, a KRAB-managed systemd daemon,
+and expiring NFD labels, see the
+[continuous node conformance prototype](docs/continuous-node-conformance.md).
+
 The Rust checker can give a strict cluster verdict for the requirements you
 choose. Every selected node must pass: one `no`, `unknown`, or `review` on a
 required check fails the cluster. KVM is a prerequisite for every profile;

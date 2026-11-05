@@ -4,6 +4,18 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "nodeConformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Install NFD rules for the separately deployed KRAB host conformance daemon."
+        }
+      }
+    },
     "nvidia": {
       "type": "object",
       "additionalProperties": false,

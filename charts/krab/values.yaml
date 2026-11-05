@@ -3,12 +3,22 @@
 nvidia:
   enabled: false
 
+# Opt-in host daemon conformance integration. Host installation is performed by
+# KRAB's checker CLI; this switch installs only the corresponding NFD policy.
+nodeConformance:
+  enabled: false
+
 # KRAB owns the shared NFD release.
 node-feature-discovery:
   enabled: true
   image:
     repository: registry.k8s.io/nfd/node-feature-discovery
     tag: v0.20.0
+  worker:
+    config:
+      core:
+        # Match the default host conformance interval and upstream NFD default.
+        sleepInterval: 60s
 
 kata-deploy:
   enabled: true

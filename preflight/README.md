@@ -114,11 +114,25 @@ krab-preflight conformance --local --require kvm \
 
 Local mode reuses the conformance policy and exit codes above. NFD output is an
 atomically replaced raw feature file with an expiry deadline based on collection
-start. NFD can consume that file through its local feature source. The JSON uses
+start. The opt-in chart rule maps that feature to the node label. The JSON uses
 `kind: krab-local-conformance` and includes full node evidence.
 Local GPU checks read PCI inventory using the pinned shared `pcilibs-rs` library;
 they do not execute or require `kata-device-provisioner` on the host. They use
 static capability lookup and never open BAR0, set GPU modes, or reset devices.
+The existing binary also supports `--daemon`, with a 60-second interval,
+30-second check timeout and 180-second result expiry, matching NFD's refresh
+cadence. The systemd service supervises and restarts that daemon.
+Install and start it with the same binary (root is needed for installation):
+
+```sh
+sudo krab-preflight conformance install --require kvm --checker-sha256 "$CHECKER_SHA256"
+sudo /opt/krab/conformance/krab-preflight conformance remove
+```
+
+Installation defaults to copying the running executable. `--checker` can select
+another Linux artifact. The daemon runs unprivileged; removal retains JSON evidence.
+For mounted-host deployment, offline setup, and the existing NFD worker's
+mount configuration, see the [continuous conformance prototype](../docs/continuous-node-conformance.md).
 
 ## Cached checks
 
