@@ -150,7 +150,8 @@ class Session:
             assert self.child.returncode == 0, self.transcript.decode(errors='replace')
             assert b'\x1b[?1049h' in self.transcript, 'TUI did not enter alternate screen'
             assert b'\x1b[?1049l' in self.transcript, 'TUI did not restore alternate screen'
-            assert termios.tcgetattr(self.slave) == self.before, 'Terminal modes were not restored'
+            # Darwin revokes the slave when the controlling session exits.
+            assert termios.tcgetattr(self.master) == self.before, 'Terminal modes were not restored'
             return stdout
         finally:
             self.close()
