@@ -45,6 +45,11 @@ added nodes. No provisioner executable is needed or copied to the host. By defau
 the installer copies its own executable; `--checker /path/to/artifact` selects a
 different host-compatible checker artifact.
 
+The main KRAB CLI forwards these commands too. To install the focused checker
+from that CLI, use `sudo krab conformance install --checker /path/to/krab-preflight`
+with the same digest and policy options. The full CLI requires `--checker` and
+never defaults to copying itself. Standalone `krab-preflight` can install itself.
+
 From a privileged deployment Job, `--host-root /host` installs into the
 mounted host tree and runs host systemctl after entering host PID 1's mount
 namespace and root. This needs host `/proc` access, `CAP_SYS_ADMIN`, and

@@ -1,0 +1,61 @@
+name: Native CLI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cli:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt --component clippy
+      - name: Check formatting and test CLI
+        working-directory: cli
+        run: |
+          cargo +1.95.0 fmt --check
+          cargo +1.95.0 clippy --locked --all-targets -- -D warnings
+          cargo +1.95.0 test --locked
+          cargo +1.95.0 build --release --locked
+      - name: Check default interactive setup in a terminal
+        run: |
+          python3 cli/tests/terminal.py cli/target/release/krab
+          python3 cli/tests/cluster-terminal.py cli/target/release/krab
+      - name: Compare CLI and web builder values
+        env:
+          KRAB_CLI_BINARY: cli/target/release/krab
+        run: npm run test:cli-parity
+      - name: Package native binary and completions
+        shell: bash
+        run: |
+          set -euo pipefail
+          target=$(rustc +1.95.0 -vV | sed -n 's/^host: //p')
+          mkdir -p dist-cli/package/completions
+          cp cli/target/release/krab cli/README.md LICENSE dist-cli/package/
+          for shell in bash zsh fish; do
+            cli/target/release/krab completions "${shell}" > "dist-cli/package/completions/krab.${shell}"
+          done
+          tar -czf "dist-cli/krab-${target}.tar.gz" -C dist-cli/package .
+          shasum -a 256 "dist-cli/krab-${target}.tar.gz" > dist-cli/SHA256SUMS
+      - uses: actions/upload-artifact@v5
+        with:
+          name: krab-cli-${{ runner.os }}-${{ runner.arch }}
+          path: |
+            dist-cli/*.tar.gz
+            dist-cli/SHA256SUMS
+          if-no-files-found: error

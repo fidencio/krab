@@ -2,11 +2,10 @@
 use crate::report::{self, ClusterReport, Identity, NodeReport, Probe, Status};
 use serde::Serialize;
 use std::collections::BTreeSet;
-use std::fs::{self, OpenOptions};
-use std::io::{Read, Write};
-use std::os::unix::fs::OpenOptionsExt;
+use std::fs;
+use std::io::Read;
 use std::path::PathBuf;
-use std::process::{Command, ExitCode};
+use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub(crate) const VERIFICATION_TIMEOUT_SECONDS: u64 = 15;
@@ -37,8 +36,10 @@ Unknown/review on required checks means fail.
 --version VERSION   Chart version (default: this binary's version)
 --namespace NAME    Pre-check namespace (default: krab-conformance)
 --release NAME      Pre-check release (default: krab-conformance)
+--kubeconfig FILE   Kubeconfig file (default: KUBECONFIG or ~/.kube/config)
 --context NAME      Kubernetes context (default: current context, pinned for the run)
 --output FILE       Save the JSON verdict, node inventory, and pre-check evidence
+--failed-nodes      Show only failed/error nodes and their reasons in text output
 --json              Write the JSON verdict to stdout instead of text
 --termination-message FILE  Write a compact status summary for a Kubernetes container
 
@@ -104,15 +105,11 @@ pub struct Options {
     nfd_output: Option<PathBuf>,
     result_ttl_seconds: u64,
     json: bool,
+    failed_only: bool,
     output: Option<PathBuf>,
     collection_error: Option<PathBuf>,
     termination_message: Option<PathBuf>,
-    chart: String,
-    version: String,
-    namespace: String,
-    release: String,
-    context: Option<String>,
-    node_selector: String,
+    cluster: crate::cluster::Options,
 }
 
 impl Options {
@@ -132,15 +129,11 @@ impl Options {
             nfd_output: None,
             result_ttl_seconds: 180,
             json: false,
+            failed_only: false,
             output: None,
             collection_error: None,
             termination_message: None,
-            chart: "oci://ghcr.io/fidencio/krab-precheck".into(),
-            version: env!("CARGO_PKG_VERSION").into(),
-            namespace: "krab-conformance".into(),
-            release: "krab-conformance".into(),
-            context: None,
-            node_selector: String::new(),
+            cluster: crate::cluster::Options::default(),
         };
         let daemon_settings = args
             .iter()
@@ -161,6 +154,10 @@ impl Options {
                     options.run = true;
                     continue;
                 }
+                "--failed-nodes" => {
+                    options.failed_only = true;
+                    continue;
+                }
                 "--json" => {
                     options.json = true;
                     continue;
@@ -175,6 +172,7 @@ impl Options {
                 | "--version"
                 | "--namespace"
                 | "--release"
+                | "--kubeconfig"
                 | "--context"
                 | "--node-selector"
                 | "--collection-error"
@@ -241,12 +239,13 @@ impl Options {
                 _ => {
                     live_options = true;
                     match arg.as_str() {
-                        "--chart" => options.chart = value,
-                        "--version" => options.version = value,
-                        "--namespace" => options.namespace = value,
-                        "--release" => options.release = value,
-                        "--context" => options.context = Some(value),
-                        "--node-selector" => options.node_selector = value,
+                        "--chart" => options.cluster.chart = value,
+                        "--version" => options.cluster.version = value,
+                        "--namespace" => options.cluster.namespace = value,
+                        "--release" => options.cluster.release = value,
+                        "--context" => options.cluster.context = Some(value),
+                        "--kubeconfig" => options.cluster.kubeconfig = Some(value.into()),
+                        "--node-selector" => options.cluster.node_selector = value,
                         _ => unreachable!(),
                     }
                 }
@@ -797,113 +796,6 @@ fn read(path: &str) -> Result<String, String> {
     }
 }
 
-fn command(program: &str, args: &[String]) -> Result<String, String> {
-    let output = Command::new(program)
-        .args(args)
-        .output()
-        .map_err(|error| format!("Cannot run {program}: {error}"))?;
-    if !output.status.success() {
-        return Err(format!(
-            "{program} failed ({}): {} {}",
-            output.status,
-            String::from_utf8_lossy(&output.stderr).trim(),
-            String::from_utf8_lossy(&output.stdout).trim()
-        ));
-    }
-    String::from_utf8(output.stdout).map_err(|e| format!("{program} emitted invalid UTF-8: {e}"))
-}
-
-struct ValuesFile(PathBuf);
-impl Drop for ValuesFile {
-    fn drop(&mut self) {
-        let _ = fs::remove_file(&self.0);
-    }
-}
-
-fn collect(options: &Options) -> Result<(String, Vec<Identity>, Vec<String>), String> {
-    let context = match &options.context {
-        Some(context) => context.clone(),
-        None => command("kubectl", &["config".into(), "current-context".into()])?
-            .trim()
-            .to_owned(),
-    };
-    if context.is_empty() {
-        return Err("No Kubernetes context selected".into());
-    }
-    let selector = if options.node_selector.is_empty() {
-        "kubernetes.io/os=linux".into()
-    } else {
-        format!("{},kubernetes.io/os=linux", options.node_selector)
-    };
-    let kubectl = |tail: Vec<String>| {
-        let mut args = vec![
-            "--context".into(),
-            context.clone(),
-            "--request-timeout=60s".into(),
-        ];
-        args.extend(tail);
-        command("kubectl", &args)
-    };
-    let list = || {
-        kubectl(vec![
-            "get".into(),
-            "nodes".into(),
-            "--selector".into(),
-            selector.clone(),
-            "-o".into(),
-            "json".into(),
-        ])
-    };
-    let before = report::inventory(&list()?)?;
-    let values = ValuesFile(std::env::temp_dir().join(
-        format!("krab-conformance-{}-{}.json", std::process::id(),
-        SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos()),
-    ));
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(&values.0)
-        .map_err(|e| e.to_string())?;
-    let content = serde_json::json!({"nodeSelector":options.node_selector,"cache":{"enabled":true,"forceRefresh":true}});
-    file.write_all(content.to_string().as_bytes())
-        .map_err(|e| e.to_string())?;
-    command(
-        "helm",
-        &[
-            "upgrade".into(),
-            "--install".into(),
-            options.release.clone(),
-            options.chart.clone(),
-            "--version".into(),
-            options.version.clone(),
-            "--namespace".into(),
-            options.namespace.clone(),
-            "--create-namespace".into(),
-            "--kube-context".into(),
-            context.clone(),
-            "--timeout".into(),
-            "35m".into(),
-            "--wait".into(),
-            "--values".into(),
-            values.0.to_string_lossy().into_owned(),
-        ],
-    )?;
-    let name: String = options.release.chars().take(45).collect();
-    let text = kubectl(vec![
-        "--namespace".into(),
-        options.namespace.clone(),
-        "logs".into(),
-        format!("job/{}-results", name.trim_end_matches('-')),
-    ])?;
-    let errors = match list().and_then(|text| report::inventory(&text)) {
-        Ok(after) if before == after => vec![],
-        Ok(_) => vec!["Selected nodes or machine/boot identities changed during pre-flight; rerun conformance".into()],
-        Err(error) => vec![format!("Cannot verify final node inventory: {error}")],
-    };
-    Ok((text, before, errors))
-}
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct LocalVerdict {
@@ -1022,12 +914,18 @@ fn local(options: &Options) -> ExitCode {
 }
 
 pub fn run(args: &[String]) -> ExitCode {
+    run_with_self_install(args, false)
+}
+
+pub(crate) fn run_with_self_install(args: &[String], allow_self_install: bool) -> ExitCode {
+    #[cfg(not(target_os = "linux"))]
+    let _ = allow_self_install;
     if args
         .first()
         .is_some_and(|arg| matches!(arg.as_str(), "install" | "remove"))
     {
         #[cfg(target_os = "linux")]
-        return crate::service::run(args);
+        return crate::service::run(args, allow_self_install);
         #[cfg(not(target_os = "linux"))]
         {
             eprintln!("Host conformance service management requires Linux");
@@ -1108,7 +1006,7 @@ pub fn run(args: &[String]) -> ExitCode {
         }
     }
     let (text, expected) = if options.run {
-        match collect(&options) {
+        match crate::cluster::collect(&options.cluster) {
             Ok((text, inventory, issues)) => {
                 errors.extend(issues);
                 (Some(text), Some(inventory))
@@ -1185,8 +1083,11 @@ pub fn run(args: &[String]) -> ExitCode {
             println!("  {}: {}", issue.check, issue.reason);
         }
         for node in &verdict.nodes {
+            if options.failed_only && node.verdict == Decision::Pass {
+                continue;
+            }
             println!("  {}: {}", node.node_name, node.verdict.label());
-            for check in &node.checks {
+            for check in node.checks.iter().filter(|_| !options.failed_only) {
                 println!(
                     "    {} [{}]: {:?}: {}",
                     check.check, check.evaluation, check.status, check.reason

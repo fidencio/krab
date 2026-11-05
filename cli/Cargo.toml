@@ -1,0 +1,23 @@
+[package]
+name = "krab"
+version = "0.2.6"
+edition = "2021"
+license = "Apache-2.0"
+description = "Native configuration and deployment CLI for Kata Reference Architecture Builder"
+publish = false
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
+crossterm = "0.29"
+ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
+ratatui-image = { version = "11.1", default-features = false, features = ["crossterm"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+jsonschema = { version = "0.46", default-features = false }
+krab-preflight = { path = "../preflight" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml_ng = "0.10"
+
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "0.38", features = ["event", "termios", "process"] }

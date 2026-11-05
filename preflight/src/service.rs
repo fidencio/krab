@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, ensure, Context, Result};
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, CommandFactory, FromArgMatches, Parser, Subcommand};
 use sha2::{Digest, Sha256};
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
@@ -32,10 +32,28 @@ struct Installer {
     action: Action,
 }
 
-pub fn run(args: &[String]) -> std::process::ExitCode {
-    let cli = match Installer::try_parse_from(
-        std::iter::once("krab-preflight conformance".to_string()).chain(args.iter().cloned()),
-    ) {
+pub fn run(args: &[String], allow_self_install: bool) -> std::process::ExitCode {
+    let program = if allow_self_install {
+        "krab-preflight conformance"
+    } else {
+        "krab conformance"
+    };
+    let command = Installer::command()
+        .bin_name(program)
+        .mut_subcommand("install", |command| {
+            command.mut_arg("checker", |arg| {
+                arg.required(!allow_self_install)
+                    .help(if allow_self_install {
+                        "Linux checker artifact to install (default: this executable)"
+                    } else {
+                        "Linux krab-preflight artifact to install"
+                    })
+            })
+        });
+    let cli = match command
+        .try_get_matches_from(std::iter::once(program.to_string()).chain(args.iter().cloned()))
+        .and_then(|matches| Installer::from_arg_matches(&matches))
+    {
         Ok(cli) => cli,
         Err(error) => {
             let code = if error.use_stderr() { 2 } else { 0 };

@@ -299,6 +299,11 @@ is also ERROR; only exit 0 and a completed Job establish success.
 
 ## Development
 
+The experimental [native Rust CLI](cli/README.md) supports catalog discovery,
+configuration validation, Helm values generation, deployment plans, and the
+existing preflight and conformance checks. Build it with
+`cargo build --release --locked --manifest-path cli/Cargo.toml`.
+
 Development changes land on `main`. GitHub Pages serves the latest published
 stable release at `/krab/` and a build from `main`, called Next, at `/krab/dev/`.
 Each pull request is built and checked independently. When it passes, Pages

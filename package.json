@@ -15,6 +15,7 @@
     "refresh:upstream": "tsx scripts/refresh-upstream.ts",
     "verify:chart-artifact": "tsx scripts/verify-chart-artifact.ts",
     "test": "tsx --test test/*.test.ts",
+    "test:cli-parity": "tsx scripts/check-cli-parity.ts",
     "test:chart": "tsx --test test/chart.test.ts",
     "test:helm": "tsx --test test/helm-render.ts",
     "test:controller:render": "tsc -p controller/tsconfig.json && tsx --test tests-controller/*.test.ts",

@@ -63,6 +63,9 @@ krab-preflight conformance --help
 
 `--run` uses Helm and kubectl from PATH to run the published pre-check chart and
 collect fresh reports. `--report` evaluates a saved v2 cluster collection offline.
+Pass `--kubeconfig FILE` to select a kubeconfig explicitly; the same file and
+context are used by kubectl and Helm. Add `--failed-nodes` for a text view listing
+only failed/error nodes and their reasons.
 Every node in the selected inventory must confirm every requirement. Required
 `no`, `unknown`, or `review` states fail the verdict, as do missing/duplicate
 nodes, changed identities, unsupported reports, or failed collection.
@@ -129,8 +132,9 @@ sudo krab-preflight conformance install --require kvm --checker-sha256 "$CHECKER
 sudo /opt/krab/conformance/krab-preflight conformance remove
 ```
 
-Installation defaults to copying the running executable. `--checker` can select
-another Linux artifact. The daemon runs unprivileged; removal retains JSON evidence.
+Standalone installation defaults to copying the running checker. `--checker`
+can select another Linux artifact; the full `krab` CLI requires this option.
+The daemon runs unprivileged; removal retains JSON evidence.
 For mounted-host deployment, offline setup, and the existing NFD worker's
 mount configuration, see the [continuous conformance prototype](../docs/continuous-node-conformance.md).
 

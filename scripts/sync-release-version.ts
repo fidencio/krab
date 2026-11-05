@@ -30,12 +30,15 @@ export async function syncReleaseVersion(root = resolve(import.meta.dirname, '..
   if (!match) throw new Error(`Invalid KRAB version in package.json: ${version}`)
   const prerelease = match[1] !== undefined
 
-  for (const [path, section, pattern] of [
-    ['preflight/Cargo.toml', '[package]', /^\[package\]\nname = "krab-preflight"\nversion = "[^"]*"$/gm],
-    ['preflight/Cargo.lock', '[[package]]', /^\[\[package\]\]\nname = "krab-preflight"\nversion = "[^"]*"$/gm],
+  for (const [path, section, name, pattern] of [
+    ['cli/Cargo.toml', '[package]', 'krab', /^\[package\]\nname = "krab"\nversion = "[^"]*"$/gm],
+    ['cli/Cargo.lock', '[[package]]', 'krab', /^\[\[package\]\]\nname = "krab"\nversion = "[^"]*"$/gm],
+    ['cli/Cargo.lock', '[[package]]', 'krab-preflight', /^\[\[package\]\]\nname = "krab-preflight"\nversion = "[^"]*"$/gm],
+    ['preflight/Cargo.toml', '[package]', 'krab-preflight', /^\[package\]\nname = "krab-preflight"\nversion = "[^"]*"$/gm],
+    ['preflight/Cargo.lock', '[[package]]', 'krab-preflight', /^\[\[package\]\]\nname = "krab-preflight"\nversion = "[^"]*"$/gm],
   ] as const) {
     await updateFile(root, path, (content) => replaceLines(content, pattern,
-      `${section}\nname = "krab-preflight"\nversion = "${version}"`, 1, path))
+      `${section}\nname = "${name}"\nversion = "${version}"`, 1, path))
   }
 
   await updateFile(root, 'package-lock.json', (content) => {
