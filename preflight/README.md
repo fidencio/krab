@@ -106,6 +106,11 @@ prerequisites; it does not test workload launch or attestation. See the
 
 ## Local conformance and NFD
 
+New releases attach static Linux amd64 and arm64 checker archives, with
+checksums and build provenance. See the
+[standalone release guide](../docs/standalone-preflight-releases.md) for downloads
+and GPU-node installation.
+
 The same checker can collect and evaluate this host without Kubernetes or a cache:
 
 ```sh

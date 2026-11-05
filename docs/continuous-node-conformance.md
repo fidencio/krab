@@ -15,6 +15,10 @@ independently on CPU-only nodes.
 
 ## Install and activate
 
+For a published Linux checker, follow the
+[standalone release download and verification instructions](standalone-preflight-releases.md).
+They also show how to obtain the binary digest for installation on a GPU node.
+
 Build the checker for the target Linux architecture and host ABI (or use a
 compatible static Linux checker artifact):
 

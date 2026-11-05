@@ -23,10 +23,22 @@ env:
   PRECHECK_CHART_REFERENCE: oci://ghcr.io/fidencio/krab-precheck
 
 jobs:
+  preflight_binaries:
+    uses: ./.github/workflows/preflight-binaries.yml
+    permissions:
+      contents: read
+
   release:
+    needs: preflight_binaries
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: krab-preflight-linux-*
+          merge-multiple: true
+          path: dist-binaries
 
       - uses: actions/setup-node@v7
         with:
@@ -110,10 +122,17 @@ jobs:
           echo "PRECHECK_IMAGE=ghcr.io/fidencio/krab-preflight:${chart_version}" >> "${GITHUB_ENV}"
           echo "COLLECTOR_IMAGE=ghcr.io/fidencio/krab-collector:${chart_version}" >> "${GITHUB_ENV}"
 
+      - name: Require both standalone checker archives
+        run: |
+          for arch in amd64 arm64; do
+            test -f "dist-binaries/krab-preflight-${CHART_VERSION}-linux-${arch}.tar.gz"
+          done
+
       - name: Regenerate and verify committed release data
         run: |
           npm run generate
           git diff --exit-code -- \
+            preflight/Cargo.toml preflight/Cargo.lock cli/Cargo.toml cli/Cargo.lock \
             package-lock.json charts/krab/Chart.yaml charts/krab/values.yaml \
             charts/precheck/Chart.yaml charts/precheck/values.yaml \
             Dockerfile.precheck upstream/precheck-image.lock.json \
@@ -578,8 +597,9 @@ jobs:
           sha256sum "dist-chart/krab-${CHART_VERSION}.tgz" \
             "dist-precheck/krab-precheck-${CHART_VERSION}.tgz" \
             "dist-builder/krab-builder-${CHART_VERSION}.tar.gz" \
+            dist-binaries/*.tar.gz \
             dist-sbom/*.spdx.json \
-            | sed 's#dist-chart/##; s#dist-precheck/##; s#dist-builder/##; s#dist-sbom/##' \
+            | sed 's#dist-chart/##; s#dist-precheck/##; s#dist-builder/##; s#dist-binaries/##; s#dist-sbom/##' \
             > dist-chart/SHA256SUMS
 
       - uses: actions/upload-artifact@v5
@@ -589,6 +609,7 @@ jobs:
             dist-chart/krab-*.tgz
             dist-precheck/krab-precheck-*.tgz
             dist-builder/krab-builder-*.tar.gz
+            dist-binaries/*.tar.gz
             dist-sbom/*.spdx.json
             dist-chart/SHA256SUMS
           if-no-files-found: error
@@ -612,6 +633,11 @@ jobs:
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist-builder/krab-builder-*.tar.gz
+
+      - name: Attest standalone checker archives
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist-binaries/*.tar.gz
 
       - name: Publish and verify charts
         shell: bash
@@ -687,6 +713,7 @@ jobs:
               dist-chart/krab-*.tgz \
               dist-precheck/krab-precheck-*.tgz \
               dist-builder/krab-builder-*.tar.gz \
+              dist-binaries/*.tar.gz \
               dist-sbom/*.spdx.json \
               dist-chart/SHA256SUMS \
               --target "${GITHUB_SHA}" \

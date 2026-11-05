@@ -1,0 +1,84 @@
+name: Build standalone preflight binaries
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - preflight/**
+      - scripts/package-preflight-binary.py
+      - scripts/smoke-preflight-binary.py
+      - .github/workflows/preflight-binaries.yml
+      - package.json
+      - LICENSE
+  push:
+    branches: [main]
+    paths:
+      - preflight/**
+      - scripts/package-preflight-binary.py
+      - scripts/smoke-preflight-binary.py
+      - .github/workflows/preflight-binaries.yml
+      - package.json
+      - LICENSE
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Linux ${{ matrix.architecture }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            architecture: amd64
+            target: x86_64-unknown-linux-musl
+          - runner: ubuntu-24.04-arm
+            architecture: arm64
+            target: aarch64-unknown-linux-musl
+    env:
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER: rust-lld
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: rust-lld
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      RUSTFLAGS: -C target-feature=+crt-static --remap-path-prefix=${{ github.workspace }}=/usr/src/krab
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install the pinned Rust toolchain and bundled linker
+        run: |
+          rustup toolchain install 1.95.0 --profile minimal --target '${{ matrix.target }}'
+          krab_sysroot="$(rustc +1.95.0 --print sysroot)"
+          krab_host="$(rustc +1.95.0 -vV | sed -n 's/^host: //p')"
+          krab_linker_dir="${krab_sysroot}/lib/rustlib/${krab_host}/bin"
+          test -x "${krab_linker_dir}/rust-lld"
+          echo "${krab_linker_dir}" >> "${GITHUB_PATH}"
+      - name: Test and build the static checker
+        run: |
+          cargo +1.95.0 test --locked --manifest-path preflight/Cargo.toml --target '${{ matrix.target }}'
+          cargo +1.95.0 build --release --locked --manifest-path preflight/Cargo.toml --target '${{ matrix.target }}'
+      - name: Package the standalone checker
+        run: |
+          python3 scripts/package-preflight-binary.py \
+            --binary 'preflight/target/${{ matrix.target }}/release/krab-preflight' \
+            --architecture '${{ matrix.architecture }}' \
+            --revision '${{ github.sha }}' \
+            --epoch "$(git show -s --format=%ct HEAD)" \
+            --rustc-version "$(rustc +1.95.0 --version)" \
+            --output dist-binaries
+      - name: Verify and smoke test the packaged checker
+        run: |
+          mkdir -p "${RUNNER_TEMP}/checker-package"
+          tar -xzf dist-binaries/*.tar.gz -C "${RUNNER_TEMP}/checker-package"
+          (
+            cd "${RUNNER_TEMP}/checker-package"
+            sha256sum --check SHA256SUMS
+          )
+          python3 scripts/smoke-preflight-binary.py \
+            "${RUNNER_TEMP}/checker-package/krab-preflight" \
+            --architecture '${{ matrix.architecture }}'
+      - uses: actions/upload-artifact@v5
+        with:
+          name: krab-preflight-linux-${{ matrix.architecture }}
+          path: dist-binaries/*.tar.gz
+          if-no-files-found: error
