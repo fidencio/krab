@@ -2,8 +2,8 @@ apiVersion: v2
 name: krab
 description: Kata Reference Architecture Builder umbrella chart
 type: application
-version: 0.2.6
-appVersion: "0.2.6"
+version: 0.2.7
+appVersion: "0.2.7"
 home: https://github.com/fidencio/krab
 icon: https://fidencio.github.io/krab/favicon.png
 sources:
@@ -20,8 +20,10 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
-    - kind: changed
-      description: Update Kata Containers chart and image to 4.3.1, including dedicated CPU and TEE runtime profiles.
+    - kind: added
+      description: Add supervised host conformance and opt-in expiring NFD labels.
+    - kind: added
+      description: Add the native CLI and static Linux checker release archives.
 # Run npm run generate to refresh these dependencies from pinned charts.
 dependencies:
   - name: node-feature-discovery

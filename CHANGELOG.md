@@ -2,6 +2,18 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.2.7] - 2026-11-05
+
+### Added
+
+- Continuous host conformance through an unprivileged systemd daemon, with
+  restart and watchdog supervision, checker integrity verification, and
+  expiring results for opt-in NFD node labels.
+- Native Rust CLI and terminal editor for configuration, Helm values,
+  deployment plans, pre-flight collection, and conformance checks.
+- Static Linux amd64 and arm64 checker release archives, with executable
+  checksums, source metadata, and build provenance for host installation.
+
 ## [0.2.6] - 2026-11-01
 
 ### Fixed
