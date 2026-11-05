@@ -260,6 +260,8 @@ export type CustomRuntimeConfiguration = {
   baseConfig: string
   dropIn: string
   runtimeClass: string
+  crioPullType?: string
+  inheritBaseOverhead?: boolean
 }
 
 export type CustomRuntimeValidationError = {
@@ -275,6 +277,7 @@ export function resolveComponents(
   selections: FamilySelections,
   components: ComponentConfiguration,
   runtime: RuntimeConfiguration,
+  customRuntimes: CustomRuntimeConfiguration[] = [],
 ): Record<keyof ComponentConfiguration, boolean> {
   const gpuSelected = vendor.hardwareFamilies.some((family) =>
     family.availability === 'available' &&
@@ -284,8 +287,10 @@ export function resolveComponents(
     kataDeploy: components.kataDeploy ?? true,
     devicePlugin: components.devicePlugin ?? gpuSelected,
     provisioner: components.provisioner ?? gpuSelected,
-    qgs: components.qgs ?? resolveRuntimeShimIds(vendor, selections, runtime)
-      .some((shimId) => shimId.includes('-tdx-')),
+    qgs: components.qgs ?? [
+      ...resolveRuntimeShimIds(vendor, selections, runtime),
+      ...customRuntimes.map(({ baseConfig }) => baseConfig),
+    ].some((shimId) => shimId.includes('-tdx-')),
   }
 }
 
@@ -560,8 +565,19 @@ export function importValuesBundle(
       ? detectedVendor.candidate
       : undefined)
 
-  if (!vendor || (enabledShimIds.length === 0 && runtimeValues.enabled !== false)) {
+  const importedCustomRuntimes = asRecord(runtimeValues.customRuntimes)
+  const customBases = importedCustomRuntimes.enabled === true
+    ? Object.values(asRecord(importedCustomRuntimes.runtimes))
+      .map(configuration => asRecord(configuration).baseConfig)
+    : []
+  if (!vendor || (enabledShimIds.length === 0 && customBases.length === 0 &&
+    runtimeValues.enabled !== false)) {
     throw new Error('KRAB could not identify a supported vendor or RuntimeClass.')
+  }
+  for (const base of customBases) {
+    if (!vendor.runtime.shims.some(({ id }) => id === base)) {
+      throw new Error(`The imported custom runtime base ${base} is not available for this vendor.`)
+    }
   }
 
   const selections = initialFamilySelections(vendor)
@@ -662,6 +678,12 @@ export function importValuesBundle(
         typeof runtimeConfiguration.runtimeClass === 'string'
           ? runtimeConfiguration.runtimeClass
           : stringify(runtimeConfiguration.runtimeClass ?? {}).trim(),
+      ...(typeof asRecord(runtimeConfiguration.crio).pullType === 'string'
+        ? { crioPullType: asRecord(runtimeConfiguration.crio).pullType }
+        : {}),
+      ...(typeof runtimeConfiguration.inheritBaseOverhead === 'boolean'
+        ? { inheritBaseOverhead: runtimeConfiguration.inheritBaseOverhead }
+        : {}),
     }
   })
 
@@ -768,7 +790,8 @@ export function importValuesBundle(
         ? { architectures: Object.keys(asRecord(runtimeValues.defaultShim)).length > 0
           ? Object.keys(asRecord(runtimeValues.defaultShim))
           : [...new Set(vendor.runtime.shims
-            .filter(({ id }) => enabledShimIds.includes(id))
+            .filter(({ id }) => enabledShimIds.includes(id) ||
+              advanced.customRuntimes.some(({ baseConfig }) => baseConfig === id))
             .flatMap(({ supportedArches }) => supportedArches))] }
         : {}),
     },
@@ -1110,6 +1133,14 @@ export function buildValuesBundle(
     delete runtimeValues.defaultShim
   }
   if (advanced.customRuntimes.length > 0) {
+    // Kata uses the base shim's architecture metadata for custom runtimes even
+    // when the corresponding built-in handler is disabled.
+    for (const { baseConfig } of advanced.customRuntimes) {
+      const base = sourceShims[baseConfig]
+      if (!(baseConfig in selectedShims) && base && typeof base !== 'boolean') {
+        selectedShims[baseConfig] = { ...base, enabled: false }
+      }
+    }
     runtimeValues.customRuntimes = {
       enabled: true,
       runtimes: Object.fromEntries(
@@ -1121,6 +1152,12 @@ export function buildValuesBundle(
               ? { dropIn: customRuntime.dropIn }
               : {}),
             runtimeClass: customRuntime.runtimeClass,
+            ...(customRuntime.inheritBaseOverhead !== undefined
+              ? { inheritBaseOverhead: customRuntime.inheritBaseOverhead }
+              : {}),
+            ...(customRuntime.crioPullType !== undefined
+              ? { crio: { pullType: customRuntime.crioPullType } }
+              : {}),
             containerd: {
               snapshotter: customRuntimeSnapshotter(vendor, customRuntime),
             },
@@ -1328,7 +1365,9 @@ export function buildValuesBundle(
   const gpuPlatformSelected = vendor.hardwareFamilies.some((family) =>
     family.availability === 'available' &&
     family.modes.some(({ id }) => id === selections[family.id]?.modeId))
-  const components = resolveComponents(vendor, selections, advanced.components, runtime)
+  const components = resolveComponents(
+    vendor, selections, advanced.components, runtime, advanced.customRuntimes,
+  )
   const includeDevicePlugin = components.devicePlugin
   const includeProvisioner = components.provisioner
   const nfdImages = advanced.images.nfd

@@ -553,7 +553,9 @@ function App() {
     requiresErofs &&
     advanced.erofsSnapshotterMode === 'disk' &&
     advanced.erofsDiskSize.trim().length === 0
-  const components = resolveComponents(selectedVendor, selections, advanced.components, runtime)
+  const components = resolveComponents(
+    selectedVendor, selections, advanced.components, runtime, advanced.customRuntimes,
+  )
   const valuesReady =
     cluster.distributionId !== null &&
     (!(components.kataDeploy || components.provisioner) ||

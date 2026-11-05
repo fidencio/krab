@@ -738,7 +738,13 @@ test('custom runtimes generate independent RuntimeClasses and snapshotters', asy
     ),
   )
 
-  assert.deepEqual(generated['kata-deploy'].shims, { disableAll: true })
+  assert.deepEqual(generated['kata-deploy'].shims, {
+    disableAll: true,
+    'qemu-nvidia-cpu-runtime-rs': {
+      ...local.runtime.chart.values.shims['qemu-nvidia-cpu-runtime-rs'],
+      enabled: false,
+    },
+  })
   assert.equal(generated['kata-deploy'].defaultShim, undefined)
   assert.deepEqual(generated['kata-deploy'].customRuntimes, {
     enabled: true,
@@ -771,6 +777,36 @@ test('custom runtimes generate independent RuntimeClasses and snapshotters', asy
   ])
   assert.ok(validationErrors.some(({ field }) => field === 'name'))
   assert.ok(validationErrors.some(({ field }) => field === 'baseConfig'))
+})
+
+test('custom-only TDX deployments preserve base architectures, CRI settings, and QGS', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const vendor = catalog.vendors.find(({ id }) => id === 'custom')!
+  const advanced = createAdvancedConfiguration()
+  advanced.customRuntimes = [{
+    name: 'cpu-tdx',
+    baseConfig: 'qemu-nvidia-gpu-tdx-runtime-rs',
+    dropIn: '[hypervisor.qemu]\ndefault_memory = 1024\n',
+    runtimeClass: buildCustomRuntimeClass('cpu-tdx'),
+    crioPullType: 'guest-pull',
+    inheritBaseOverhead: true,
+  }]
+  const source = buildValuesBundle(catalog, vendor, {},
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+    { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    advanced)
+  const generated = parse(source)
+  const base = generated['kata-deploy'].shims['qemu-nvidia-gpu-tdx-runtime-rs']
+  assert.equal(base.enabled, false)
+  assert.deepEqual(base.supportedArches, ['amd64'])
+  assert.equal(generated['intel-tdx-qgs'].enabled, true)
+  assert.equal(generated['kata-device-plugin'].enabled, false)
+  assert.equal(generated['kata-device-provisioner'].enabled, false)
+  const imported = importValuesBundle(catalog, source)
+  assert.deepEqual(imported.advanced.customRuntimes, advanced.customRuntimes)
+  assert.deepEqual(imported.cluster.architectures, ['amd64'])
+  assert.deepEqual(parse(buildValuesBundle(catalog, vendor, imported.selections,
+    imported.cluster, imported.runtime, imported.advanced)), generated)
 })
 
 test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
