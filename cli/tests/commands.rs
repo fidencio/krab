@@ -11,12 +11,11 @@ fn run(args: &[&str], input: Option<&str>) -> Output {
         .spawn()
         .unwrap();
     if let Some(input) = input {
-        child
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(input.as_bytes())
-            .unwrap();
+        if let Err(error) = child.stdin.take().unwrap().write_all(input.as_bytes()) {
+            // Argument errors may exit before reading stdin. Preserve their exit
+            // code and stderr, while still rejecting every other write failure.
+            assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+        }
     }
     child.wait_with_output().unwrap()
 }
