@@ -1,0 +1,32 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:04.000
+Start KRAB. Choose a deployment path; Custom combines runtime choices. [krab]
+
+00:00:04.000 --> 00:00:07.000
+Select the architectures of your cluster nodes. [Enter]
+
+00:00:07.000 --> 00:00:10.000
+Choose the Kubernetes distribution used by your cluster. [Enter]
+
+00:00:10.000 --> 00:00:14.000
+The overview keeps every configuration section within reach. [Enter]
+
+00:00:14.000 --> 00:00:18.000
+Press F1 for contextual help on any screen. [F1]
+
+00:00:18.000 --> 00:00:22.000
+Open Runtimes. Arrow keys navigate; checked entries are selected. [↓ × 5, Enter]
+
+00:00:22.000 --> 00:00:26.000
+Space toggles a runtime and updates the live configuration panel. [Space]
+
+00:00:26.000 --> 00:00:30.000
+Preview the generated, version-pinned Helm values before saving. [Enter, p]
+
+00:00:30.000 --> 00:00:33.000
+Save your configuration to a file you can edit or automate later. [Esc, s]
+
+00:00:33.000 --> 00:00:36.000
+Review the destination and confirm the save. [Enter]
+

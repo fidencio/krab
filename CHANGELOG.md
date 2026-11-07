@@ -8,7 +8,9 @@ All notable changes to KRAB are documented in this file.
 
 - Native CLI / TUI release downloads for Linux amd64/arm64 and macOS Apple
   Silicon, with checksums, completions, source metadata, and build provenance.
-- Website installation and usage guide with downloads pinned to its release.
+- On-site documentation for website navigation, installation, TUI / CLI, and
+  conformance, with three captioned video walkthroughs and readable transcripts.
+- Compact website download strip with links pinned to its release.
 - Export website configurations to the terminal with every advanced setting,
   including QGS, custom runtimes, scheduling, containerd, and image overrides.
 - Release publication requires passing native builds and CLI/web values parity.

@@ -78,6 +78,9 @@ available before publishing KRAB.
 
 ## KRAB TUI / CLI
 
+Follow the [on-site guide](https://fidencio.github.io/krab/#docs) for website
+navigation, installation, TUI and CLI workflows, and captioned video walkthroughs.
+
 Download native Linux and macOS binaries from the [website](https://fidencio.github.io/krab/#cli)
 or [GitHub releases](https://github.com/fidencio/krab/releases/latest).
 Each release includes Linux amd64/arm64 and macOS Apple Silicon archives,

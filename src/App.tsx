@@ -5,6 +5,7 @@ import {
   Check,
   ChevronDown,
   Clipboard,
+  BookOpen,
   Copy,
   Download,
   ExternalLink,
@@ -20,6 +21,7 @@ import packageData from '../package.json'
 import krabLogoDark from './assets/brands/krab-kata-hybrid.png'
 import krabLogoLight from './assets/brands/krab-kata-hybrid-light.png'
 import { CliGuide } from './CliGuide'
+import { Documentation } from './Documentation'
 import { IommufdSetupNote } from './IommufdSetupNote'
 import { erofsUtilsImage } from './lib/erofs-image'
 import {
@@ -301,6 +303,15 @@ const preferredSystemTheme = (): Theme =>
   window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 
 function App() {
+  const [showDocs, setShowDocs] = useState(() => window.location.hash.startsWith('#docs'))
+  useEffect(() => {
+    const navigate = () => {
+      setShowDocs(window.location.hash.startsWith('#docs'))
+      if (!window.location.hash.startsWith('#docs')) window.scrollTo({ top: 0, behavior: 'instant' })
+    }
+    window.addEventListener('hashchange', navigate)
+    return () => window.removeEventListener('hashchange', navigate)
+  }, [])
   const [releaseOptions, setReleaseOptions] = useState<ReleaseOption[]>([])
   const [latestStableVersion, setLatestStableVersion] = useState<string | null>(null)
   const releasePickerRef = useRef<HTMLDetailsElement>(null)
@@ -811,6 +822,7 @@ function App() {
   }
 
   const restart = () => {
+    window.location.hash = 'builder'
     setImportMessage(null)
     setStep(1)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -853,10 +865,8 @@ function App() {
           </div>
         </details>
         <nav aria-label="Downloads and display settings">
-          <a className="cli-nav-link" href={isDevelopmentBuild
-            ? 'https://github.com/fidencio/krab/actions/workflows/cli.yml'
-            : `https://github.com/fidencio/krab/releases/tag/chart-v${packageData.version}`}>
-            <Download size={15} aria-hidden="true" /> TUI / CLI
+          <a className="cli-nav-link" href="#docs">
+            <BookOpen size={15} aria-hidden="true" /> Docs
           </a>
           <button
             type="button"
@@ -880,6 +890,7 @@ function App() {
       </header>
 
       <main>
+        {showDocs ? <Documentation version={packageData.version} development={isDevelopmentBuild} /> : <>
         {step === 1 && (
           <section className="intro">
             <div className="intro-copy">
@@ -2812,6 +2823,7 @@ function App() {
             </div>
           )}
         </section>
+        </>}
       </main>
 
     </div>

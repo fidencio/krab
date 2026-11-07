@@ -1,0 +1,20 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:04.000
+Start with the builder. The header gives you documentation, theme, and release choices.
+
+00:00:04.000 --> 00:00:08.000
+Choose Custom to combine runtime and hardware paths, or start with a vendor path. [Choose a deployment path]
+
+00:00:08.000 --> 00:00:12.000
+The configuration page starts with target architectures and the Kubernetes distribution. [Custom]
+
+00:00:12.000 --> 00:00:16.000
+Select the runtime you want to install. KRAB checks the architecture coverage as you choose. [AMD64 · kubeadm · QEMU]
+
+00:00:16.000 --> 00:00:20.000
+Review the version-pinned Helm command and generated values before deploying. [Review the output]
+
+00:00:20.000 --> 00:00:24.000
+Download values for Helm, or export krab.json to keep working in the TUI and CLI. [Continue in TUI / CLI]
+

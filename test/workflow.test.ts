@@ -75,8 +75,8 @@ test('native CLI builds gate releases and all advertised downloads are published
     assert.match(steps.find((step: { name: string }) => step.name === name).run, /dist-cli\/\*\.tar\.gz/)
   }
   assert.equal(steps.find((step: { name: string }) => step.name === 'Attest native CLI archives').with['subject-path'], 'dist-cli/*.tar.gz')
-  const guide = await readFile(resolve(root, 'src/CliGuide.tsx'), 'utf8')
-  for (const platform of platforms) assert.ok(guide.includes(platform))
-  assert.match(guide, /releases\/download\/chart-v\$\{version\}/)
-  assert.match(guide, /krab-\$\{version\}-\$\{platform\}\.tar\.gz/)
+  const downloads = await readFile(resolve(root, 'src/lib/cli-release.ts'), 'utf8')
+  for (const platform of platforms) assert.ok(downloads.includes(platform))
+  assert.match(downloads, /releases\/download\/chart-v\$\{version\}/)
+  assert.match(downloads, /krab-\$\{version\}-\$\{platform\}\.tar\.gz/)
 })

@@ -7,6 +7,9 @@ Node.js is only needed by the development comparison tests.
 
 ## Download and install
 
+The [website guide](https://fidencio.github.io/krab/#docs) includes installation,
+keyboard controls, CLI examples, and captioned video walkthroughs.
+
 Use the [website downloads](https://fidencio.github.io/krab/#cli) for binaries
 matching that website, or choose a version from [GitHub releases](https://github.com/fidencio/krab/releases).
 Download the archive for the computer running KRAB (Linux amd64/arm64 or macOS

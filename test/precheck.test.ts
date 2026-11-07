@@ -262,7 +262,7 @@ test('pre-check chart reuses the pinned dispatcher and aggregates all node repor
 
 test('website directs report filtering to the terminal and retains the standalone collection command', async () => {
   const app = await readFile(resolve(import.meta.dirname, '../src/App.tsx'), 'utf8')
-  const guide = await readFile(resolve(import.meta.dirname, '../src/CliGuide.tsx'), 'utf8')
+  const guide = await readFile(resolve(import.meta.dirname, '../src/Documentation.tsx'), 'utf8')
   assert.ok(app.indexOf('<CliGuide') < app.indexOf('<div className="platform-directory">'))
   assert.doesNotMatch(app, /NodePrecheckPanel|parsePrecheckUpload|selectedChecks|selectedGpuModels|unavailableVendorForChecks/)
   assert.match(guide, /--failed-nodes/)
