@@ -4666,20 +4666,20 @@ nav a:hover,
 }
 
 .cli-guide {
-  margin: 1.5rem 0 2rem;
-  padding: clamp(1rem, 3vw, 1.5rem);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
+  margin: 12px 24px 18px;
+  padding: 12px 0;
+  border-block: 1px solid var(--line);
+  font-size: 13px;
 }
-.cli-guide-heading { display: flex; align-items: flex-start; gap: 0.8rem; }
-.cli-guide-heading > svg { flex-shrink: 0; margin-top: 0.2rem; }
-.cli-guide h2 { margin: 0 0 0.5rem; }
-.cli-guide p { line-height: 1.6; }
-.cli-downloads { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1rem 0; }
-.cli-downloads a { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 0.8rem; border: 1px solid var(--line); border-radius: 6px; }
-.cli-release-links { font-size: 0.85rem; }
-.cli-guide summary { cursor: pointer; font-weight: 600; padding: 0.5rem 0; }
-.cli-guide pre { max-width: 100%; overflow-x: auto; padding: 1rem; border: 1px solid var(--line); border-radius: 6px; line-height: 1.6; }
-
+.cli-guide-heading { display: flex; align-items: flex-start; gap: 8px; }
+.cli-guide-heading > svg { flex-shrink: 0; margin-top: 1px; }
+.vendor-panel .cli-guide h2 { margin: 0; font-size: 15px; line-height: 1.3; }
+.cli-guide p { margin: 4px 0; line-height: 1.5; color: var(--muted); }
+.cli-downloads { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0; }
+.cli-downloads a { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
+.cli-guide .cli-release-links { margin: 6px 0; font-size: 12px; }
+.cli-guide summary { cursor: pointer; font-size: 12px; padding: 4px 0; }
+.cli-guide details[open] summary { margin-bottom: 8px; }
+.cli-guide pre { max-width: 100%; overflow-x: auto; padding: 12px; border: 1px solid var(--line); border-radius: 4px; line-height: 1.6; }
 .cli-nav-link { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--ink); font-size: 0.85rem; white-space: nowrap; }
+@media (max-width: 480px) { .cli-guide { margin-inline: 16px; } }

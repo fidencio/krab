@@ -12,18 +12,15 @@ export function CliGuide({ version, development }: { version: string; developmen
   const assets = `${repository}/releases/download/chart-v${version}`
   return <section className="cli-guide" id="cli" aria-labelledby="cli-title">
     <div className="cli-guide-heading">
-      <Terminal size={23} aria-hidden="true" />
+      <Terminal size={17} aria-hidden="true" />
       <div>
-        <h2 id="cli-title">KRAB in your terminal</h2>
-        <p>Use the TUI / CLI for node pre-checks, cluster conformance, node selectors,
-          and filtering failed nodes. Configure and generate values offline with the
-          same pinned catalog and chart as this website.</p>
+        <h2 id="cli-title">KRAB TUI / CLI</h2>
+        <p>Run node pre-checks and filter failed nodes in your terminal, using the same pinned catalog.</p>
       </div>
     </div>
-    {development ? <p>This is the Next builder. <a href={`${repository}/actions/workflows/cli.yml`}>
-      Get matching development builds <ExternalLink size={13} /></a> from a successful
-      Native CLI run (GitHub sign-in required), or <a href={`${repository}/releases/latest`}>
-      download the latest stable release</a> and use its matching website.</p> : <>
+    {development ? <p className="cli-release-links">Next: <a href={`${repository}/actions/workflows/cli.yml`}>
+      Development builds <ExternalLink size={12} /></a> (GitHub sign-in)
+      {' · '}<a href={`${repository}/releases/latest`}>Stable downloads</a></p> : <>
       <div className="cli-downloads" aria-label={`Download KRAB ${version}`}>
         {platforms.map(([label, platform]) => <a key={platform}
           href={`${assets}/krab-${version}-${platform}.tar.gz`}>
@@ -34,7 +31,7 @@ export function CliGuide({ version, development }: { version: string; developmen
         {' · '}<a href={release}>All release assets</a></p>
     </>}
     <details>
-      <summary>Install, configure, and check your cluster</summary>
+      <summary>Install and use KRAB</summary>
       <p>Download the archive for the machine running KRAB. The target cluster can use
         different architectures. Extract it, verify its checksum against SHA256SUMS,
         and install the binary in your PATH. For example, on Linux x86_64:</p>

@@ -36,6 +36,7 @@ import {
   resolveRuntimeShimIds,
   resolveComponents,
   usesConfidentialComputing,
+  uncoveredRuntimeArchitectures,
   validateCustomRuntimes,
   type AdvancedConfiguration,
   type ChartImageConfiguration,
@@ -498,8 +499,8 @@ function App() {
     installedRuntimeClasses.length + advanced.customRuntimes.length
   const customArchitectures = cluster.architectures ?? []
   const uncoveredArchitectures = selectedVendor.id === 'custom'
-    ? customArchitectures.filter((architecture) =>
-      !installedRuntimeClasses.some((shim) => shim.supportedArches.includes(architecture)))
+    ? uncoveredRuntimeArchitectures(selectedVendor, customArchitectures,
+      installedRuntimeClasses.map(({ id }) => id), advanced.customRuntimes)
     : []
   const requiresErofs =
     selectedVendor.hardwareFamilies.some(

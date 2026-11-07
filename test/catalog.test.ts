@@ -1203,3 +1203,13 @@ test('every generated item retains pinned provenance', async () => {
     assert.match(source.sourceUrl, /^https:\/\/github\.com\//)
   }
 })
+
+
+test('custom-only handlers cover target architectures without enabling their base handler', async () => {
+  const { uncoveredRuntimeArchitectures } = await import('../src/lib/artifacts.ts')
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const handler = { name: 'my-runtime', baseConfig: 'qemu-tdx-runtime-rs', dropIn: '', runtimeClass: 'kata-my-runtime' }
+  assert.deepEqual(uncoveredRuntimeArchitectures(custom, ['amd64'], [], [handler]), [])
+  assert.deepEqual(uncoveredRuntimeArchitectures(custom, ['amd64', 's390x'], [], [handler]), ['s390x'])
+})

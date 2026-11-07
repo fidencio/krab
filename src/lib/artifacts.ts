@@ -1532,3 +1532,16 @@ export function buildCliConfiguration(
     advanced: settings,
   }
 }
+
+/** Custom handlers cover their base runtime's architectures, even if that handler is disabled. */
+export function uncoveredRuntimeArchitectures(
+  vendor: VendorCatalog,
+  architectures: string[],
+  shimIds: string[],
+  customRuntimes: CustomRuntimeConfiguration[],
+) {
+  const bases = new Set([...shimIds, ...customRuntimes.map(({ baseConfig }) => baseConfig)])
+  return architectures.filter((architecture) => !vendor.runtime.shims.some(
+    ({ id, supportedArches }) => bases.has(id) && supportedArches.includes(architecture),
+  ))
+}
