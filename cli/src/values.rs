@@ -19,10 +19,14 @@ pub fn build(config: &Config, catalog: &Value) -> Result<Value> {
     let gpu = !config.hardware.is_empty();
     let plugin = config.components.device_plugin.unwrap_or(gpu);
     let provisioner = config.components.provisioner.unwrap_or(gpu);
-    let qgs = config
-        .components
-        .qgs
-        .unwrap_or_else(|| shims.iter().any(|s| text(&s["id"]).contains("-tdx-")));
+    let qgs = config.components.qgs.unwrap_or_else(|| {
+        shims.iter().any(|s| text(&s["id"]).contains("-tdx-"))
+            || config
+                .advanced
+                .custom_runtimes
+                .iter()
+                .any(|s| s.base_config.contains("-tdx-"))
+    });
     let mut runtime = vendor["runtime"]["chart"]["values"].clone();
     runtime["deploymentMode"] = json!("job");
     runtime["debug"] = json!(false);
@@ -100,6 +104,15 @@ pub fn build(config: &Config, catalog: &Value) -> Result<Value> {
             snapshotters.push(snapshotter);
         }
     }
+    for custom in &config.advanced.custom_runtimes {
+        let snapshotter = config.advanced.snapshotter(custom, vendor)?;
+        if !snapshotter.is_empty()
+            && snapshotter != "default"
+            && !snapshotters.contains(&snapshotter)
+        {
+            snapshotters.push(snapshotter);
+        }
+    }
     if snapshotters.is_empty() {
         runtime.as_object_mut().unwrap().remove("snapshotter");
         runtime.as_object_mut().unwrap().remove("containerd");
@@ -146,7 +159,9 @@ pub fn build(config: &Config, catalog: &Value) -> Result<Value> {
             runtime["nodeBinaries"] = json!({});
         }
         runtime["nodeBinaries"]["erofs-utils"] = json!({
-            "image": format!("{}:{}@{}", text(&lock["reference"]), text(&lock["tag"]), text(&lock["digest"])),
+            "image": if config.advanced.erofs_utils_image.trim().is_empty() {
+                format!("{}:{}@{}", text(&lock["reference"]), text(&lock["tag"]), text(&lock["digest"]))
+            } else { config.advanced.erofs_utils_image.trim().to_string() },
             "binaries": ["mkfs.erofs"], "pullPolicy": "IfNotPresent"
         });
     }
@@ -210,6 +225,9 @@ pub fn build(config: &Config, catalog: &Value) -> Result<Value> {
         provisioner_values["profiles"] = json!(profiles);
     }
     values[text(&deps["provisionerValuesKey"])] = provisioner_values;
+    config
+        .advanced
+        .apply(&mut values, vendor, catalog, &config.distribution)?;
     merge(&mut values, &config.values_overrides);
     validate_schema(
         include_str!("../../charts/krab/values.schema.json"),

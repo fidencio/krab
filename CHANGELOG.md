@@ -2,6 +2,22 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.2.8] - 2026-11-07
+
+### Added
+
+- Native CLI / TUI release downloads for Linux amd64/arm64 and macOS Apple
+  Silicon, with checksums, completions, source metadata, and build provenance.
+- Website installation and usage guide with downloads pinned to its release.
+- Export website configurations to the terminal with every advanced setting,
+  including QGS, custom runtimes, scheduling, containerd, and image overrides.
+- Release publication requires passing native builds and CLI/web values parity.
+
+### Changed
+
+- Move node report uploads and readiness filters from the website to the TUI / CLI.
+  The website recommends terminal conformance, node selectors, and failure views.
+
 ## [0.2.7] - 2026-11-05
 
 ### Added

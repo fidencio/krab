@@ -52,7 +52,7 @@ test('standalone checker builds gate release publication and deliver both archit
 
   const release = parse(readFileSync(join(root, '.github/workflows/release-chart.yml'), 'utf8'))
   assert.equal(release.jobs.preflight_binaries.uses, './.github/workflows/preflight-binaries.yml')
-  assert.equal(release.jobs.release.needs, 'preflight_binaries')
+  assert.deepEqual(release.jobs.release.needs, ['preflight_binaries', 'cli_binaries'])
   const steps = release.jobs.release.steps
   const download = steps.find((s: { uses: string }) => s.uses === 'actions/download-artifact@v5')
   assert.equal(download.with.pattern, 'krab-preflight-linux-*')

@@ -57,6 +57,7 @@ const ADVANCED: &[(&str, Field)] = &[
         "Install EROFS utilities",
         Field::Runtime("installErofsUtils"),
     ),
+    ("Website advanced settings (YAML)", Field::WebsiteAdvanced),
     ("Chart overrides (YAML)", Field::Overrides),
 ];
 
@@ -75,6 +76,7 @@ enum Field {
     Release,
     Namespace,
     Overrides,
+    WebsiteAdvanced,
     Output,
 }
 
@@ -183,7 +185,7 @@ impl<'a> App<'a> {
     fn dirty(&self) -> bool {
         self.defaults.existing.is_none()
             || self.config != self.original
-            || matches!(&self.screen, Screen::Input(input) if matches!(input.field, Field::Overrides) && serde_yaml_ng::to_string(&input.baseline.values_overrides).is_ok_and(|source| source != input.value))
+            || matches!(&self.screen, Screen::Input(input) if matches!(input.field, Field::Overrides | Field::WebsiteAdvanced) && serde_yaml_ng::to_string(&if matches!(input.field, Field::WebsiteAdvanced) { serde_json::to_value(&input.baseline.advanced).expect("advanced settings serialize") } else { input.baseline.values_overrides.clone() }).is_ok_and(|source| source != input.value))
     }
     fn vendor(&self) -> Result<&Value> {
         find(&self.catalog["vendors"], &self.config.vendor)
@@ -191,7 +193,7 @@ impl<'a> App<'a> {
     fn advanced_field(field: &Field) -> bool {
         matches!(
             field,
-            Field::Component(_) | Field::Runtime(_) | Field::Overrides
+            Field::Component(_) | Field::Runtime(_) | Field::Overrides | Field::WebsiteAdvanced
         )
     }
     fn parent(&mut self, field: &Field) {
@@ -210,6 +212,7 @@ impl<'a> App<'a> {
             Field::Release => value["release"].clone(),
             Field::Namespace => value["namespace"].clone(),
             Field::Overrides => value["valuesOverrides"].clone(),
+            Field::WebsiteAdvanced => value["advanced"].clone(),
             Field::Selinux => value["selinux"].clone(),
             _ => Value::Null,
         }
@@ -223,6 +226,7 @@ impl<'a> App<'a> {
             Field::Release => value["release"] = replacement,
             Field::Namespace => value["namespace"] = replacement,
             Field::Overrides => value["valuesOverrides"] = replacement,
+            Field::WebsiteAdvanced => value["advanced"] = replacement,
             Field::Selinux => value["selinux"] = replacement,
             _ => return Err("This field is not a scalar setting".into()),
         }
@@ -479,14 +483,15 @@ impl<'a> App<'a> {
             _ => {
                 let value = if matches!(field, Field::Output) {
                     self.defaults.path.to_string_lossy().into_owned()
-                } else if matches!(field, Field::Overrides) {
-                    serde_yaml_ng::to_string(&self.config.values_overrides)
+                } else if matches!(field, Field::Overrides | Field::WebsiteAdvanced) {
+                    serde_yaml_ng::to_string(&self.field_value(&field))
                         .map_err(|e| e.to_string())?
                 } else {
                     text(&self.field_value(&field)).into()
                 };
                 let title = match &field {
                     Field::Overrides => "Chart overrides (YAML)",
+                    Field::WebsiteAdvanced => "Website advanced settings (YAML)",
                     Field::Output => "Output filename",
                     Field::Release => "Release name",
                     Field::Namespace => "Namespace",
@@ -500,7 +505,7 @@ impl<'a> App<'a> {
                     title,
                     value,
                     cursor,
-                    fresh: !matches!(field, Field::Overrides),
+                    fresh: !matches!(field, Field::Overrides | Field::WebsiteAdvanced),
                     baseline: self.config.clone(),
                 });
             }
@@ -723,7 +728,7 @@ impl<'a> App<'a> {
         if matches!(input.field, Field::Output) {
             return Ok(());
         }
-        let value = if matches!(input.field, Field::Overrides) {
+        let value = if matches!(input.field, Field::Overrides | Field::WebsiteAdvanced) {
             let parsed: Value =
                 serde_yaml_ng::from_str(&input.value).map_err(|e| format!("Invalid YAML: {e}"))?;
             if !parsed.is_object() {
@@ -893,7 +898,9 @@ impl<'a> App<'a> {
                         self.parent(&input.field);
                         return Ok(None);
                     }
-                    KeyCode::Enter if !matches!(input.field, Field::Overrides) => {
+                    KeyCode::Enter
+                        if !matches!(input.field, Field::Overrides | Field::WebsiteAdvanced) =>
+                    {
                         self.finish_input(input)?;
                         return Ok(None);
                     }
@@ -1190,7 +1197,7 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
             summary.push(Line::from(format!("  {id}")));
         }
     }
-    let verdict = if matches!(&app.screen, Screen::Input(i) if matches!(i.field, Field::Overrides))
+    let verdict = if matches!(&app.screen, Screen::Input(i) if matches!(i.field, Field::Overrides | Field::WebsiteAdvanced))
         && !app.message.is_empty()
     {
         Line::styled(
@@ -1245,7 +1252,7 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
                 .iter()
                 .map(|(label, field)| {
                     let value = app.field_value(field);
-                    let displayed = if matches!(field, Field::Overrides) {
+                    let displayed = if matches!(field, Field::Overrides | Field::WebsiteAdvanced) {
                         format!(
                             "{} top-level keys",
                             value.as_object().map(|m| m.len()).unwrap_or(0)
@@ -1380,7 +1387,7 @@ fn controls(screen: &Screen) -> &'static str {
         Screen::Advanced => "[↑/↓] Move [Enter] Open setting",
         Screen::Choices(menu) if menu.multiple => "[↑/↓] Move [Space] Toggle [Enter] Done",
         Screen::Choices(_) => "[↑/↓] Select [Enter] Confirm",
-        Screen::Input(i) if matches!(i.field, Field::Overrides) => {
+        Screen::Input(i) if matches!(i.field, Field::Overrides | Field::WebsiteAdvanced) => {
             "[Enter] New line [Ctrl+S] Confirm [Ctrl+U] Clear"
         }
         Screen::Input(_) => "[←/→] Move cursor [Enter] Confirm [Ctrl+U] Clear",
@@ -1398,6 +1405,7 @@ fn help_details(screen: &Screen) -> &'static str {
         Screen::Choices(menu) if matches!(menu.field, Field::Selinux) => "Loads SELinux policy for Kata's installer containers on enforcing nodes. Does not enable host SELinux or change guest/workload confinement. Arrow keys preview a value; Enter confirms; Esc restores the earlier setting.",
         Screen::Choices(menu) if menu.multiple => "Checkboxes [x]/[ ] allow multiple selections. Move to a row, press Space to toggle it, then Enter to finish the section. [A] marks an automatic runtime required by the GPU configuration; change that GPU configuration to remove it.",
         Screen::Choices(_) => "Radio buttons (*)/( ) allow one selection. Arrow keys select and preview a value; Enter confirms it. Space has no action here.",
+        Screen::Input(i) if matches!(i.field, Field::WebsiteAdvanced) => "Edit the website advanced settings: QGS, containerd paths and drop-ins, custom runtimes, node selectors and affinity, tolerations, scheduled reconcile, images, and debug. Enter inserts a line; Ctrl+S confirms. Unknown fields are rejected. Basic components and EROFS settings have separate menu entries.",
         Screen::Input(i) if matches!(i.field, Field::Overrides) => "Edit chart overrides as a YAML mapping. Enter inserts a new line; Ctrl+S confirms. Arrow keys, Home/End, Backspace/Delete, and multiline paste are supported. Invalid YAML must be corrected before confirming.",
         Screen::Input(_) => "Typing initially replaces the displayed value. Move the cursor first to edit within it. Home/End, Backspace/Delete, and paste are supported. Enter confirms the field; saving still requires a separate confirmation.",
         Screen::Preview(_, _) => "Scroll through generated Helm values. Esc or q returns to the overview.",
@@ -1488,6 +1496,38 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect()
+    }
+
+    #[test]
+    fn website_settings_yaml_preserves_drafts_and_rejects_unknown_fields() {
+        let catalog = crate::config::catalog();
+        let config = crate::init(&catalog, "custom", "kubeadm", "amd64").unwrap();
+        let mut app = App::new(&catalog, defaults(&config)).unwrap();
+        app.open(Field::WebsiteAdvanced).unwrap();
+        assert!(output(&app, 140, 40).contains("Ctrl+S"));
+        app.key(KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL))
+            .unwrap();
+        app.paste("debug: true\nnodeSelector:\n  - key: pool\n    value: kata\n")
+            .unwrap();
+        assert!(app.dirty());
+        app.key(KeyEvent::new(KeyCode::Char('s'), KeyModifiers::CONTROL))
+            .unwrap();
+        assert!(matches!(app.screen, Screen::Advanced));
+        assert!(app.config.advanced.debug);
+        assert_eq!(
+            values::build(&app.config, &catalog).unwrap()["kata-deploy"]["nodeSelector"]["pool"],
+            "kata"
+        );
+        let saved = app.config.clone();
+        app.open(Field::WebsiteAdvanced).unwrap();
+        app.key(KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL))
+            .unwrap();
+        app.paste("typo: true\n").unwrap();
+        app.key(KeyEvent::new(KeyCode::Char('s'), KeyModifiers::CONTROL))
+            .unwrap();
+        assert!(matches!(app.screen, Screen::Input(_)));
+        key(&mut app, KeyCode::Esc);
+        assert_eq!(app.config, saved);
     }
 
     #[test]

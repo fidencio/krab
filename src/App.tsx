@@ -19,22 +19,12 @@ import catalogData from './generated/catalog.json'
 import packageData from '../package.json'
 import krabLogoDark from './assets/brands/krab-kata-hybrid.png'
 import krabLogoLight from './assets/brands/krab-kata-hybrid-light.png'
-import { NodePrecheckPanel } from './NodePrecheckPanel'
+import { CliGuide } from './CliGuide'
 import { IommufdSetupNote } from './IommufdSetupNote'
 import { erofsUtilsImage } from './lib/erofs-image'
 import {
-  allNodesLack,
-  erofsPrecheckStatus,
-  parsePrecheckUpload,
-  unavailableFamilyForChecks,
-  unavailableModeForChecks,
-  unavailableShimReason,
-  unavailableVendorForChecks,
-  type NodePrecheck,
-  type RequestedCheck,
-} from './lib/precheck'
-import {
   buildCustomRuntimeClass,
+  buildCliConfiguration,
   buildInstallScript,
   buildValuesFileName,
   buildValuesBundle,
@@ -325,14 +315,7 @@ function App() {
   })
   const theme = themePreference === 'system' ? systemTheme : themePreference
   const [step, setStep] = useState<1 | 2>(1)
-  const [nodeReports, setNodeReports] = useState<Array<{ name: string; report: NodePrecheck }>>([])
-  const [precheckError, setPrecheckError] = useState('')
-  const [selectedChecks, setSelectedChecks] = useState<RequestedCheck[]>([])
-  const [selectedGpuModels, setSelectedGpuModels] = useState<string[]>([])
-  const reports = nodeReports.map(({ report }) => report)
-  const vendorPrecheckReason = (vendor: VendorCatalog) =>
-    unavailableVendorForChecks(vendor, reports, selectedChecks, selectedGpuModels)
-  const familyPrecheckReason = (family: VendorCatalog['hardwareFamilies'][number]) =>
+  const familyArchitectureReason = (family: VendorCatalog['hardwareFamilies'][number]) =>
     selectedVendorId === 'custom' &&
     !(cluster.architectures ?? []).some((architecture) => family.supportedArches.includes(architecture))
       ? `Requires ${family.supportedArches.map((arch) => arch.toUpperCase()).join(' or ')}`
@@ -342,11 +325,7 @@ function App() {
             family.supportedArches.includes(architecture) &&
             (cluster.architectures ?? []).includes(architecture)))
       ? 'No compatible GPU RuntimeClass for the selected architecture'
-      : unavailableFamilyForChecks(family, reports, selectedChecks, selectedGpuModels)
-  const modePrecheckReason = (
-    mode: VendorCatalog['hardwareFamilies'][number]['modes'][number],
-    family: VendorCatalog['hardwareFamilies'][number],
-  ) => unavailableModeForChecks(mode, family, reports, selectedChecks, selectedGpuModels)
+      : null
   const [selectedVendorId, setSelectedVendorId] = useState(catalog.vendors[0]?.id ?? '')
   const selectedVendor = catalog.vendors.find(({ id }) => id === selectedVendorId) ??
     catalog.vendors[0]
@@ -374,9 +353,7 @@ function App() {
   const [advanced, setAdvanced] = useState<AdvancedConfiguration>(
     createAdvancedConfiguration,
   )
-  const erofsStatus = erofsPrecheckStatus(reports)
-  const erofsInstallFromPrecheck = erofsStatus === 'provision'
-  const installErofsUtils = advanced.installErofsUtils || erofsInstallFromPrecheck
+  const installErofsUtils = advanced.installErofsUtils
   useEffect(() => {
     document.documentElement.dataset.theme = theme
   }, [theme])
@@ -435,19 +412,8 @@ function App() {
     (!selections[family.id]?.modeId ||
       needsCpuSelection(selections[family.id])),
   )
-  const unsupportedSelection = selectedVendor.hardwareFamilies.some((family) => {
-    const selection = selections[family.id]
-    const mode = family.modes.find(({ id }) => id === selection?.modeId)
-    return Boolean(selection?.modeId && (
-      familyPrecheckReason(family) ||
-      (mode && modePrecheckReason(mode, family)) ||
-      selection.cpuTeeIds.some((id) => allNodesLack(reports, id) ||
-        selectedChecks.some((check) => check !== 'gpu' && check !== id))
-    ))
-  }) || runtime.selectedShimIds.some((id) => {
-    const shim = selectedVendor.runtime.shims.find((item) => item.id === id)
-    return shim && Boolean(unavailableShimReason(shim, reports))
-  })
+  const unsupportedSelection = selectedVendor.hardwareFamilies.some((family) =>
+    selections[family.id]?.modeId && familyArchitectureReason(family))
   const selectedDistribution =
     catalog.plannedArchitecture.cluster.distributions.find(
       ({ id }) => id === cluster.distributionId,
@@ -570,7 +536,6 @@ function App() {
         : hasHardwareSelection || hasStandaloneRuntimeSelection)))
 
   const selectVendor = (vendor: VendorCatalog) => {
-    if (vendorPrecheckReason(vendor)) return
     setImportMessage(null)
     setSelectedVendorId(vendor.id)
     setSelections(initialSelections(vendor))
@@ -616,8 +581,7 @@ function App() {
   const selectMode = (familyId: string, modeId: string | null) => {
     const family = selectedVendor.hardwareFamilies.find(({ id }) => id === familyId)
     if (!family || family.availability !== 'available') return
-    if (familyPrecheckReason(family) || (modeId && family.modes.some((mode) =>
-      mode.id === modeId && Boolean(modePrecheckReason(mode, family))))) return
+    if (familyArchitectureReason(family)) return
     const mode = family.modes.find(({ id }) => id === modeId)
     const supportedCpuTeeIds = mode?.supportedCpuTeeIds ?? []
     setSelections((current) => ({
@@ -640,7 +604,7 @@ function App() {
   const toggleFamily = (familyId: string, enabled: boolean) => {
     const family = selectedVendor.hardwareFamilies.find(({ id }) => id === familyId)
     if (!family || family.availability !== 'available') return
-    if (enabled && familyPrecheckReason(family)) return
+    if (enabled && familyArchitectureReason(family)) return
     setSelections((current) => ({
       ...current,
       [familyId]: enabled
@@ -654,8 +618,6 @@ function App() {
   }
 
   const toggleCpuTee = (familyId: string, cpuTeeId: string) => {
-    if (selectedChecks.some((check) => check !== 'gpu' && check !== cpuTeeId)) return
-    if (allNodesLack(reports, cpuTeeId) && !selections[familyId]?.cpuTeeIds.includes(cpuTeeId)) return
     setSelections((current) => ({
       ...current,
       [familyId]: {
@@ -670,7 +632,6 @@ function App() {
 
   const toggleRuntimeShim = (shimId: string) => {
     const shim = selectedVendor.runtime.shims.find(({ id }) => id === shimId)
-    if (shim && unavailableShimReason(shim, reports) && !runtime.selectedShimIds.includes(shimId)) return
     if (selectedVendor.id === 'custom' && shim &&
       !shim.supportedArches.some((architecture) => customArchitectures.includes(architecture))) return
     setRuntime((current) => ({
@@ -831,15 +792,17 @@ function App() {
     window.setTimeout(() => setCopied(null), 1600)
   }
 
-  const downloadValues = () => {
+  const downloadValues = (native = false) => {
     if (!valuesReady) return
-    const blob = new Blob([`${artifacts.values}\n`], {
+    const blob = new Blob([native
+      ? JSON.stringify(buildCliConfiguration(selectedVendor, selections, cluster, runtime, advanced, effectiveDeploymentName), null, 2) + '\n'
+      : `${artifacts.values}\n`], {
       type: 'application/yaml',
     })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = valuesFileName
+    link.download = native ? 'krab.json' : valuesFileName
     document.body.append(link)
     link.click()
     link.remove()
@@ -850,20 +813,6 @@ function App() {
     setImportMessage(null)
     setStep(1)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const loadNodeReports = async (files: FileList | null) => {
-    if (!files?.length) return
-    try {
-      const loaded = (await Promise.all(Array.from(files, async (file) => {
-        if (file.size > 10_000_000) throw new Error('Report exceeds the 10 MB upload limit.')
-        return parsePrecheckUpload(await file.text(), file.name)
-      }))).flat()
-      setNodeReports(loaded)
-      setPrecheckError('')
-    } catch (error) {
-      setPrecheckError(error instanceof Error ? error.message : 'Could not read node report.')
-    }
   }
 
   const selectableReleases = isDevelopmentBuild
@@ -902,7 +851,12 @@ function App() {
             {!isDevelopmentBuild && <a href={`${siteRootUrl}dev/`}>Next</a>}
           </div>
         </details>
-        <nav aria-label="Display settings">
+        <nav aria-label="Downloads and display settings">
+          <a className="cli-nav-link" href={isDevelopmentBuild
+            ? 'https://github.com/fidencio/krab/actions/workflows/cli.yml'
+            : `https://github.com/fidencio/krab/releases/tag/chart-v${packageData.version}`}>
+            <Download size={15} aria-hidden="true" /> TUI / CLI
+          </a>
           <button
             type="button"
             className="theme-toggle"
@@ -987,21 +941,9 @@ function App() {
                 ))}
               </section>
 
-              <NodePrecheckPanel
-                nodeReports={nodeReports}
-                error={precheckError}
-                selectedChecks={selectedChecks}
-                setSelectedChecks={setSelectedChecks}
-                selectedGpuModels={selectedGpuModels}
-                setSelectedGpuModels={setSelectedGpuModels}
-                onFiles={(files) => void loadNodeReports(files)}
-                onClear={() => {
-                  setNodeReports([])
-                  setPrecheckError('')
-                }}
-              />
+              <CliGuide version={packageData.version} development={isDevelopmentBuild} />
 
-              <IommufdSetupNote reports={reports} />
+              <IommufdSetupNote reports={[]} />
 
               <div className="platform-directory">
                 <section className="platform-group">
@@ -1014,8 +956,6 @@ function App() {
                       <button
                         className="platform-row"
                         key={vendor.id}
-                        disabled={Boolean(vendorPrecheckReason(vendor))}
-                        title={vendorPrecheckReason(vendor) ?? undefined}
                         onClick={() => selectVendor(vendor)}
                       >
                         <span className={`platform-row-brand vendor-${vendor.id}`}>
@@ -1023,7 +963,6 @@ function App() {
                           <strong>{vendor.displayName}</strong>
                         </span>
                         <span className="platform-row-description">{vendor.description}
-                          {vendorPrecheckReason(vendor) && <small className="platform-row-precheck">{vendorPrecheckReason(vendor)}</small>}
                         </span>
                         <span className="platform-row-capabilities">
                           {vendor.capabilities.map(({ id }) => capabilityName(id)).join(' · ')}
@@ -1046,15 +985,12 @@ function App() {
                   <button
                     className="platform-row"
                     key={vendor.id}
-                    disabled={Boolean(vendorPrecheckReason(vendor))}
-                    title={vendorPrecheckReason(vendor) ?? undefined}
                     onClick={() => selectVendor(vendor)}
                   >
                     <span className={`platform-row-brand vendor-${vendor.id}`}>
                       <img src={logoFor(vendor, theme)} alt={vendor.displayName} />
                     </span>
                     <span className="platform-row-description">{vendor.description}
-                      {vendorPrecheckReason(vendor) && <small className="platform-row-precheck">{vendorPrecheckReason(vendor)}</small>}
                     </span>
                     <span className="platform-row-capabilities">
                       {vendor.capabilities.map(({ id }) => capabilityName(id)).join(' · ')}
@@ -1150,11 +1086,6 @@ function App() {
                 </p>
               )}
 
-              {nodeReports.length > 0 && <p className="builder-precheck-summary">
-                {nodeReports.length} node {nodeReports.length === 1 ? 'report' : 'reports'} loaded.
-                {unsupportedSelection && ' The current selection conflicts with those reports; remove unavailable choices to generate values.yaml.'}
-              </p>}
-
               {selectedVendor.id === 'custom' && <section className="custom-architectures" aria-label="Target architectures">
                 <header><h2>Target architectures</h2><p>Every selected architecture must have a runtime.</p></header>
                 <div className="custom-architecture-options">
@@ -1227,26 +1158,21 @@ function App() {
                 )}
               </section>
 
-              {requiresErofs && erofsStatus !== 'confirmed' && (
+              {requiresErofs && (
                 <div
                   className={`runtime-prerequisite ${
-                    installErofsUtils && !erofsInstallFromPrecheck ? 'managed' : ''
+                    installErofsUtils ? 'managed' : ''
                   }`}
                   role="note"
                 >
-                  {installErofsUtils && !erofsInstallFromPrecheck ? (
+                  {installErofsUtils ? (
                     <Check size={18} />
                   ) : (
                     <AlertTriangle size={18} />
                   )}
                   <div>
-                    <strong>{erofsInstallFromPrecheck ? 'EROFS utilities will be installed' : 'EROFS host prerequisite'}</strong>
-                    {erofsInstallFromPrecheck ? (
-                      <p>
-                        At least one checked node did not confirm erofs-utils 1.8.2 or newer.
-                        The generated deployment will stage mkfs.erofs 1.9.3 on targeted nodes.
-                      </p>
-                    ) : installErofsUtils ? (
+                    <strong>EROFS host prerequisite</strong>
+                    {installErofsUtils ? (
                       <p>
                         The generated job-mode deployment stages mkfs.erofs 1.9.3
                         on every targeted node before validating the host.
@@ -1719,12 +1645,11 @@ function App() {
                                 ? 'Managed'
                                 : 'Host provided'}
                             </strong>
-                            <small>{erofsInstallFromPrecheck ? 'Selected from the node reports.' : 'Uses the enforced job installation mode.'}</small>
+                            <small>Uses the enforced job installation mode.</small>
                           </span>
                           <input
                             type="checkbox"
                             checked={installErofsUtils}
-                            disabled={erofsInstallFromPrecheck}
                             onChange={(event) =>
                               setAdvanced((current) => ({
                                 ...current,
@@ -2328,7 +2253,6 @@ function App() {
                           .map((shim) => (
                             <label
                               key={shim.id}
-                              title={unavailableShimReason(shim, reports) ?? undefined}
                               onClick={(event) => {
                                 if ((event.target as HTMLElement).tagName !== 'INPUT') {
                                   event.preventDefault()
@@ -2338,7 +2262,6 @@ function App() {
                             >
                               <input
                                 type="checkbox"
-                                disabled={Boolean(unavailableShimReason(shim, reports)) && !runtime.selectedShimIds.includes(shim.id)}
                                 checked={runtime.selectedShimIds.includes(shim.id)}
                                 onChange={() => toggleRuntimeShim(shim.id)}
                               />
@@ -2348,7 +2271,6 @@ function App() {
                                 <em>
                                   Architectures: {shim.supportedArches.join(' · ')}
                                 </em>
-                                {unavailableShimReason(shim, reports) && <em>{unavailableShimReason(shim, reports)}</em>}
                               </span>
                             </label>
                           ))}
@@ -2382,7 +2304,6 @@ function App() {
                           selectedVendor.id !== 'custom' || selectionGroup !== 'gpu').map((shim) => (
                           <label
                             key={shim.id}
-                            title={unavailableShimReason(shim, reports) ?? undefined}
                             onClick={(event) => {
                               if ((event.target as HTMLElement).tagName !== 'INPUT') {
                                 event.preventDefault()
@@ -2392,8 +2313,7 @@ function App() {
                           >
                             <input
                               type="checkbox"
-                              disabled={(Boolean(unavailableShimReason(shim, reports)) && !runtime.selectedShimIds.includes(shim.id)) ||
-                                (selectedVendor.id === 'custom' && !shim.supportedArches.some((architecture) =>
+                              disabled={                                (selectedVendor.id === 'custom' && !shim.supportedArches.some((architecture) =>
                                   customArchitectures.includes(architecture)))}
                               checked={runtime.selectedShimIds.includes(shim.id)}
                               onChange={() => toggleRuntimeShim(shim.id)}
@@ -2406,7 +2326,6 @@ function App() {
                                   ? `Architecture: ${shim.supportedArches[0]}`
                                   : `Architectures: ${shim.supportedArches.join(' · ')}`}
                               </em>
-                              {unavailableShimReason(shim, reports) && <em>{unavailableShimReason(shim, reports)}</em>}
                             </span>
                           </label>
                         ))}
@@ -2416,13 +2335,13 @@ function App() {
                   {selectedVendor.hardwareFamilies.map((family) => (
                     <details
                       className={`profile-card ${
-                        family.availability === 'pending' || familyPrecheckReason(family) ? 'pending' : ''
+                        family.availability === 'pending' || familyArchitectureReason(family) ? 'pending' : ''
                       }`}
                       key={family.id}
                     >
                       <summary
                         onClick={(event) => {
-                          if (family.availability === 'available' && !familyPrecheckReason(family)) {
+                          if (family.availability === 'available' && !familyArchitectureReason(family)) {
                             event.preventDefault()
                             const enabled = isFamilyEnabled(
                               selections[family.id],
@@ -2443,7 +2362,7 @@ function App() {
                             <input
                               type="checkbox"
                               aria-label={`Enable ${family.displayName}`}
-                              disabled={family.availability !== 'available' || Boolean(familyPrecheckReason(family) && !isFamilyEnabled(selections[family.id]))}
+                              disabled={family.availability !== 'available' || Boolean(familyArchitectureReason(family) && !isFamilyEnabled(selections[family.id]))}
                               checked={isFamilyEnabled(
                                 selections[family.id],
                               )}
@@ -2467,11 +2386,11 @@ function App() {
                           </div>
                         </div>
                         <div className="profile-summary-status">
-                          {(family.availabilityReason || familyPrecheckReason(family) ||
+                          {(family.availabilityReason || familyArchitectureReason(family) ||
                             isFamilyEnabled(selections[family.id])) && (
                             <span
                               className={
-                                family.availability === 'pending' || familyPrecheckReason(family)
+                                family.availability === 'pending' || familyArchitectureReason(family)
                                   ? 'pending'
                                   : !selections[family.id]?.modeId ||
                                       needsCpuSelection(selections[family.id])
@@ -2479,7 +2398,7 @@ function App() {
                                   : ''
                               }
                             >
-                              {family.availabilityReason ?? familyPrecheckReason(family) ??
+                              {family.availabilityReason ?? familyArchitectureReason(family) ??
                                 profileSummary(
                                   selectedVendor,
                                   selections[family.id],
@@ -2491,14 +2410,14 @@ function App() {
                           )}
                         </div>
                       </summary>
-                      {(family.availability === 'pending' || familyPrecheckReason(family) ||
+                      {(family.availability === 'pending' || familyArchitectureReason(family) ||
                         isFamilyEnabled(selections[family.id])) && (
                         <div className="profile-options">
-                        {family.availability === 'pending' || familyPrecheckReason(family) ? (
+                        {family.availability === 'pending' || familyArchitectureReason(family) ? (
                           <div className="profile-unavailable">
                             <AlertTriangle size={17} />
                             <div>
-                              <strong>{family.availabilityReason ?? familyPrecheckReason(family)}</strong>
+                              <strong>{family.availabilityReason ?? familyArchitectureReason(family)}</strong>
                               <span>
                                 Architecture: {family.supportedArches.join(' · ')}
                               </span>
@@ -2507,17 +2426,16 @@ function App() {
                                   ? 'KRAB does not generate deployment artifacts for this hardware family yet.'
                                   : selectedVendor.id === 'custom'
                                     ? 'This GPU family needs a compatible selected architecture and RuntimeClass.'
-                                    : 'This hardware family is unavailable on the uploaded nodes.'}
+                                    : 'This hardware family requires a compatible target architecture.'}
                               </p>
                             </div>
                           </div>
                         ) : (
                           <>
                             {family.modes.map((mode) => (
-                              <label className="mode-option" key={mode.id} title={modePrecheckReason(mode, family) ?? undefined}>
+                              <label className="mode-option" key={mode.id}>
                                 <input
                                   type="radio"
-                                  disabled={Boolean(modePrecheckReason(mode, family))}
                                   name={`${family.id}-mode`}
                                   checked={selections[family.id]?.modeId === mode.id}
                                   onChange={() => selectMode(family.id, mode.id)}
@@ -2527,7 +2445,6 @@ function App() {
                                     {mode.displayName}
                                     {mode.badge && <em>{mode.badge}</em>}
                                   </strong>
-                                  {modePrecheckReason(mode, family) && <small>{modePrecheckReason(mode, family)}</small>}
                                 </span>
                               </label>
                             ))}
@@ -2575,8 +2492,6 @@ function App() {
                                       >
                                         <input
                                           type="checkbox"
-                                          disabled={selectedChecks.some((check) => check !== 'gpu' && check !== tee.id) ||
-                                            (allNodesLack(reports, tee.id) && !selections[family.id]?.cpuTeeIds.includes(tee.id))}
                                           checked={
                                             selections[family.id]?.cpuTeeIds.includes(
                                               tee.id,
@@ -2588,9 +2503,6 @@ function App() {
                                         />
                                         <span>
                                           <strong>{tee.displayName}</strong>
-                                          {selectedChecks.some((check) => check !== 'gpu' && check !== tee.id)
-                                            ? <small>Outside the selected checks</small>
-                                            : allNodesLack(reports, tee.id) && <small>Unavailable on uploaded nodes</small>}
                                         </span>
                                       </label>
                                       ))}
@@ -2821,10 +2733,15 @@ function App() {
                       {valuesReady && (
                         <button
                           className="download-artifact-button"
-                          onClick={downloadValues}
+                          onClick={() => downloadValues()}
                         >
                           <Download size={15} />
                           Download as a file
+                        </button>
+                      )}
+                      {valuesReady && (
+                        <button className="download-artifact-button" onClick={() => downloadValues(true)}>
+                          <Download size={15} /> Continue in TUI / CLI
                         </button>
                       )}
                       <button

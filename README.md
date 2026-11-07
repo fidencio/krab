@@ -76,6 +76,29 @@ review the new output before deploying.
 The release workflow verifies that every upstream chart dependency is
 available before publishing KRAB.
 
+## KRAB TUI / CLI
+
+Download native Linux and macOS binaries from the [website](https://fidencio.github.io/krab/#cli)
+or [GitHub releases](https://github.com/fidencio/krab/releases/latest).
+Each release includes Linux amd64/arm64 and macOS Apple Silicon archives,
+SHA256 checksums, shell completions, and build provenance. The website links to
+binaries for its exact release. Linux packages are static musl builds.
+
+Extract the archive for your machine, verify its checksum, and put `krab` in your
+PATH. Run `krab` for the TUI or `krab --help` for automation commands. The terminal
+and website embed the same pinned catalog and chart version. Use **Continue in
+TUI / CLI** beside the website's generated values to download `krab.json`, then:
+
+```sh
+krab edit --config krab.json
+krab validate --config krab.json
+krab generate --config krab.json --output values.yaml
+```
+
+All website settings are preserved, including custom runtimes, image overrides,
+QGS, scheduling, and containerd configuration. See the [CLI documentation](cli/README.md)
+for installation, advanced settings, deployment, and conformance.
+
 ## Node pre-check
 
 KRAB 0.2.2 uses Helm values format 2 and pre-check schema v2.
@@ -92,7 +115,7 @@ Install the published pre-check chart to check every Linux node in the cluster:
 ```sh
 helm install krab-precheck \
   oci://ghcr.io/fidencio/krab-precheck \
-  --version 0.2.7 \
+  --version 0.2.8 \
   --timeout 35m \
   --namespace krab-precheck --create-namespace &&
 kubectl --namespace krab-precheck logs \
@@ -135,38 +158,32 @@ dispatcher records result metadata on Nodes, so its ServiceAccount has node
 patch permission. Review the JSON before sharing it; it includes GPU names,
 PCI addresses, and kernel version.
 
-The browser reads reports locally. Definite incompatibilities disable matching
-choices, while unknown probes remain selectable and require operator review.
+Use the [KRAB TUI / CLI](cli/README.md) to collect reports, select requirements,
+filter failed nodes, inspect reasons, and export evidence. The website focuses on
+configuration and Helm values generation; report uploads and node filters live in
+the terminal workflow.
+
+```sh
+krab
+krab precheck --node worker-1 --context my-cluster --output node.json
+krab conformance --run --context my-cluster --require kvm --failed-nodes
+krab conformance --run --context my-cluster --require tdx \
+  --node-selector pool=confidential --failed-nodes --output verdict.json
+```
+
 The v2 report shape is defined in [`contracts/precheck-v2.schema.json`](contracts/precheck-v2.schema.json).
-It records the selected node inventory, node UID, host machine/boot identities,
-checker version, and collection time. The collector rejects identity changes
-and incomplete node coverage.
-The install command above and the builder use [`upstream/precheck-command.json`](upstream/precheck-command.json).
-An uploaded report is a snapshot, not a launch or attestation test. Add reports
-from every target node, particularly for clusters with mixed hardware. Select
-the Kubernetes distribution separately in the builder.
-Select one or more Intel TDX, AMD SEV-SNP, IBM SEL, or NVIDIA GPU checks before
-uploading a report. Top-level checks use AND: all selected checks must pass on
-the same node. GPU model choices use OR: any selected model qualifies. The
-results show which selected models were found and list only nodes with failed
-checks, with name search and ten nodes per page. NVIDIA GPU readiness includes
-KVM, IOMMUFD, an NVIDIA GPU, and EROFS utilities. The report still records CC and
-PPCIE capability for deployment choices. NO means a host check did not pass or
-could not be confirmed. It does not establish whether the hardware lacks a
-feature or the host needs firmware, BIOS, or kernel setup.
-For the NVIDIA check, optionally select one or more GPU models. The choices
-come from the pinned provisioner profiles. A node passes the model filter when
-its provisioner inventory identifies any selected model. The node report records
-the provisioner's `chip=` field and readable device name; older reports can
-still match a complete model name in the device name.
+It records node inventory, node UID, host machine/boot identities, checker version,
+and collection time. The collector rejects identity changes and incomplete coverage.
+Reports describe host prerequisites; they do not establish workload launch or attestation.
+
 If IOMMUFD is installed as an unloaded module, the report requests host setup
 instead of rejecting the kernel. Run `sudo modprobe iommufd`, then
 `echo iommufd | sudo tee /etc/modules-load.d/iommufd.conf` on each target node
 to persist it across reboots. Rerun the precheck afterward. The precheck itself
 is read-only.
 
-The generated deployment installs EROFS utilities when a checked node does not
-confirm suitable host utilities.
+Enable EROFS utility installation under Advanced deployment configuration when
+targeted nodes need suitable host utilities.
 The node probe runs on a distroless base. The collector uses a separate
 `ghcr.io/fidencio/krab-collector` image containing Bash, curl, jq, and CA
 certificates, with the same release version as the precheck chart. Its probe provisioner
@@ -263,7 +280,7 @@ For the GPU OR selection instead, use `anyOf: [gpu-cc, gpu-ppcie]` under
 ```sh
 helm upgrade --install krab-conformance \
   oci://ghcr.io/fidencio/krab-precheck \
-  --version 0.2.7 \
+  --version 0.2.8 \
   --namespace krab-conformance --create-namespace \
   --timeout 35m --values conformance-values.yaml
 ```
@@ -298,11 +315,6 @@ Job, automation must treat the absent verdict as ERROR. Any unexpected exit code
 is also ERROR; only exit 0 and a completed Job establish success.
 
 ## Development
-
-The experimental [native Rust CLI](cli/README.md) supports catalog discovery,
-configuration validation, Helm values generation, deployment plans, and the
-existing preflight and conformance checks. Build it with
-`cargo build --release --locked --manifest-path cli/Cargo.toml`.
 
 Development changes land on `main`. GitHub Pages serves the latest published
 stable release at `/krab/` and a build from `main`, called Next, at `/krab/dev/`.
@@ -451,7 +463,7 @@ For a prerelease, specify its version explicitly when installing with Helm:
 
 ```sh
 helm upgrade --install krab oci://ghcr.io/fidencio/krab \
-  --version 0.2.7 \
+  --version 0.2.8 \
   --namespace kata-system \
   --create-namespace \
   --values values.yaml

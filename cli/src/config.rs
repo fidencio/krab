@@ -37,6 +37,8 @@ pub struct Config {
     pub components: Components,
     #[serde(default)]
     pub runtime: Runtime,
+    #[serde(default)]
+    pub advanced: crate::advanced::Advanced,
     /// Explicit Helm overrides are schema checked after merging.
     #[serde(default = "empty_object")]
     pub values_overrides: Value,
@@ -142,6 +144,7 @@ impl Config {
             );
         }
         let vendor = find(&catalog["vendors"], &self.vendor)?;
+        self.advanced.validate(vendor)?;
         find(
             &catalog["plannedArchitecture"]["cluster"]["distributions"],
             &self.distribution,
@@ -207,7 +210,10 @@ impl Config {
             }
         }
         let shims = self.shims(vendor)?;
-        if self.components.kata_deploy.unwrap_or(true) && shims.is_empty() {
+        if self.components.kata_deploy.unwrap_or(true)
+            && shims.is_empty()
+            && self.advanced.custom_runtimes.is_empty()
+        {
             return Err("Select at least one runtime or hardware profile".into());
         }
         if self.components.kata_deploy.unwrap_or(true) {
@@ -224,8 +230,24 @@ impl Config {
                     ));
                 }
             }
+            let mut coverage = shims.clone();
+            for custom in &self.advanced.custom_runtimes {
+                let base = find(&vendor["runtime"]["shims"], &custom.base_config)?;
+                if !self.architectures.is_empty()
+                    && !self
+                        .architectures
+                        .iter()
+                        .any(|a| items(&base["supportedArches"]).contains(&json!(a)))
+                {
+                    return Err(format!(
+                        "Custom runtime {} does not support the selected architectures",
+                        custom.name
+                    ));
+                }
+                coverage.push(base);
+            }
             for arch in &self.architectures {
-                if !shims
+                if !coverage
                     .iter()
                     .any(|s| items(&s["supportedArches"]).contains(&json!(arch)))
                 {

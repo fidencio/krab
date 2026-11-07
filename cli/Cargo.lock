@@ -865,7 +865,7 @@ dependencies = [
 
 [[package]]
 name = "krab"
-version = "0.2.7"
+version = "0.2.8"
 dependencies = [
  "clap",
  "clap_complete",
@@ -883,7 +883,7 @@ dependencies = [
 
 [[package]]
 name = "krab-preflight"
-version = "0.2.7"
+version = "0.2.8"
 dependencies = [
  "anyhow",
  "clap",

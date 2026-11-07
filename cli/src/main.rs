@@ -1,3 +1,4 @@
+mod advanced;
 mod checks;
 mod cluster_ui;
 mod config;

@@ -260,14 +260,13 @@ test('pre-check chart reuses the pinned dispatcher and aggregates all node repor
   assert.equal(values.probeImage.repository, 'ghcr.io/fidencio/krab-preflight')
 })
 
-test('node reports are requested before vendor selection', async () => {
+test('website directs report filtering to the terminal and retains the standalone collection command', async () => {
   const app = await readFile(resolve(import.meta.dirname, '../src/App.tsx'), 'utf8')
-  const panel = await readFile(resolve(import.meta.dirname, '../src/NodePrecheckPanel.tsx'), 'utf8')
-  assert.ok(app.indexOf('<NodePrecheckPanel') < app.indexOf('<div className="platform-directory">'))
-  assert.equal(app.match(/<NodePrecheckPanel/g)?.length, 1)
-  assert.match(panel, /krab\/preflight=true/)
-  assert.match(panel, /precheckCommand\(chartVersion\)/)
-  assert.doesNotMatch(panel, /\.\/charts\/precheck/)
+  const guide = await readFile(resolve(import.meta.dirname, '../src/CliGuide.tsx'), 'utf8')
+  assert.ok(app.indexOf('<CliGuide') < app.indexOf('<div className="platform-directory">'))
+  assert.doesNotMatch(app, /NodePrecheckPanel|parsePrecheckUpload|selectedChecks|selectedGpuModels|unavailableVendorForChecks/)
+  assert.match(guide, /--failed-nodes/)
+  assert.match(guide, /--node-selector pool=confidential/)
   const command = precheckCommand('0.1.0-test')
   assert.match(command, /--timeout 35m/)
   assert.match(command, /--namespace krab-precheck --create-namespace &&/)

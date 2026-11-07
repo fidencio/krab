@@ -1504,3 +1504,31 @@ export function buildInstallScript(
   const valuesFileName = buildValuesFileName(catalog, deploymentName)
   return `helm upgrade --install ${releaseName} ${krab.ociReference} --version ${krab.version} --namespace ${namespace} --create-namespace --values ${valuesFileName}`
 }
+
+/** Native configuration uses the same selections and advanced settings as the web builder. */
+export function buildCliConfiguration(
+  vendor: VendorCatalog,
+  selections: FamilySelections,
+  cluster: ClusterConfiguration,
+  runtime: RuntimeConfiguration,
+  advanced: AdvancedConfiguration,
+  release = 'krab',
+  namespace = 'kata-system',
+) {
+  const { components, erofsSnapshotterMode, erofsDiskSize, erofsDmverity,
+    erofsEnableFsverity, installErofsUtils, ...settings } = advanced
+  return {
+    apiVersion: 'krab/v1alpha1', vendor: vendor.id,
+    distribution: cluster.distributionId, release, namespace,
+    architectures: cluster.architectures ?? [], selinux: cluster.selinuxEnabled,
+    runtimes: runtime.selectedShimIds,
+    hardware: Object.fromEntries(Object.entries(selections)
+      .filter(([, selection]) => selection.modeId)
+      .map(([id, selection]) => [id, { mode: selection.modeId, cpuTees: selection.cpuTeeIds }])),
+    components,
+    runtime: { httpsProxy: runtime.runtimeHttpsProxy, noProxy: runtime.runtimeNoProxy,
+      nvidiaDcgm: runtime.nvidiaDcgmEnabled, erofsMode: erofsSnapshotterMode,
+      erofsDiskSize, erofsDmverity, erofsFsverity: erofsEnableFsverity, installErofsUtils },
+    advanced: settings,
+  }
+}

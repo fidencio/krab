@@ -1,6 +1,7 @@
 name: Native CLI
 
 on:
+  workflow_call:
   pull_request:
   push:
     branches: [main]
@@ -14,8 +15,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15]
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            platform: linux-amd64
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            platform: linux-arm64
+          - os: macos-15
+            target: aarch64-apple-darwin
+            platform: darwin-arm64
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER: rust-lld
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: rust-lld
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v7
@@ -24,37 +38,45 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Install Rust toolchain
-        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt --component clippy
+        shell: bash
+        run: |
+          rustup toolchain install 1.95.0 --profile minimal --component rustfmt --component clippy --target '${{ matrix.target }}'
+          krab_sysroot="$(rustc +1.95.0 --print sysroot)"
+          krab_host="$(rustc +1.95.0 -vV | sed -n 's/^host: //p')"
+          echo "${krab_sysroot}/lib/rustlib/${krab_host}/bin" >> "${GITHUB_PATH}"
       - name: Check formatting and test CLI
         working-directory: cli
         run: |
           cargo +1.95.0 fmt --check
-          cargo +1.95.0 clippy --locked --all-targets -- -D warnings
-          cargo +1.95.0 test --locked
-          cargo +1.95.0 build --release --locked
+          cargo +1.95.0 clippy --locked --all-targets --target ${{ matrix.target }} -- -D warnings
+          cargo +1.95.0 test --locked --target ${{ matrix.target }}
+          cargo +1.95.0 build --release --locked --target ${{ matrix.target }}
       - name: Check default interactive setup in a terminal
         run: |
-          python3 cli/tests/terminal.py cli/target/release/krab
-          python3 cli/tests/cluster-terminal.py cli/target/release/krab
+          python3 cli/tests/terminal.py cli/target/${{ matrix.target }}/release/krab
+          python3 cli/tests/cluster-terminal.py cli/target/${{ matrix.target }}/release/krab
       - name: Compare CLI and web builder values
         env:
-          KRAB_CLI_BINARY: cli/target/release/krab
+          KRAB_CLI_BINARY: cli/target/${{ matrix.target }}/release/krab
         run: npm run test:cli-parity
       - name: Package native binary and completions
         shell: bash
         run: |
           set -euo pipefail
-          target=$(rustc +1.95.0 -vV | sed -n 's/^host: //p')
-          mkdir -p dist-cli/package/completions
-          cp cli/target/release/krab cli/README.md LICENSE dist-cli/package/
-          for shell in bash zsh fish; do
-            cli/target/release/krab completions "${shell}" > "dist-cli/package/completions/krab.${shell}"
-          done
-          tar -czf "dist-cli/krab-${target}.tar.gz" -C dist-cli/package .
-          shasum -a 256 "dist-cli/krab-${target}.tar.gz" > dist-cli/SHA256SUMS
+          python3 scripts/package-cli.py \
+            --binary 'cli/target/${{ matrix.target }}/release/krab' \
+            --platform '${{ matrix.platform }}' \
+            --revision '${{ github.sha }}' \
+            --epoch "$(git show -s --format=%ct HEAD)" \
+            --output dist-cli
+          mkdir -p "${RUNNER_TEMP}/cli-package"
+          tar -xzf dist-cli/*.tar.gz -C "${RUNNER_TEMP}/cli-package"
+          (cd "${RUNNER_TEMP}/cli-package" && shasum -a 256 --check SHA256SUMS)
+          "${RUNNER_TEMP}/cli-package/krab" --version
+          (cd dist-cli && shasum -a 256 *.tar.gz > SHA256SUMS)
       - uses: actions/upload-artifact@v5
         with:
-          name: krab-cli-${{ runner.os }}-${{ runner.arch }}
+          name: krab-cli-${{ matrix.platform }}
           path: |
             dist-cli/*.tar.gz
             dist-cli/SHA256SUMS

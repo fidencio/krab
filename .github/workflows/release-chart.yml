@@ -28,8 +28,13 @@ jobs:
     permissions:
       contents: read
 
+  cli_binaries:
+    uses: ./.github/workflows/cli.yml
+    permissions:
+      contents: read
+
   release:
-    needs: preflight_binaries
+    needs: [preflight_binaries, cli_binaries]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -39,6 +44,12 @@ jobs:
           pattern: krab-preflight-linux-*
           merge-multiple: true
           path: dist-binaries
+
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: krab-cli-*
+          merge-multiple: true
+          path: dist-cli
 
       - uses: actions/setup-node@v7
         with:
@@ -73,10 +84,10 @@ jobs:
           const chart = parse(readFileSync('charts/krab/Chart.yaml', 'utf8'))
           const precheck = parse(readFileSync('charts/precheck/Chart.yaml', 'utf8'))
           const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
-          for (const path of ['preflight/Cargo.toml', 'preflight/Cargo.lock']) {
-            const version = readFileSync(path, 'utf8').match(/name = \"krab-preflight\"\nversion = \"([^\"]+)\"/)?.[1]
+          for (const path of ['preflight/Cargo.toml', 'preflight/Cargo.lock', 'cli/Cargo.toml', 'cli/Cargo.lock']) {
+            const version = readFileSync(path, 'utf8').match(/name = \"krab(?:-preflight)?\"\nversion = \"([^\"]+)\"/)?.[1]
             if (version !== pkg.version) {
-              throw new Error(`${path}: pre-flight version ${version} must match KRAB ${pkg.version}; run npm run generate`)
+              throw new Error(`${path}: native version ${version} must match KRAB ${pkg.version}; run npm run generate`)
             }
           }
           const match = chart.version.match(
@@ -126,6 +137,12 @@ jobs:
         run: |
           for arch in amd64 arm64; do
             test -f "dist-binaries/krab-preflight-${CHART_VERSION}-linux-${arch}.tar.gz"
+          done
+
+      - name: Require all native CLI archives
+        run: |
+          for platform in linux-amd64 linux-arm64 darwin-arm64; do
+            test -f "dist-cli/krab-${CHART_VERSION}-${platform}.tar.gz"
           done
 
       - name: Regenerate and verify committed release data
@@ -598,8 +615,9 @@ jobs:
             "dist-precheck/krab-precheck-${CHART_VERSION}.tgz" \
             "dist-builder/krab-builder-${CHART_VERSION}.tar.gz" \
             dist-binaries/*.tar.gz \
+            dist-cli/*.tar.gz \
             dist-sbom/*.spdx.json \
-            | sed 's#dist-chart/##; s#dist-precheck/##; s#dist-builder/##; s#dist-binaries/##; s#dist-sbom/##' \
+            | sed 's#dist-chart/##; s#dist-precheck/##; s#dist-builder/##; s#dist-binaries/##; s#dist-cli/##; s#dist-sbom/##' \
             > dist-chart/SHA256SUMS
 
       - uses: actions/upload-artifact@v5
@@ -610,6 +628,7 @@ jobs:
             dist-precheck/krab-precheck-*.tgz
             dist-builder/krab-builder-*.tar.gz
             dist-binaries/*.tar.gz
+            dist-cli/*.tar.gz
             dist-sbom/*.spdx.json
             dist-chart/SHA256SUMS
           if-no-files-found: error
@@ -638,6 +657,11 @@ jobs:
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist-binaries/*.tar.gz
+
+      - name: Attest native CLI archives
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist-cli/*.tar.gz
 
       - name: Publish and verify charts
         shell: bash
@@ -714,6 +738,7 @@ jobs:
               dist-precheck/krab-precheck-*.tgz \
               dist-builder/krab-builder-*.tar.gz \
               dist-binaries/*.tar.gz \
+              dist-cli/*.tar.gz \
               dist-sbom/*.spdx.json \
               dist-chart/SHA256SUMS \
               --target "${GITHUB_SHA}" \

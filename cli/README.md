@@ -1,9 +1,53 @@
 # KRAB CLI
 
-An experimental native Rust interface to Kata Reference Architecture Builder.
+The native Rust interface to Kata Reference Architecture Builder.
 The binary embeds the same pinned catalog, chart version, and values schema as
 the web builder. Configuration validation and values generation run offline;
 Node.js is only needed by the development comparison tests.
+
+## Download and install
+
+Use the [website downloads](https://fidencio.github.io/krab/#cli) for binaries
+matching that website, or choose a version from [GitHub releases](https://github.com/fidencio/krab/releases).
+Download the archive for the computer running KRAB (Linux amd64/arm64 or macOS
+Apple Silicon) and the release's `SHA256SUMS`. The cluster may use different
+architectures. For example, for Linux amd64, replacing VERSION with your release:
+
+```sh
+sha256sum --ignore-missing --check SHA256SUMS
+tar -xzf krab-VERSION-linux-amd64.tar.gz
+mkdir -p "$HOME/.local/bin"
+install -m 0755 krab "$HOME/.local/bin/krab"
+export PATH="$HOME/.local/bin:$PATH"
+krab --version
+krab
+```
+
+On macOS use `shasum -a 256 krab-VERSION-darwin-arm64.tar.gz` and compare the digest with `SHA256SUMS` before extraction.
+Archives include `BUILD-INFO.json` with the source revision and catalog digest,
+an executable checksum, license, this guide, and Bash/Zsh/Fish completions.
+GitHub build provenance is attached to the release archives.
+Linux binaries are statically linked with musl; Rust and Node.js are not needed.
+Local probes require Linux. Configuration works offline on Linux and macOS.
+
+Windows ARM64 and x86_64 support is planned as a follow-up; Windows binaries are
+not included in this release.
+
+The Next website points to development artifacts from successful Native CLI runs.
+Those artifacts require GitHub sign-in and are separate from stable release downloads.
+
+## Continue from the website
+
+Click **Continue in TUI / CLI** next to the generated values to download
+`krab.json`. Every selected setting is retained:
+
+```sh
+krab edit --config krab.json
+krab generate --config krab.json --output values.yaml
+```
+
+Use the matching release of the CLI and website. Generated CLI `values.yaml`
+can also be loaded through the website's **Load previous deployment** action.
 
 ## Build and use
 
@@ -86,6 +130,31 @@ Flags such as `--vendor nvidia`, `--distribution k3s`, and `--architecture arm64
 set the starter defaults. The target architecture describes cluster nodes,
 independently of the machine running the CLI.
 
+### Website advanced settings
+
+The **Website advanced settings (YAML)** entry in the TUI exposes the remaining
+website advanced settings as a typed YAML mapping. The same mapping is accepted
+under `advanced` in configuration files; unknown fields are rejected. Component
+and EROFS switches retain their dedicated controls above. Supported keys are:
+
+- `qgs`: `mode`, `pcsApiKeySecretName`, and nullable `deploySgxPlugin`.
+- `containerdConfigDir`, `containerdRuntimeSocket`, `containerdConfigFileName`,
+  `containerdUserDropIn`, and `shimDropIns` (runtime ID to TOML text).
+- `customRuntimes`: `name`, `baseConfig`, `dropIn`, `runtimeClass`, optional
+  `crioPullType` and `inheritBaseOverhead` for each runtime.
+- `nodeSelector` (key/value rows), `nodeAffinity` (key/operator/values rows),
+  and `tolerations` (key/operator/value/effect rows).
+- `scheduledReconcileEnabled`, `scheduledReconcileSchedule`, and `debug`.
+- `erofsUtilsImage` for a custom utility image.
+- `images`: `kataDeploy`, `nfd`, `devicePlugin`, `provisioner`; each accepts
+  `reference`, `tag`, `pullPolicy`, `pullSecrets`, `dispatcherReference`, and
+  `dispatcherTag`. Kata deploy also accepts `kubectlReference` and `kubectlTag`.
+
+The website's **Continue in TUI / CLI** export fills this mapping for you. Both
+builders use the same defaults and value-generation behavior. Containerd path
+and user drop-in overrides apply to kubeadm, as on the website. Low-level
+`valuesOverrides` are applied last and validated against the chart schema.
+
 ## Save and automate
 
 Saving validates the configuration, prompts for a destination, and asks for
@@ -122,9 +191,9 @@ generation and remote cluster conformance can run on either. GPU host probes
 also need the pinned kata-device-provisioner executable described in
 [preflight](../preflight/README.md).
 
-The `Native CLI` workflow builds and tests Linux and macOS packages, including
-shell completions and checksums, as workflow artifacts. These are development
-builds; the chart release workflow does not yet publish CLI binaries.
+The `Native CLI` workflow tests and packages all three host platforms. The release
+workflow requires these builds and CLI/web values parity before publishing the
+archives alongside the chart and website in the same versioned GitHub release.
 
 ## Discover choices
 
@@ -298,5 +367,5 @@ modes. Catalog changes are therefore checked against both implementations.
 
 Next milestones are importing existing builder values, using node reports
 during configuration, structured JSON errors, and
-publishing signed CLI release packages. The experimental controller remains
+package-manager distribution. The experimental controller remains
 separate from this CLI.

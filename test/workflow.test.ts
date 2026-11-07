@@ -58,3 +58,25 @@ test('pull requests build chart and image SBOM artifacts', async () => {
   assert.match(source, /name: chart-sboms/)
   assert.match(source, /name: preflight-image-sboms/)
 })
+
+test('native CLI builds gate releases and all advertised downloads are published with checksums', async () => {
+  const { source, workflow } = await readWorkflow('cli')
+  assert.ok('workflow_call' in workflow.on)
+  const platforms = workflow.jobs.cli.strategy.matrix.include.map((entry: { platform: string }) => entry.platform)
+  assert.deepEqual(platforms.sort(), ['darwin-arm64', 'linux-amd64', 'linux-arm64'])
+  assert.match(source, /npm run test:cli-parity/)
+  assert.match(source, /scripts\/package-cli.py/)
+  assert.match(source, /shasum -a 256 --check SHA256SUMS/)
+  const { workflow: release } = await readWorkflow('release-chart')
+  assert.equal(release.jobs.cli_binaries.uses, './.github/workflows/cli.yml')
+  assert.ok(release.jobs.release.needs.includes('cli_binaries'))
+  const steps = release.jobs.release.steps
+  for (const name of ['Prepare release checksums', 'Publish GitHub release']) {
+    assert.match(steps.find((step: { name: string }) => step.name === name).run, /dist-cli\/\*\.tar\.gz/)
+  }
+  assert.equal(steps.find((step: { name: string }) => step.name === 'Attest native CLI archives').with['subject-path'], 'dist-cli/*.tar.gz')
+  const guide = await readFile(resolve(root, 'src/CliGuide.tsx'), 'utf8')
+  for (const platform of platforms) assert.ok(guide.includes(platform))
+  assert.match(guide, /releases\/download\/chart-v\$\{version\}/)
+  assert.match(guide, /krab-\$\{version\}-\$\{platform\}\.tar\.gz/)
+})

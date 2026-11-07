@@ -214,6 +214,10 @@ impl<R: BufRead, W: Write> Prompts<R, W> {
                 label: "Runtime proxies, NVIDIA DCGM, and EROFS settings".into(),
             },
             Choice {
+                id: "website".into(),
+                label: "Website advanced settings (YAML)".into(),
+            },
+            Choice {
                 id: "overrides".into(),
                 label: "Advanced Helm values overrides (YAML)".into(),
             },
@@ -297,6 +301,11 @@ impl<R: BufRead, W: Write> Prompts<R, W> {
                 self.yes_no("Enable EROFS fs-verity?", runtime.erofs_fsverity)?;
             runtime.install_erofs_utils =
                 self.yes_no("Install EROFS utilities?", runtime.install_erofs_utils)?;
+        }
+        if selected.iter().any(|s| s == "website") {
+            let mut advanced = serde_json::to_value(&config.advanced).map_err(|e| e.to_string())?;
+            self.overrides(&mut advanced)?;
+            config.advanced = serde_json::from_value(advanced).map_err(|e| e.to_string())?;
         }
         if selected.iter().any(|s| s == "overrides") {
             self.overrides(&mut config.values_overrides)?;
