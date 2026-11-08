@@ -1,0 +1,54 @@
+name: Attest with bounded retries
+description: Retry temporary signing or registry failures without skipping required attestations.
+inputs:
+  subject-path:
+    description: Artifact paths to attest
+    default: ''
+  subject-name:
+    description: Fully qualified image name
+    default: ''
+  subject-digest:
+    description: Image digest
+    default: ''
+  sbom-path:
+    description: SBOM path, or empty for build provenance
+    default: ''
+  push-to-registry:
+    description: Push image attestations to the registry
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+      id: first
+      continue-on-error: true
+      with:
+        subject-path: ${{ inputs.subject-path }}
+        subject-name: ${{ inputs.subject-name }}
+        subject-digest: ${{ inputs.subject-digest }}
+        sbom-path: ${{ inputs.sbom-path }}
+        push-to-registry: ${{ inputs.push-to-registry }}
+    - if: steps.first.outcome == 'failure'
+      shell: bash
+      run: sleep 10
+    - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+      id: second
+      if: steps.first.outcome == 'failure'
+      continue-on-error: true
+      with:
+        subject-path: ${{ inputs.subject-path }}
+        subject-name: ${{ inputs.subject-name }}
+        subject-digest: ${{ inputs.subject-digest }}
+        sbom-path: ${{ inputs.sbom-path }}
+        push-to-registry: ${{ inputs.push-to-registry }}
+    - if: steps.second.outcome == 'failure'
+      shell: bash
+      run: sleep 20
+    - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+      if: steps.second.outcome == 'failure'
+      with:
+        subject-path: ${{ inputs.subject-path }}
+        subject-name: ${{ inputs.subject-name }}
+        subject-digest: ${{ inputs.subject-digest }}
+        sbom-path: ${{ inputs.sbom-path }}
+        push-to-registry: ${{ inputs.push-to-registry }}

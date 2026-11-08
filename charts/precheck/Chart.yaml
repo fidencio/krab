@@ -1,0 +1,11 @@
+apiVersion: v2
+name: krab-precheck
+description: Per-node KRAB capability pre-check and aggregated report
+type: application
+version: 0.2.11
+appVersion: 0.2.11
+home: https://github.com/kata-containers/krab
+sources:
+  - https://github.com/kata-containers/krab
+annotations:
+  org.opencontainers.image.source: https://github.com/kata-containers/krab

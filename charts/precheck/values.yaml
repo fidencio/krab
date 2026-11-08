@@ -1,0 +1,21 @@
+parallelism: 20
+# Optional label selector to restrict checks; empty checks every Linux node.
+nodeSelector: ""
+# Reuse host-local reports until the host reboots or the checker changes.
+cache:
+  enabled: true
+  hostPath: /var/lib/krab/preflight
+  forceRefresh: false
+dispatcherImage: ghcr.io/kata-containers/k8s-job-dispatcher:0.4.0
+probeImage:
+  repository: ghcr.io/kata-containers/krab-preflight
+collectorImage:
+  repository: ghcr.io/kata-containers/krab-collector
+# Enable a Helm-gated conformance Job. Requirements must be explicitly selected.
+conformance:
+  enabled: false
+  # Add erofs only for runtime classes that require host EROFS utilities.
+  requirements: []
+  # Optional GPU alternatives: every node must satisfy at least one.
+  anyOf: []
+  gpuModels: []

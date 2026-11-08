@@ -1,0 +1,99 @@
+import { readFile, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+import { precheckCommand } from '../src/lib/precheck-command.ts'
+
+const semver = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/
+
+async function updateFile(root: string, path: string, update: (content: string) => string) {
+  const file = resolve(root, path)
+  const current = await readFile(file, 'utf8')
+  const next = update(current)
+  if (next !== current) await writeFile(file, next)
+}
+
+function replaceLines(content: string, pattern: RegExp, replacement: string, count: number, path: string) {
+  let matches = 0
+  const result = content.replace(pattern, () => {
+    matches += 1
+    return replacement
+  })
+  if (matches !== count) {
+    throw new Error(`${path}: expected ${count} version field(s), found ${matches}`)
+  }
+  return result
+}
+
+export async function syncReleaseVersion(root = resolve(import.meta.dirname, '..')) {
+  const pkg = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
+  const version = pkg.version as string
+  const match = typeof version === 'string' ? version.match(semver) : null
+  if (!match) throw new Error(`Invalid KRAB version in package.json: ${version}`)
+  const prerelease = match[1] !== undefined
+
+  for (const [path, section, name, pattern] of [
+    ['core/Cargo.toml', '[package]', 'krab-core', /^\[package\]\nname = "krab-core"\nversion = "[^"]*"$/gm],
+    ['core/Cargo.lock', '[[package]]', 'krab-core', /^\[\[package\]\]\nname = "krab-core"\nversion = "[^"]*"$/gm],
+    ['cli/Cargo.lock', '[[package]]', 'krab-core', /^\[\[package\]\]\nname = "krab-core"\nversion = "[^"]*"$/gm],
+    ['cli/Cargo.toml', '[package]', 'krab', /^\[package\]\nname = "krab"\nversion = "[^"]*"$/gm],
+    ['cli/Cargo.lock', '[[package]]', 'krab', /^\[\[package\]\]\nname = "krab"\nversion = "[^"]*"$/gm],
+    ['cli/Cargo.lock', '[[package]]', 'krab-preflight', /^\[\[package\]\]\nname = "krab-preflight"\nversion = "[^"]*"$/gm],
+    ['preflight/Cargo.lock', '[[package]]', 'krab-core', /^\[\[package\]\]\nname = "krab-core"\nversion = "[^"]*"$/gm],
+    ['preflight/Cargo.toml', '[package]', 'krab-preflight', /^\[package\]\nname = "krab-preflight"\nversion = "[^"]*"$/gm],
+    ['preflight/Cargo.lock', '[[package]]', 'krab-preflight', /^\[\[package\]\]\nname = "krab-preflight"\nversion = "[^"]*"$/gm],
+  ] as const) {
+    await updateFile(root, path, (content) => replaceLines(content, pattern,
+      `${section}\nname = "${name}"\nversion = "${version}"`, 1, path))
+  }
+
+  await updateFile(root, 'package-lock.json', (content) => {
+    const lock = JSON.parse(content)
+    if (lock.name !== pkg.name || lock.packages?.['']?.name !== pkg.name) {
+      throw new Error('package-lock.json does not belong to KRAB')
+    }
+    lock.version = version
+    lock.packages[''].version = version
+    return `${JSON.stringify(lock, null, 2)}\n`
+  })
+
+  await updateFile(root, 'charts/krab/Chart.yaml', (content) => {
+    let next = replaceLines(content, /^version:.*$/gm, `version: ${version}`, 1, 'charts/krab/Chart.yaml')
+    next = replaceLines(next, /^appVersion:.*$/gm, `appVersion: "${version}"`, 1, 'charts/krab/Chart.yaml')
+    return replaceLines(next, /^  artifacthub\.io\/prerelease:.*$/gm,
+      `  artifacthub.io/prerelease: "${prerelease}"`, 1, 'charts/krab/Chart.yaml')
+  })
+  await updateFile(root, 'charts/krab/values.yaml', content => replaceLines(content,
+    /^    nodeImage:.*$/gm, `    nodeImage: ghcr.io/kata-containers/krab-preflight:${version}`, 1, 'charts/krab/values.yaml'))
+  await updateFile(root, 'charts/precheck/Chart.yaml', (content) => {
+    let next = replaceLines(content, /^version:.*$/gm, `version: ${version}`, 1, 'charts/precheck/Chart.yaml')
+    return replaceLines(next, /^appVersion:.*$/gm, `appVersion: ${version}`, 1, 'charts/precheck/Chart.yaml')
+  })
+  await updateFile(root, 'upstream/architecture.yaml', (content) => {
+    const status = prerelease ? 'prerelease' : 'stable'
+    const notice = prerelease
+      ? `KRAB ${version} is prerelease software. Review generated values before deploying.`
+      : `KRAB ${version}. Review generated values before deploying.`
+    let next = replaceLines(content, /^status:.*$/gm, `status: ${status}`, 1, 'upstream/architecture.yaml')
+    return replaceLines(next, /^notice:.*$/gm, `notice: ${notice}`, 1, 'upstream/architecture.yaml')
+  })
+  await updateFile(root, 'README.md', (content) => {
+    const section = content.indexOf('## Node pre-check')
+    const start = content.indexOf('helm install ', section)
+    const end = content.indexOf('\n```', start)
+    if (section < 0 || start < 0 || end < 0) throw new Error('README.md: precheck command is missing')
+    return content.slice(0, start) + precheckCommand(version) + content.slice(end)
+  })
+  for (const [path, count] of [['README.md', 3], ['charts/krab/README.md', 1]] as const) {
+    await updateFile(root, path, (content) =>
+      replaceLines(content, /^  --version \S+ \\$/gm, `  --version ${version} \\`, count, path))
+  }
+  await updateFile(root, 'CHANGELOG.md', (content) => {
+    if (content.includes(`## [${version}]`)) return content
+    if (content.includes('## [Unreleased]')) {
+      return content.replace('## [Unreleased]', `## [${version}] - Unreleased`)
+    }
+    const heading = /^## \[/m
+    if (!heading.test(content)) throw new Error('CHANGELOG.md has no release heading')
+    return content.replace(heading, `## [${version}] - Unreleased\n\n## [`)
+  })
+  return { version, prerelease }
+}

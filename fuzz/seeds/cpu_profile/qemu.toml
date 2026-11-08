@@ -1,0 +1,2 @@
+[hypervisor.qemu]
+kernel_params = "root=/dev/vda1 nvidia.NVreg_EnableGpuFirmware=0"

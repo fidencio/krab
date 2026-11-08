@@ -1,0 +1,76 @@
+name: Rust quality
+
+on:
+  pull_request:
+    paths: ['core/**', 'cli/**', 'preflight/**', 'deny.toml', '.github/workflows/rust-quality.yml']
+  push:
+    branches: [main]
+    paths: ['core/**', 'cli/**', 'preflight/**', 'deny.toml', '.github/workflows/rust-quality.yml']
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: rust-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - crate: core
+            toolchain: 1.95.0
+          - crate: cli
+            toolchain: 1.95.0
+          - crate: preflight
+            toolchain: 1.95.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust and quality tools
+        env:
+          TOOLCHAIN: ${{ matrix.toolchain }}
+        run: rustup toolchain install "$TOOLCHAIN" --profile minimal --component rustfmt --component clippy --component llvm-tools-preview
+      - uses: taiki-e/install-action@1919c4a95903d2c33e4a221102edca87309fc14b # v2.89.0
+        with:
+          tool: cargo-audit,cargo-deny,cargo-llvm-cov@0.8.7
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ matrix.crate }}/target
+          key: quality-${{ matrix.toolchain }}-${{ matrix.crate }}-${{ hashFiles('**/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: quality-${{ matrix.toolchain }}-${{ matrix.crate }}-${{ hashFiles('**/Cargo.lock') }}-
+      - name: Formatting, Clippy, and coverage
+        working-directory: ${{ matrix.crate }}
+        env:
+          TOOLCHAIN: ${{ matrix.toolchain }}
+          CARGO_PROFILE_DEV_DEBUG: '0'
+          CARGO_INCREMENTAL: '0'
+        run: |
+          cargo +"$TOOLCHAIN" fmt --check
+          cargo +"$TOOLCHAIN" clippy --locked --all-targets --all-features -- -D warnings
+          cargo +"$TOOLCHAIN" llvm-cov --locked --all-features --lcov --output-path lcov.info
+          cargo +"$TOOLCHAIN" llvm-cov report --summary-only > coverage-summary.txt
+          cat coverage-summary.txt >> "$GITHUB_STEP_SUMMARY"
+      - name: Audit advisories, licenses, and dependency sources
+        working-directory: ${{ matrix.crate }}
+        run: |
+          cargo audit
+          cargo deny --all-features --config ../deny.toml check
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: rust-coverage-${{ matrix.crate }}
+          path: |
+            ${{ matrix.crate }}/lcov.info
+            ${{ matrix.crate }}/coverage-summary.txt
+          retention-days: 14

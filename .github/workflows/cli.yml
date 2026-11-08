@@ -1,0 +1,110 @@
+name: Native CLI
+
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-cli-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  cli:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            platform: linux-amd64
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            platform: linux-arm64
+          - os: macos-15
+            target: aarch64-apple-darwin
+            platform: darwin-arm64
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER: rust-lld
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: rust-lld
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install Rust toolchain
+        shell: bash
+        run: |
+          rustup toolchain install 1.95.0 --profile minimal --component rustfmt --component clippy --target '${{ matrix.target }}'
+          rustup target add wasm32-unknown-unknown --toolchain 1.95.0
+          krab_sysroot="$(rustc +1.95.0 --print sysroot)"
+          krab_host="$(rustc +1.95.0 -vV | sed -n 's/^host: //p')"
+          echo "${krab_sysroot}/lib/rustlib/${krab_host}/bin" >> "${GITHUB_PATH}"
+      - name: Cache native CLI compilation
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            cli/target
+            core/target
+          key: cli-rust-1.95-${{ runner.os }}-${{ runner.arch }}-${{ matrix.target }}-${{ hashFiles('cli/Cargo.lock', 'core/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            cli-rust-1.95-${{ runner.os }}-${{ runner.arch }}-${{ matrix.target }}-${{ hashFiles('cli/Cargo.lock', 'core/Cargo.lock') }}-
+            cli-rust-1.95-${{ runner.os }}-${{ runner.arch }}-${{ matrix.target }}-
+      - name: Check formatting and test CLI
+        working-directory: cli
+        run: |
+          cargo +1.95.0 fmt --check
+          cargo +1.95.0 fmt --check --manifest-path ../core/Cargo.toml
+          cargo +1.95.0 clippy --locked --all-targets --target ${{ matrix.target }} -- -D warnings
+          cargo +1.95.0 test --locked --target ${{ matrix.target }}
+          python3 ../scripts/build-cli-release.py --target ${{ matrix.target }}
+      - name: Check default interactive setup in a terminal
+        run: |
+          python3 cli/tests/terminal.py cli/target/${{ matrix.target }}/release/krab
+          python3 cli/tests/cluster-terminal.py cli/target/${{ matrix.target }}/release/krab
+      - name: Build shared browser engine
+        run: npm run build:core
+      - name: Verify website command reference against the actual CLI
+        run: python3 scripts/generate-cli-reference.py --binary 'cli/target/${{ matrix.target }}/release/krab' --check
+      - name: Compare CLI and web builder values
+        env:
+          KRAB_CLI_BINARY: cli/target/${{ matrix.target }}/release/krab
+        run: npm run test:cli-parity
+      - name: Package native binary and completions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/package-cli.py \
+            --binary 'cli/target/${{ matrix.target }}/release/krab' \
+            --platform '${{ matrix.platform }}' \
+            --revision '${{ github.sha }}' \
+            --epoch "$(git show -s --format=%ct HEAD)" \
+            --output dist-cli
+          mkdir -p "${RUNNER_TEMP}/cli-package"
+          tar -xzf dist-cli/*.tar.gz -C "${RUNNER_TEMP}/cli-package"
+          (cd "${RUNNER_TEMP}/cli-package" && shasum -a 256 --check SHA256SUMS)
+          "${RUNNER_TEMP}/cli-package/krab" --version
+          (cd dist-cli && shasum -a 256 *.tar.gz > SHA256SUMS)
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: krab-cli-${{ matrix.platform }}
+          path: |
+            dist-cli/*.tar.gz
+            dist-cli/SHA256SUMS
+          if-no-files-found: error

@@ -1,0 +1,2167 @@
+{
+  "schemaVersion": 1,
+  "plannedArchitecture": {
+    "schemaVersion": 1,
+    "status": "stable",
+    "notice": "KRAB 0.2.11. Review generated values before deploying.",
+    "namespace": "kata-system",
+    "images": {
+      "kubectl": {
+        "reference": "quay.io/kata-containers/kubectl",
+        "tag": "v1.37.0"
+      },
+      "devicePlugin": {
+        "repository": "ghcr.io/kata-containers/kata-device-plugin",
+        "tag": "v0.2.0-rc.2"
+      }
+    },
+    "cluster": {
+      "distributions": [
+        {
+          "id": "kubeadm",
+          "displayName": "kubeadm",
+          "kataDeployValue": "k8s",
+          "defaultConfigurationOnly": false,
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+        },
+        {
+          "id": "k0s",
+          "displayName": "k0s",
+          "kataDeployValue": "k0s",
+          "defaultConfigurationOnly": true,
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+        },
+        {
+          "id": "k3s",
+          "displayName": "K3s",
+          "kataDeployValue": "k3s",
+          "defaultConfigurationOnly": true,
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+        },
+        {
+          "id": "microk8s",
+          "displayName": "MicroK8s",
+          "kataDeployValue": "microk8s",
+          "unsupportedSnapshotters": {
+            "erofs": "MicroK8s bundles containerd older than 2.2; EROFS requires containerd 2.2 or newer."
+          },
+          "defaultConfigurationOnly": true,
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+        },
+        {
+          "id": "rke2",
+          "displayName": "RKE2",
+          "kataDeployValue": "rke2",
+          "defaultConfigurationOnly": true,
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+        }
+      ],
+      "selinuxValuesPath": "selinux.enabled",
+      "selinuxSourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+    },
+    "charts": {
+      "krab": {
+        "repository": "kata-containers/krab",
+        "chartName": "krab",
+        "releaseName": "krab",
+        "ociReference": "oci://ghcr.io/kata-containers/krab",
+        "valuesFileName": "values.yaml",
+        "dependencies": {
+          "nvidiaValuesKey": "nvidia",
+          "runtimeValuesKey": "kata-deploy",
+          "runtimeRequired": false,
+          "devicePluginValuesKey": "kata-device-plugin",
+          "devicePluginRequired": false,
+          "devicePluginRequiredBy": [
+            "nvidia"
+          ],
+          "provisionerValuesKey": "kata-device-provisioner",
+          "provisionerRequired": false,
+          "provisionerRequiredBy": [
+            "nvidia"
+          ],
+          "nfdValuesKey": "node-feature-discovery",
+          "nfdRequired": false
+        },
+        "version": "0.2.11",
+        "appVersion": "0.2.11"
+      },
+      "qgs": {
+        "chartName": "intel-tdx-qgs",
+        "version": "0.27.0-alpha.1",
+        "sourceUrl": "https://github.com/intel/confidential-computing.tee.dcap.k8s.qgs/blob/d21e62cc2d5cba8f886364e75613916c39ece506/charts/intel-tdx-qgs/Chart.yaml"
+      },
+      "nfd": {
+        "chartName": "node-feature-discovery",
+        "version": "0.20.0",
+        "appVersion": "v0.20.0",
+        "repository": "oci://registry.k8s.io/nfd/charts",
+        "valuesKey": "node-feature-discovery",
+        "required": false,
+        "image": {
+          "repository": "registry.k8s.io/nfd/node-feature-discovery",
+          "pullPolicy": "IfNotPresent",
+          "tag": "v0.20.0"
+        },
+        "sourceUrl": "https://github.com/kubernetes-sigs/node-feature-discovery/blob/469c89e008c7498c49e3615ce3859fe7ccbfd0ae/deployment/helm/node-feature-discovery/Chart.yaml"
+      },
+      "kataDeploy": {
+        "chartName": "kata-deploy",
+        "version": "4.3.1",
+        "required": false,
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
+      },
+      "devicePlugin": {
+        "chartName": "kata-device-plugin",
+        "version": "0.2.0-rc.2",
+        "appVersion": "0.2.0-rc.2",
+        "required": false,
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
+      },
+      "provisioner": {
+        "chartName": "kata-device-provisioner",
+        "version": "0.1.0-alpha.3",
+        "appVersion": "0.1.0-alpha.3",
+        "required": false,
+        "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/Chart.yaml"
+      }
+    },
+    "attestation": {
+      "trustee": {
+        "displayName": "Trustee",
+        "repository": "https://github.com/confidential-containers/trustee",
+        "commit": "512fed65642015b849f38fb13bfdec7806639987",
+        "sourceUrl": "https://github.com/confidential-containers/trustee/commit/512fed65642015b849f38fb13bfdec7806639987",
+        "documentationUrl": "https://github.com/confidential-containers/trustee/blob/512fed65642015b849f38fb13bfdec7806639987/README.md",
+        "kataSourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/versions.yaml"
+      }
+    }
+  },
+  "vendors": [
+    {
+      "id": "nvidia",
+      "displayName": "NVIDIA",
+      "tagline": "GPU and confidential computing",
+      "description": "Run GPU-accelerated workloads with Kata, from standard workloads to confidential ones.",
+      "logo": "nvidia.svg",
+      "capabilities": [
+        {
+          "id": "gpu",
+          "resourceName": "nvidia.com/gpu"
+        },
+        {
+          "id": "confidential-computing",
+          "modes": [
+            "off",
+            "ppcie",
+            "on"
+          ]
+        }
+      ],
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml",
+      "hardwareFamilies": [
+        {
+          "id": "grace-blackwell",
+          "displayName": "NVIDIA GBx00",
+          "upstreamName": "Grace-Blackwell superchips",
+          "models": [
+            "GB200",
+            "GB300"
+          ],
+          "modelAliases": {},
+          "supportedArches": [
+            "arm64"
+          ],
+          "availability": "pending",
+          "availabilityReason": "Kata Containers support pending",
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
+          "defaultModeId": "off",
+          "modes": [
+            {
+              "id": "off",
+              "supportedCpuTeeIds": [],
+              "displayName": "Passthrough",
+              "badge": null,
+              "label": "`off`",
+              "description": "GBx00: Grace-Blackwell superchips bound for passthrough — GB200 and GB300,",
+              "values": {
+                "ccMode": "off",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-grace-blackwell": "true"
+                },
+                "job": {
+                  "parallelism": 2,
+                  "activeDeadlineSeconds": 3600
+                }
+              },
+              "profileName": "GBx00",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml"
+            }
+          ],
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/README.md",
+          "experimental": true
+        },
+        {
+          "id": "blackwell",
+          "displayName": "NVIDIA HGX Bx00",
+          "upstreamName": "HGX Bx00",
+          "models": [
+            "B200",
+            "B300"
+          ],
+          "modelAliases": {
+            "B200": [
+              "B200 SXM"
+            ]
+          },
+          "supportedArches": [
+            "amd64"
+          ],
+          "availability": "available",
+          "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
+          "defaultModeId": "off",
+          "modes": [
+            {
+              "id": "off",
+              "supportedCpuTeeIds": [],
+              "displayName": "Passthrough",
+              "badge": null,
+              "label": "`off`",
+              "description": "HGX Bx00: SXM boards bound for passthrough, confidential computing left off.",
+              "values": {
+                "ccMode": "off",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-blackwell": "true",
+                  "kata.feature.node.kubernetes.io/nvidia-nvswitch": "true"
+                },
+                "job": {
+                  "parallelism": 2,
+                  "activeDeadlineSeconds": 3600
+                }
+              },
+              "profileName": "HGX-Bx00",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml"
+            },
+            {
+              "id": "on",
+              "supportedCpuTeeIds": [
+                "snp",
+                "tdx"
+              ],
+              "displayName": "Confidential computing",
+              "badge": "ON",
+              "label": "`on` — single-GPU and multi-GPU",
+              "description": "HGX Bx00: CC mode on, one GPU or the whole board to a confidential VM.",
+              "values": {
+                "ccMode": "on",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-blackwell": "true",
+                  "kata.feature.node.kubernetes.io/nvidia-nvswitch": "true"
+                },
+                "job": {
+                  "parallelism": 2,
+                  "activeDeadlineSeconds": 3600
+                }
+              },
+              "profileName": "HGX-Bx00-CC",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml"
+            }
+          ],
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/README.md",
+          "experimental": true
+        },
+        {
+          "id": "hopper",
+          "displayName": "NVIDIA HGX Hx00",
+          "upstreamName": "HGX Hx00",
+          "models": [
+            "H100",
+            "H200",
+            "H800",
+            "H20"
+          ],
+          "modelAliases": {
+            "H100": [
+              "H100 SXM5 80GB"
+            ]
+          },
+          "supportedArches": [
+            "amd64"
+          ],
+          "availability": "available",
+          "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
+          "defaultModeId": "off",
+          "modes": [
+            {
+              "id": "off",
+              "supportedCpuTeeIds": [],
+              "displayName": "Passthrough",
+              "badge": null,
+              "label": "`off`",
+              "description": "HGX Hx00: SXM boards bound for passthrough, confidential computing left off.",
+              "values": {
+                "ccMode": "off",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-hopper": "true",
+                  "kata.feature.node.kubernetes.io/nvidia-nvswitch": "true"
+                },
+                "job": {
+                  "parallelism": 2,
+                  "activeDeadlineSeconds": 3600
+                }
+              },
+              "profileName": "HGX-Hx00",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml"
+            },
+            {
+              "id": "ppcie",
+              "supportedCpuTeeIds": [
+                "tdx"
+              ],
+              "displayName": "Confidential computing · Protected PCIe",
+              "badge": "PPCIE",
+              "label": "`ppcie`, whole board",
+              "description": "HGX Hx00: the whole board to one confidential VM, via Protected PCIe.",
+              "values": {
+                "ccMode": "ppcie",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-hopper": "true",
+                  "kata.feature.node.kubernetes.io/nvidia-nvswitch": "true"
+                },
+                "job": {
+                  "parallelism": 2,
+                  "activeDeadlineSeconds": 3600
+                }
+              },
+              "profileName": "HGX-Hx00-PPCIE",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml"
+            }
+          ],
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/README.md",
+          "experimental": true
+        },
+        {
+          "id": "pcie-gpu",
+          "displayName": "NVIDIA PCIe GPUs",
+          "upstreamName": "discrete cards, no NVSwitch",
+          "models": [],
+          "modelAliases": {},
+          "supportedArches": [
+            "amd64"
+          ],
+          "availability": "available",
+          "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
+          "defaultModeId": "off",
+          "modes": [
+            {
+              "id": "off",
+              "supportedCpuTeeIds": [],
+              "displayName": "Passthrough",
+              "badge": null,
+              "label": "`off`",
+              "description": "PCIE-GPU: discrete cards bound for passthrough, confidential computing left",
+              "values": {
+                "ccMode": "off",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-gpu": "true"
+                },
+                "nodeSelectorExpressions": [
+                  "!kata.feature.node.kubernetes.io/nvidia-nvswitch",
+                  "!kata.feature.node.kubernetes.io/nvidia-c2c"
+                ],
+                "job": {
+                  "parallelism": 10
+                }
+              },
+              "profileName": "PCIE-GPU",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml"
+            },
+            {
+              "id": "on",
+              "supportedCpuTeeIds": [
+                "snp",
+                "tdx"
+              ],
+              "displayName": "Confidential computing",
+              "badge": "ON",
+              "label": "`on`, per GPU",
+              "description": "PCIE-GPU-CC: discrete cards, one CC-mode GPU per confidential VM.",
+              "values": {
+                "ccMode": "on",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-gpu": "true"
+                },
+                "nodeSelectorExpressions": [
+                  "!kata.feature.node.kubernetes.io/nvidia-nvswitch",
+                  "!kata.feature.node.kubernetes.io/nvidia-c2c"
+                ],
+                "job": {
+                  "parallelism": 10
+                }
+              },
+              "profileName": "PCIE-GPU-CC",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml"
+            }
+          ],
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/README.md",
+          "experimental": true
+        }
+      ],
+      "runtime": {
+        "chart": {
+          "name": "kata-deploy",
+          "version": "4.3.1",
+          "appVersion": "4.3.1",
+          "ociReference": "oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy",
+          "namespace": "kata-system",
+          "valuesFileName": "kata-nvidia.values.yaml",
+          "values": {
+            "debug": false,
+            "deploymentMode": "job",
+            "snapshotter": {
+              "setup": [
+                "nydus",
+                "erofs"
+              ],
+              "erofsSnapshotterMode": "memory",
+              "erofsDmverity": true
+            },
+            "containerd": {
+              "userDropIn": "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n"
+            },
+            "shims": {
+              "disableAll": true,
+              "qemu-nvidia-gpu": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": ""
+                },
+                "nvrc": {
+                  "enableDCGM": false
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "nvidia.com/cc.ready.state": "false"
+                  }
+                }
+              },
+              "qemu-nvidia-gpu-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "erofs"
+                },
+                "nvrc": {
+                  "enableDCGM": false
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "nvidia.com/cc.ready.state": "false"
+                  }
+                }
+              },
+              "qemu-nvidia-gpu-snp": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                },
+                "nvrc": {
+                  "enableDCGM": false
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "nvidia.com/cc.ready.state": "true",
+                    "amd.feature.node.kubernetes.io/snp": "true"
+                  }
+                }
+              },
+              "qemu-nvidia-gpu-snp-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                },
+                "nvrc": {
+                  "enableDCGM": false
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "nvidia.com/cc.ready.state": "true",
+                    "amd.feature.node.kubernetes.io/snp": "true"
+                  }
+                }
+              },
+              "qemu-nvidia-gpu-tdx": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                },
+                "nvrc": {
+                  "enableDCGM": false
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "nvidia.com/cc.ready.state": "true",
+                    "intel.feature.node.kubernetes.io/tdx": "true"
+                  }
+                }
+              },
+              "qemu-nvidia-gpu-tdx-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                },
+                "nvrc": {
+                  "enableDCGM": false
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "nvidia.com/cc.ready.state": "true",
+                    "intel.feature.node.kubernetes.io/tdx": "true"
+                  }
+                }
+              },
+              "qemu-nvidia-cpu-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64",
+                  "arm64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "erofs"
+                }
+              }
+            },
+            "defaultShim": {
+              "amd64": "qemu-nvidia-gpu"
+            },
+            "runtimeClasses": {
+              "enabled": true,
+              "createDefault": false,
+              "defaultName": "kata"
+            },
+            "node-feature-discovery": {
+              "enabled": true
+            },
+            "image": {
+              "reference": "quay.io/kata-containers/kata-deploy",
+              "tag": "4.3.1"
+            },
+            "kubectlImage": {
+              "reference": "quay.io/kata-containers/kubectl",
+              "tag": "v1.37.0"
+            },
+            "job": {
+              "dispatcherImage": {
+                "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+                "tag": "0.3.0"
+              }
+            }
+          },
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
+        },
+        "shims": [
+          {
+            "id": "qemu-nvidia-gpu-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-gpu-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "erofs",
+            "nodeSelector": {
+              "nvidia.com/cc.ready.state": "false"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml",
+            "selectionGroup": "gpu"
+          },
+          {
+            "id": "qemu-nvidia-gpu-snp-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-gpu-snp-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {
+              "nvidia.com/cc.ready.state": "true",
+              "amd.feature.node.kubernetes.io/snp": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml",
+            "selectionGroup": "gpu"
+          },
+          {
+            "id": "qemu-nvidia-gpu-tdx-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-gpu-tdx-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {
+              "nvidia.com/cc.ready.state": "true",
+              "intel.feature.node.kubernetes.io/tdx": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml",
+            "selectionGroup": "gpu"
+          },
+          {
+            "id": "qemu-nvidia-cpu-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-cpu-runtime-rs",
+            "userSelectable": true,
+            "selectionGroup": "cpu",
+            "supportedArches": [
+              "amd64",
+              "arm64"
+            ],
+            "snapshotter": "erofs",
+            "snapshotterConfiguration": {
+              "erofsSnapshotterMode": "memory",
+              "erofsDmverity": true,
+              "containerdUserDropIn": "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n"
+            },
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-cpu.values.yaml"
+          },
+          {
+            "id": "qemu-nvidia-cpu-snp-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-cpu-snp-runtime-rs",
+            "userSelectable": true,
+            "selectionGroup": "cpu",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "derivedBase": "qemu-nvidia-gpu-snp-runtime-rs",
+            "cpuTee": "snp",
+            "nodeSelector": {
+              "amd.feature.node.kubernetes.io/snp": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.2.11/core/src/cpu.rs"
+          },
+          {
+            "id": "qemu-nvidia-cpu-tdx-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-cpu-tdx-runtime-rs",
+            "userSelectable": true,
+            "selectionGroup": "cpu",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "derivedBase": "qemu-nvidia-gpu-tdx-runtime-rs",
+            "cpuTee": "tdx",
+            "nodeSelector": {
+              "intel.feature.node.kubernetes.io/tdx": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.2.11/core/src/cpu.rs"
+          }
+        ],
+        "cpuTees": [
+          {
+            "id": "snp",
+            "displayName": "AMD SEV-SNP",
+            "shimId": "qemu-nvidia-gpu-snp-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-gpu-snp-runtime-rs",
+            "documentedRuntimeClass": "kata-qemu-nvidia-gpu-snp",
+            "nodeSelector": {
+              "nvidia.com/cc.ready.state": "true",
+              "amd.feature.node.kubernetes.io/snp": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          },
+          {
+            "id": "tdx",
+            "displayName": "Intel TDX",
+            "shimId": "qemu-nvidia-gpu-tdx-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-gpu-tdx-runtime-rs",
+            "documentedRuntimeClass": "kata-qemu-nvidia-gpu-tdx",
+            "nodeSelector": {
+              "nvidia.com/cc.ready.state": "true",
+              "intel.feature.node.kubernetes.io/tdx": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          }
+        ]
+      },
+      "provisioner": {
+        "chart": {
+          "name": "kata-device-provisioner",
+          "version": "0.1.0-alpha.3",
+          "appVersion": "0.1.0-alpha.3",
+          "namespace": "kata-system",
+          "repository": "kata-containers/kata-device-provisioner",
+          "ref": "0429c4e117aa7dcd64c9267d5f083670180407f3",
+          "chartPath": "deploy/helm/kata-device-provisioner",
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/Chart.yaml",
+          "experimental": true
+        },
+        "values": {
+          "image": {
+            "reference": "ghcr.io/kata-containers/kata-device-provisioner",
+            "tag": "0.1.0-alpha.3"
+          },
+          "job": {
+            "dispatcherImage": {
+              "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+              "tag": "0.4.0"
+            }
+          }
+        }
+      },
+      "devicePlugin": {
+        "chart": {
+          "chartName": "kata-device-plugin",
+          "version": "0.2.0-rc.2",
+          "appVersion": "0.2.0-rc.2",
+          "required": false,
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
+        },
+        "values": {
+          "fullnameOverride": "",
+          "image": {
+            "repository": "ghcr.io/kata-containers/kata-device-plugin",
+            "tag": "v0.2.0-rc.2",
+            "pullPolicy": "IfNotPresent"
+          },
+          "nodeSelector": {
+            "katacontainers.io/kata-runtime": null,
+            "feature.node.kubernetes.io/pci-0302_10de.present": "true"
+          },
+          "tolerations": [
+            {
+              "operator": "Exists",
+              "effect": "NoSchedule"
+            }
+          ],
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "20Mi"
+            },
+            "limits": {
+              "cpu": "100m",
+              "memory": "64Mi"
+            }
+          },
+          "resourceNaming": "alias",
+          "logFilter": ""
+        },
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
+      },
+      "workload": {
+        "resourceName": "nvidia.com/gpu",
+        "nvSwitchResourceName": "nvidia.com/nvswitch",
+        "resourceNaming": "alias",
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/src/vfio.rs"
+      }
+    },
+    {
+      "id": "custom",
+      "displayName": "Custom",
+      "tagline": "Custom Kata deployment",
+      "description": "Combine Kata runtimes for different node types in one deployment.",
+      "logo": "custom.svg",
+      "capabilities": [
+        {
+          "id": "general-purpose"
+        },
+        {
+          "id": "multiple-hypervisors"
+        },
+        {
+          "id": "confidential-computing"
+        },
+        {
+          "id": "gpu",
+          "resourceName": "nvidia.com/gpu"
+        }
+      ],
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml",
+      "hardwareFamilies": [
+        {
+          "id": "grace-blackwell",
+          "displayName": "NVIDIA GBx00",
+          "upstreamName": "Grace-Blackwell superchips",
+          "models": [
+            "GB200",
+            "GB300"
+          ],
+          "modelAliases": {},
+          "supportedArches": [
+            "arm64"
+          ],
+          "availability": "pending",
+          "availabilityReason": "Kata Containers support pending",
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
+          "defaultModeId": "off",
+          "modes": [
+            {
+              "id": "off",
+              "supportedCpuTeeIds": [],
+              "displayName": "Passthrough",
+              "badge": null,
+              "label": "`off`",
+              "description": "GBx00: Grace-Blackwell superchips bound for passthrough — GB200 and GB300,",
+              "values": {
+                "ccMode": "off",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-grace-blackwell": "true"
+                },
+                "job": {
+                  "parallelism": 2,
+                  "activeDeadlineSeconds": 3600
+                }
+              },
+              "profileName": "GBx00",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/GBx00.values.yaml"
+            }
+          ],
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/README.md",
+          "experimental": true
+        },
+        {
+          "id": "blackwell",
+          "displayName": "NVIDIA HGX Bx00",
+          "upstreamName": "HGX Bx00",
+          "models": [
+            "B200",
+            "B300"
+          ],
+          "modelAliases": {
+            "B200": [
+              "B200 SXM"
+            ]
+          },
+          "supportedArches": [
+            "amd64"
+          ],
+          "availability": "available",
+          "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
+          "defaultModeId": "off",
+          "modes": [
+            {
+              "id": "off",
+              "supportedCpuTeeIds": [],
+              "displayName": "Passthrough",
+              "badge": null,
+              "label": "`off`",
+              "description": "HGX Bx00: SXM boards bound for passthrough, confidential computing left off.",
+              "values": {
+                "ccMode": "off",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-blackwell": "true",
+                  "kata.feature.node.kubernetes.io/nvidia-nvswitch": "true"
+                },
+                "job": {
+                  "parallelism": 2,
+                  "activeDeadlineSeconds": 3600
+                }
+              },
+              "profileName": "HGX-Bx00",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00.values.yaml"
+            },
+            {
+              "id": "on",
+              "supportedCpuTeeIds": [
+                "snp",
+                "tdx"
+              ],
+              "displayName": "Confidential computing",
+              "badge": "ON",
+              "label": "`on` — single-GPU and multi-GPU",
+              "description": "HGX Bx00: CC mode on, one GPU or the whole board to a confidential VM.",
+              "values": {
+                "ccMode": "on",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-blackwell": "true",
+                  "kata.feature.node.kubernetes.io/nvidia-nvswitch": "true"
+                },
+                "job": {
+                  "parallelism": 2,
+                  "activeDeadlineSeconds": 3600
+                }
+              },
+              "profileName": "HGX-Bx00-CC",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Bx00-CC.values.yaml"
+            }
+          ],
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/README.md",
+          "experimental": true
+        },
+        {
+          "id": "hopper",
+          "displayName": "NVIDIA HGX Hx00",
+          "upstreamName": "HGX Hx00",
+          "models": [
+            "H100",
+            "H200",
+            "H800",
+            "H20"
+          ],
+          "modelAliases": {
+            "H100": [
+              "H100 SXM5 80GB"
+            ]
+          },
+          "supportedArches": [
+            "amd64"
+          ],
+          "availability": "available",
+          "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
+          "defaultModeId": "off",
+          "modes": [
+            {
+              "id": "off",
+              "supportedCpuTeeIds": [],
+              "displayName": "Passthrough",
+              "badge": null,
+              "label": "`off`",
+              "description": "HGX Hx00: SXM boards bound for passthrough, confidential computing left off.",
+              "values": {
+                "ccMode": "off",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-hopper": "true",
+                  "kata.feature.node.kubernetes.io/nvidia-nvswitch": "true"
+                },
+                "job": {
+                  "parallelism": 2,
+                  "activeDeadlineSeconds": 3600
+                }
+              },
+              "profileName": "HGX-Hx00",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00.values.yaml"
+            },
+            {
+              "id": "ppcie",
+              "supportedCpuTeeIds": [
+                "tdx"
+              ],
+              "displayName": "Confidential computing · Protected PCIe",
+              "badge": "PPCIE",
+              "label": "`ppcie`, whole board",
+              "description": "HGX Hx00: the whole board to one confidential VM, via Protected PCIe.",
+              "values": {
+                "ccMode": "ppcie",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-hopper": "true",
+                  "kata.feature.node.kubernetes.io/nvidia-nvswitch": "true"
+                },
+                "job": {
+                  "parallelism": 2,
+                  "activeDeadlineSeconds": 3600
+                }
+              },
+              "profileName": "HGX-Hx00-PPCIE",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/HGX-Hx00-PPCIE.values.yaml"
+            }
+          ],
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/README.md",
+          "experimental": true
+        },
+        {
+          "id": "pcie-gpu",
+          "displayName": "NVIDIA PCIe GPUs",
+          "upstreamName": "discrete cards, no NVSwitch",
+          "models": [],
+          "modelAliases": {},
+          "supportedArches": [
+            "amd64"
+          ],
+          "availability": "available",
+          "availabilityReason": null,
+          "evidenceUrls": [
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml",
+            "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml",
+            "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          ],
+          "defaultModeId": "off",
+          "modes": [
+            {
+              "id": "off",
+              "supportedCpuTeeIds": [],
+              "displayName": "Passthrough",
+              "badge": null,
+              "label": "`off`",
+              "description": "PCIE-GPU: discrete cards bound for passthrough, confidential computing left",
+              "values": {
+                "ccMode": "off",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-gpu": "true"
+                },
+                "nodeSelectorExpressions": [
+                  "!kata.feature.node.kubernetes.io/nvidia-nvswitch",
+                  "!kata.feature.node.kubernetes.io/nvidia-c2c"
+                ],
+                "job": {
+                  "parallelism": 10
+                }
+              },
+              "profileName": "PCIE-GPU",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU.values.yaml"
+            },
+            {
+              "id": "on",
+              "supportedCpuTeeIds": [
+                "snp",
+                "tdx"
+              ],
+              "displayName": "Confidential computing",
+              "badge": "ON",
+              "label": "`on`, per GPU",
+              "description": "PCIE-GPU-CC: discrete cards, one CC-mode GPU per confidential VM.",
+              "values": {
+                "ccMode": "on",
+                "nodeFeatureRule": {
+                  "enabled": true
+                },
+                "nodeSelector": {
+                  "kata.feature.node.kubernetes.io/nvidia-gpu": "true"
+                },
+                "nodeSelectorExpressions": [
+                  "!kata.feature.node.kubernetes.io/nvidia-nvswitch",
+                  "!kata.feature.node.kubernetes.io/nvidia-c2c"
+                ],
+                "job": {
+                  "parallelism": 10
+                }
+              },
+              "profileName": "PCIE-GPU-CC",
+              "sourcePath": "deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml",
+              "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/PCIE-GPU-CC.values.yaml"
+            }
+          ],
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/profiles/README.md",
+          "experimental": true
+        }
+      ],
+      "runtime": {
+        "chart": {
+          "name": "kata-deploy",
+          "version": "4.3.1",
+          "appVersion": "4.3.1",
+          "ociReference": "oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy",
+          "namespace": "kata-system",
+          "valuesFileName": "kata-custom.values.yaml",
+          "values": {
+            "debug": false,
+            "deploymentMode": "job",
+            "image": {
+              "reference": "quay.io/kata-containers/kata-deploy",
+              "tag": "4.3.1"
+            },
+            "kubectlImage": {
+              "reference": "quay.io/kata-containers/kubectl",
+              "tag": "v1.37.0"
+            },
+            "job": {
+              "dispatcherImage": {
+                "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+                "tag": "0.3.0"
+              }
+            },
+            "snapshotter": {
+              "setup": [],
+              "erofsMergeMode": "",
+              "erofsSnapshotterMode": "",
+              "erofsDmverity": false
+            },
+            "shims": {
+              "disableAll": true,
+              "clh-runtime-rs": {
+                "enabled": null,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "hypervisor": {
+                  "rootless": false
+                },
+                "containerd": {
+                  "snapshotter": ""
+                }
+              },
+              "clh-azure-runtime-rs": {
+                "enabled": null,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": ""
+                }
+              },
+              "dragonball": {
+                "enabled": null,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": ""
+                }
+              },
+              "qemu-runtime-rs": {
+                "enabled": null,
+                "supportedArches": [
+                  "amd64",
+                  "arm64",
+                  "s390x",
+                  "ppc64le"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "hypervisor": {
+                  "rootless": false
+                },
+                "containerd": {
+                  "snapshotter": ""
+                }
+              },
+              "openvmm-azure-runtime-rs": {
+                "enabled": null,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": ""
+                }
+              },
+              "qemu-nvidia-cpu-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64",
+                  "arm64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "erofs"
+                }
+              },
+              "qemu-coco-dev-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64",
+                  "arm64",
+                  "s390x"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                }
+              },
+              "qemu-snp-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "amd.feature.node.kubernetes.io/snp": "true"
+                  }
+                }
+              },
+              "qemu-se-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "s390x"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "feature.node.kubernetes.io/cpu-security.se.enabled": "true"
+                  }
+                }
+              },
+              "qemu-tdx-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "intel.feature.node.kubernetes.io/tdx": "true"
+                  }
+                }
+              },
+              "qemu-nvidia-gpu-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "erofs"
+                },
+                "nvrc": {
+                  "enableDCGM": false
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "nvidia.com/cc.ready.state": "false"
+                  }
+                }
+              },
+              "qemu-nvidia-gpu-snp-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                },
+                "nvrc": {
+                  "enableDCGM": false
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "nvidia.com/cc.ready.state": "true",
+                    "amd.feature.node.kubernetes.io/snp": "true"
+                  }
+                }
+              },
+              "qemu-nvidia-gpu-tdx-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                },
+                "nvrc": {
+                  "enableDCGM": false
+                },
+                "runtimeClass": {
+                  "nodeSelector": {
+                    "nvidia.com/cc.ready.state": "true",
+                    "intel.feature.node.kubernetes.io/tdx": "true"
+                  }
+                }
+              }
+            },
+            "defaultShim": {
+              "amd64": "qemu-runtime-rs",
+              "arm64": "qemu-runtime-rs",
+              "s390x": "qemu-runtime-rs",
+              "ppc64le": "qemu-runtime-rs"
+            },
+            "runtimeClasses": {
+              "enabled": true,
+              "createDefault": false,
+              "defaultName": "kata",
+              "overheadEnabled": true
+            },
+            "node-feature-discovery": {
+              "enabled": false
+            }
+          },
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
+        },
+        "shims": [
+          {
+            "id": "clh-runtime-rs",
+            "runtimeClass": "kata-clh-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "default",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+          },
+          {
+            "id": "clh-azure-runtime-rs",
+            "runtimeClass": "kata-clh-azure-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "default",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+          },
+          {
+            "id": "dragonball",
+            "runtimeClass": "kata-dragonball",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "default",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+          },
+          {
+            "id": "qemu-runtime-rs",
+            "runtimeClass": "kata-qemu-runtime-rs",
+            "supportedArches": [
+              "amd64",
+              "arm64",
+              "s390x",
+              "ppc64le"
+            ],
+            "snapshotter": "default",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+          },
+          {
+            "id": "openvmm-azure-runtime-rs",
+            "runtimeClass": "kata-openvmm-azure-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "default",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+          },
+          {
+            "id": "qemu-nvidia-cpu-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-cpu-runtime-rs",
+            "supportedArches": [
+              "amd64",
+              "arm64"
+            ],
+            "snapshotter": "erofs",
+            "snapshotterConfiguration": {
+              "erofsSnapshotterMode": "memory",
+              "erofsDmverity": true,
+              "containerdUserDropIn": "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n"
+            },
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-cpu.values.yaml"
+          },
+          {
+            "id": "qemu-coco-dev-runtime-rs",
+            "runtimeClass": "kata-qemu-coco-dev-runtime-rs",
+            "supportedArches": [
+              "amd64",
+              "arm64",
+              "s390x"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml"
+          },
+          {
+            "id": "qemu-snp-runtime-rs",
+            "runtimeClass": "kata-qemu-snp-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {
+              "amd.feature.node.kubernetes.io/snp": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml"
+          },
+          {
+            "id": "qemu-se-runtime-rs",
+            "runtimeClass": "kata-qemu-se-runtime-rs",
+            "supportedArches": [
+              "s390x"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {
+              "feature.node.kubernetes.io/cpu-security.se.enabled": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml"
+          },
+          {
+            "id": "qemu-tdx-runtime-rs",
+            "runtimeClass": "kata-qemu-tdx-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {
+              "intel.feature.node.kubernetes.io/tdx": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml"
+          },
+          {
+            "id": "qemu-nvidia-gpu-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-gpu-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "erofs",
+            "nodeSelector": {
+              "nvidia.com/cc.ready.state": "false"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml",
+            "selectionGroup": "gpu"
+          },
+          {
+            "id": "qemu-nvidia-gpu-snp-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-gpu-snp-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {
+              "nvidia.com/cc.ready.state": "true",
+              "amd.feature.node.kubernetes.io/snp": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml",
+            "selectionGroup": "gpu"
+          },
+          {
+            "id": "qemu-nvidia-gpu-tdx-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-gpu-tdx-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {
+              "nvidia.com/cc.ready.state": "true",
+              "intel.feature.node.kubernetes.io/tdx": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml",
+            "selectionGroup": "gpu"
+          },
+          {
+            "id": "qemu-nvidia-cpu-snp-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-cpu-snp-runtime-rs",
+            "userSelectable": true,
+            "selectionGroup": "cpu",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "derivedBase": "qemu-nvidia-gpu-snp-runtime-rs",
+            "cpuTee": "snp",
+            "nodeSelector": {
+              "amd.feature.node.kubernetes.io/snp": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.2.11/core/src/cpu.rs"
+          },
+          {
+            "id": "qemu-nvidia-cpu-tdx-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-cpu-tdx-runtime-rs",
+            "userSelectable": true,
+            "selectionGroup": "cpu",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "derivedBase": "qemu-nvidia-gpu-tdx-runtime-rs",
+            "cpuTee": "tdx",
+            "nodeSelector": {
+              "intel.feature.node.kubernetes.io/tdx": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.2.11/core/src/cpu.rs"
+          }
+        ],
+        "cpuTees": [
+          {
+            "id": "snp",
+            "displayName": "AMD SEV-SNP",
+            "shimId": "qemu-nvidia-gpu-snp-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-gpu-snp-runtime-rs",
+            "documentedRuntimeClass": "kata-qemu-nvidia-gpu-snp",
+            "nodeSelector": {
+              "nvidia.com/cc.ready.state": "true",
+              "amd.feature.node.kubernetes.io/snp": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          },
+          {
+            "id": "tdx",
+            "displayName": "Intel TDX",
+            "shimId": "qemu-nvidia-gpu-tdx-runtime-rs",
+            "runtimeClass": "kata-qemu-nvidia-gpu-tdx-runtime-rs",
+            "documentedRuntimeClass": "kata-qemu-nvidia-gpu-tdx",
+            "nodeSelector": {
+              "nvidia.com/cc.ready.state": "true",
+              "intel.feature.node.kubernetes.io/tdx": "true"
+            },
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-nvidia-gpu.values.yaml"
+          }
+        ]
+      },
+      "provisioner": {
+        "chart": {
+          "name": "kata-device-provisioner",
+          "version": "0.1.0-alpha.3",
+          "appVersion": "0.1.0-alpha.3",
+          "namespace": "kata-system",
+          "repository": "kata-containers/kata-device-provisioner",
+          "ref": "0429c4e117aa7dcd64c9267d5f083670180407f3",
+          "chartPath": "deploy/helm/kata-device-provisioner",
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/Chart.yaml",
+          "experimental": true
+        },
+        "values": {
+          "image": {
+            "reference": "ghcr.io/kata-containers/kata-device-provisioner",
+            "tag": "0.1.0-alpha.3"
+          },
+          "job": {
+            "dispatcherImage": {
+              "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+              "tag": "0.4.0"
+            }
+          }
+        }
+      },
+      "devicePlugin": {
+        "chart": {
+          "chartName": "kata-device-plugin",
+          "version": "0.2.0-rc.2",
+          "appVersion": "0.2.0-rc.2",
+          "required": false,
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
+        },
+        "values": {
+          "fullnameOverride": "",
+          "image": {
+            "repository": "ghcr.io/kata-containers/kata-device-plugin",
+            "tag": "v0.2.0-rc.2",
+            "pullPolicy": "IfNotPresent"
+          },
+          "nodeSelector": {
+            "katacontainers.io/kata-runtime": null,
+            "feature.node.kubernetes.io/pci-0302_10de.present": "true"
+          },
+          "tolerations": [
+            {
+              "operator": "Exists",
+              "effect": "NoSchedule"
+            }
+          ],
+          "resources": {
+            "requests": {
+              "cpu": "10m",
+              "memory": "20Mi"
+            },
+            "limits": {
+              "cpu": "100m",
+              "memory": "64Mi"
+            }
+          },
+          "resourceNaming": "alias",
+          "logFilter": ""
+        },
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
+      },
+      "workload": {
+        "resourceName": "nvidia.com/gpu",
+        "nvSwitchResourceName": "nvidia.com/nvswitch",
+        "resourceNaming": "alias",
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/src/vfio.rs"
+      }
+    },
+    {
+      "id": "amd",
+      "displayName": "AMD",
+      "tagline": "SEV-SNP",
+      "description": "Run AMD SEV-SNP confidential workloads with Kata.",
+      "logo": "amd.svg",
+      "capabilities": [
+        {
+          "id": "confidential-computing"
+        }
+      ],
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml",
+      "hardwareFamilies": [],
+      "runtime": {
+        "chart": {
+          "name": "kata-deploy",
+          "version": "4.3.1",
+          "appVersion": "4.3.1",
+          "ociReference": "oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy",
+          "namespace": "kata-system",
+          "valuesFileName": "kata-amd.values.yaml",
+          "values": {
+            "debug": false,
+            "deploymentMode": "job",
+            "image": {
+              "reference": "quay.io/kata-containers/kata-deploy",
+              "tag": "4.3.1"
+            },
+            "kubectlImage": {
+              "reference": "quay.io/kata-containers/kubectl",
+              "tag": "v1.37.0"
+            },
+            "job": {
+              "dispatcherImage": {
+                "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+                "tag": "0.3.0"
+              }
+            },
+            "snapshotter": {
+              "setup": [],
+              "erofsMergeMode": "",
+              "erofsSnapshotterMode": "",
+              "erofsDmverity": false
+            },
+            "shims": {
+              "disableAll": true,
+              "qemu-snp-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                }
+              }
+            },
+            "defaultShim": {
+              "amd64": "qemu-runtime-rs",
+              "arm64": "qemu-runtime-rs",
+              "s390x": "qemu-runtime-rs",
+              "ppc64le": "qemu-runtime-rs"
+            },
+            "runtimeClasses": {
+              "enabled": true,
+              "createDefault": false,
+              "defaultName": "kata",
+              "overheadEnabled": true
+            },
+            "node-feature-discovery": {
+              "enabled": false
+            }
+          },
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
+        },
+        "shims": [
+          {
+            "id": "qemu-snp-runtime-rs",
+            "runtimeClass": "kata-qemu-snp-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml"
+          }
+        ],
+        "cpuTees": []
+      },
+      "provisioner": {
+        "chart": {
+          "name": "kata-device-provisioner",
+          "version": "0.1.0-alpha.3",
+          "appVersion": "0.1.0-alpha.3",
+          "namespace": "kata-system",
+          "repository": "kata-containers/kata-device-provisioner",
+          "ref": "0429c4e117aa7dcd64c9267d5f083670180407f3",
+          "chartPath": "deploy/helm/kata-device-provisioner",
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/Chart.yaml",
+          "experimental": true
+        },
+        "values": {
+          "image": {
+            "reference": "ghcr.io/kata-containers/kata-device-provisioner",
+            "tag": "0.1.0-alpha.3"
+          },
+          "job": {
+            "dispatcherImage": {
+              "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+              "tag": "0.4.0"
+            }
+          }
+        }
+      },
+      "devicePlugin": {
+        "chart": {
+          "chartName": "kata-device-plugin",
+          "version": "0.2.0-rc.2",
+          "appVersion": "0.2.0-rc.2",
+          "required": false,
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
+        },
+        "values": {},
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
+      },
+      "workload": {
+        "resourceName": "",
+        "nvSwitchResourceName": "",
+        "resourceNaming": "",
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+      }
+    },
+    {
+      "id": "ibm",
+      "displayName": "IBM",
+      "tagline": "Secure Execution for Linux",
+      "description": "Run IBM Z Secure Execution confidential workloads with Kata.",
+      "logo": "ibm.png",
+      "capabilities": [
+        {
+          "id": "confidential-computing"
+        }
+      ],
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml",
+      "hardwareFamilies": [],
+      "runtime": {
+        "chart": {
+          "name": "kata-deploy",
+          "version": "4.3.1",
+          "appVersion": "4.3.1",
+          "ociReference": "oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy",
+          "namespace": "kata-system",
+          "valuesFileName": "kata-ibm.values.yaml",
+          "values": {
+            "debug": false,
+            "deploymentMode": "job",
+            "image": {
+              "reference": "quay.io/kata-containers/kata-deploy",
+              "tag": "4.3.1"
+            },
+            "kubectlImage": {
+              "reference": "quay.io/kata-containers/kubectl",
+              "tag": "v1.37.0"
+            },
+            "job": {
+              "dispatcherImage": {
+                "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+                "tag": "0.3.0"
+              }
+            },
+            "snapshotter": {
+              "setup": [],
+              "erofsMergeMode": "",
+              "erofsSnapshotterMode": "",
+              "erofsDmverity": false
+            },
+            "shims": {
+              "disableAll": true,
+              "qemu-se-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "s390x"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                }
+              }
+            },
+            "defaultShim": {
+              "amd64": "qemu-runtime-rs",
+              "arm64": "qemu-runtime-rs",
+              "s390x": "qemu-runtime-rs",
+              "ppc64le": "qemu-runtime-rs"
+            },
+            "runtimeClasses": {
+              "enabled": true,
+              "createDefault": false,
+              "defaultName": "kata",
+              "overheadEnabled": true
+            },
+            "node-feature-discovery": {
+              "enabled": false
+            }
+          },
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
+        },
+        "shims": [
+          {
+            "id": "qemu-se-runtime-rs",
+            "runtimeClass": "kata-qemu-se-runtime-rs",
+            "supportedArches": [
+              "s390x"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml"
+          }
+        ],
+        "cpuTees": []
+      },
+      "provisioner": {
+        "chart": {
+          "name": "kata-device-provisioner",
+          "version": "0.1.0-alpha.3",
+          "appVersion": "0.1.0-alpha.3",
+          "namespace": "kata-system",
+          "repository": "kata-containers/kata-device-provisioner",
+          "ref": "0429c4e117aa7dcd64c9267d5f083670180407f3",
+          "chartPath": "deploy/helm/kata-device-provisioner",
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/Chart.yaml",
+          "experimental": true
+        },
+        "values": {
+          "image": {
+            "reference": "ghcr.io/kata-containers/kata-device-provisioner",
+            "tag": "0.1.0-alpha.3"
+          },
+          "job": {
+            "dispatcherImage": {
+              "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+              "tag": "0.4.0"
+            }
+          }
+        }
+      },
+      "devicePlugin": {
+        "chart": {
+          "chartName": "kata-device-plugin",
+          "version": "0.2.0-rc.2",
+          "appVersion": "0.2.0-rc.2",
+          "required": false,
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
+        },
+        "values": {},
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
+      },
+      "workload": {
+        "resourceName": "",
+        "nvSwitchResourceName": "",
+        "resourceNaming": "",
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+      }
+    },
+    {
+      "id": "intel",
+      "displayName": "Intel",
+      "tagline": "TDX",
+      "description": "Run Intel TDX confidential workloads with Kata.",
+      "logo": "intel.png",
+      "capabilities": [
+        {
+          "id": "confidential-computing"
+        }
+      ],
+      "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml",
+      "hardwareFamilies": [],
+      "runtime": {
+        "chart": {
+          "name": "kata-deploy",
+          "version": "4.3.1",
+          "appVersion": "4.3.1",
+          "ociReference": "oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy",
+          "namespace": "kata-system",
+          "valuesFileName": "kata-intel.values.yaml",
+          "values": {
+            "debug": false,
+            "deploymentMode": "job",
+            "image": {
+              "reference": "quay.io/kata-containers/kata-deploy",
+              "tag": "4.3.1"
+            },
+            "kubectlImage": {
+              "reference": "quay.io/kata-containers/kubectl",
+              "tag": "v1.37.0"
+            },
+            "job": {
+              "dispatcherImage": {
+                "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+                "tag": "0.3.0"
+              }
+            },
+            "snapshotter": {
+              "setup": [],
+              "erofsMergeMode": "",
+              "erofsSnapshotterMode": "",
+              "erofsDmverity": false
+            },
+            "shims": {
+              "disableAll": true,
+              "qemu-tdx-runtime-rs": {
+                "enabled": true,
+                "supportedArches": [
+                  "amd64"
+                ],
+                "allowedHypervisorAnnotations": [],
+                "containerd": {
+                  "snapshotter": "nydus",
+                  "forceGuestPull": false
+                },
+                "crio": {
+                  "guestPull": true
+                },
+                "agent": {
+                  "httpsProxy": "",
+                  "noProxy": ""
+                }
+              }
+            },
+            "defaultShim": {
+              "amd64": "qemu-runtime-rs",
+              "arm64": "qemu-runtime-rs",
+              "s390x": "qemu-runtime-rs",
+              "ppc64le": "qemu-runtime-rs"
+            },
+            "runtimeClasses": {
+              "enabled": true,
+              "createDefault": false,
+              "defaultName": "kata",
+              "overheadEnabled": true
+            },
+            "node-feature-discovery": {
+              "enabled": false
+            }
+          },
+          "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/Chart.yaml"
+        },
+        "shims": [
+          {
+            "id": "qemu-tdx-runtime-rs",
+            "runtimeClass": "kata-qemu-tdx-runtime-rs",
+            "supportedArches": [
+              "amd64"
+            ],
+            "snapshotter": "nydus",
+            "nodeSelector": {},
+            "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/try-kata-tee.values.yaml"
+          }
+        ],
+        "cpuTees": []
+      },
+      "provisioner": {
+        "chart": {
+          "name": "kata-device-provisioner",
+          "version": "0.1.0-alpha.3",
+          "appVersion": "0.1.0-alpha.3",
+          "namespace": "kata-system",
+          "repository": "kata-containers/kata-device-provisioner",
+          "ref": "0429c4e117aa7dcd64c9267d5f083670180407f3",
+          "chartPath": "deploy/helm/kata-device-provisioner",
+          "sourceUrl": "https://github.com/kata-containers/kata-device-provisioner/blob/0429c4e117aa7dcd64c9267d5f083670180407f3/deploy/helm/kata-device-provisioner/Chart.yaml",
+          "experimental": true
+        },
+        "values": {
+          "image": {
+            "reference": "ghcr.io/kata-containers/kata-device-provisioner",
+            "tag": "0.1.0-alpha.3"
+          },
+          "job": {
+            "dispatcherImage": {
+              "reference": "ghcr.io/kata-containers/k8s-job-dispatcher",
+              "tag": "0.4.0"
+            }
+          }
+        }
+      },
+      "devicePlugin": {
+        "chart": {
+          "chartName": "kata-device-plugin",
+          "version": "0.2.0-rc.2",
+          "appVersion": "0.2.0-rc.2",
+          "required": false,
+          "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
+        },
+        "values": {},
+        "sourceUrl": "https://github.com/kata-containers/kata-device-plugin/blob/02f869a706207845cec4879a38924c9094b00c7d/deploy/helm/kata-device-plugin/Chart.yaml"
+      },
+      "workload": {
+        "resourceName": "",
+        "nvSwitchResourceName": "",
+        "resourceNaming": "",
+        "sourceUrl": "https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/values.yaml"
+      }
+    }
+  ]
+}

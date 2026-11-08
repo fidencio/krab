@@ -1,0 +1,803 @@
+name: Release KRAB Helm chart
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release-chart
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: write
+  packages: write
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+env:
+  CHART_PATH: charts/krab
+  CHART_REGISTRY: oci://ghcr.io/kata-containers
+  CHART_REFERENCE: oci://ghcr.io/kata-containers/krab
+  PRECHECK_CHART_PATH: charts/precheck
+  PRECHECK_CHART_REFERENCE: oci://ghcr.io/kata-containers/krab-precheck
+
+jobs:
+  existing_builds:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    outputs:
+      preflight: ${{ steps.existing.outputs.preflight }}
+      cli: ${{ steps.existing.outputs.cli }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Reuse successful builds of the exact release commit
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/reuse-release-artifacts.py
+
+  preflight_binaries:
+    needs: existing_builds
+    if: needs.existing_builds.outputs.preflight == ''
+    uses: ./.github/workflows/preflight-binaries.yml
+    permissions:
+      contents: read
+
+  cli_binaries:
+    needs: existing_builds
+    if: needs.existing_builds.outputs.cli == ''
+    uses: ./.github/workflows/cli.yml
+    permissions:
+      contents: read
+
+  release:
+    needs: [existing_builds, preflight_binaries, cli_binaries]
+    if: >-
+      ${{ !cancelled() && needs.existing_builds.result == 'success' &&
+          (needs.preflight_binaries.result == 'success' || needs.preflight_binaries.result == 'skipped') &&
+          (needs.cli_binaries.result == 'success' || needs.cli_binaries.result == 'skipped') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: krab-preflight-linux-*
+          merge-multiple: true
+          path: dist-binaries
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ needs.existing_builds.outputs.preflight || github.run_id }}
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: krab-cli-*
+          merge-multiple: true
+          path: dist-cli
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ needs.existing_builds.outputs.cli || github.run_id }}
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5
+
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - uses: oras-project/setup-oras@5e2f2482b30b0cb3e14e67f89a80c88c659a7c63 # v2.0.3
+        with:
+          version: 1.3.3
+
+      - run: npm ci
+
+      - name: Install shared browser engine toolchain
+        run: rustup toolchain install 1.95.0 --profile minimal --target wasm32-unknown-unknown
+
+      - uses: ./.github/actions/cache-browser-engine
+
+      - name: Verify release versions and branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "::error::Chart releases must be dispatched from main"
+            exit 1
+          fi
+
+          metadata="$(node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs'
+          import { parse } from 'yaml'
+
+          const chart = parse(readFileSync('charts/krab/Chart.yaml', 'utf8'))
+          const precheck = parse(readFileSync('charts/precheck/Chart.yaml', 'utf8'))
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+          for (const path of ['preflight/Cargo.toml', 'preflight/Cargo.lock', 'cli/Cargo.toml', 'cli/Cargo.lock', 'core/Cargo.toml', 'core/Cargo.lock']) {
+            const version = readFileSync(path, 'utf8').match(/name = \"krab(?:-preflight|-core)?\"\nversion = \"([^\"]+)\"/)?.[1]
+            if (version !== pkg.version) {
+              throw new Error(`${path}: native version ${version} must match KRAB ${pkg.version}; run npm run generate`)
+            }
+          }
+          const match = chart.version.match(
+            /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/,
+          )
+          if (!match) {
+            throw new Error(`Chart version ${chart.version} is not valid SemVer`)
+          }
+          console.log([
+            chart.version,
+            chart.appVersion,
+            pkg.version,
+            precheck.version,
+            precheck.appVersion,
+            String(match[1] !== undefined),
+            chart.annotations?.['artifacthub.io/prerelease'],
+          ].join('\t'))
+          NODE
+          )"
+          IFS=$'\t' read -r \
+            chart_version \
+            app_version \
+            package_version \
+            precheck_version \
+            precheck_app_version \
+            is_prerelease \
+            artifacthub_prerelease <<<"${metadata}"
+
+          if [[ "${chart_version}" != "${app_version}" || "${chart_version}" != "${package_version}" || \
+                "${chart_version}" != "${precheck_version}" || "${chart_version}" != "${precheck_app_version}" ]]; then
+            echo "::error::KRAB chart, pre-check chart, and package versions must all match"
+            exit 1
+          fi
+
+          if [[ "${artifacthub_prerelease}" != "${is_prerelease}" ]]; then
+            echo "::error::Artifact Hub prerelease annotation (${artifacthub_prerelease}) must match SemVer prerelease status (${is_prerelease})"
+            exit 1
+          fi
+
+          echo "CHART_VERSION=${chart_version}" >> "${GITHUB_ENV}"
+          echo "RELEASE_TAG=chart-v${chart_version}" >> "${GITHUB_ENV}"
+          echo "IS_PRERELEASE=${is_prerelease}" >> "${GITHUB_ENV}"
+          echo "PRECHECK_IMAGE=ghcr.io/kata-containers/krab-preflight:${chart_version}" >> "${GITHUB_ENV}"
+          echo "COLLECTOR_IMAGE=ghcr.io/kata-containers/krab-collector:${chart_version}" >> "${GITHUB_ENV}"
+
+      - name: Require both standalone checker archives
+        run: |
+          for arch in amd64 arm64; do
+            test -f "dist-binaries/krab-preflight-${CHART_VERSION}-linux-${arch}.tar.gz"
+          done
+
+      - name: Require all native CLI archives
+        run: |
+          for platform in linux-amd64 linux-arm64 darwin-arm64; do
+            test -f "dist-cli/krab-${CHART_VERSION}-${platform}.tar.gz"
+          done
+
+      - name: Regenerate and verify committed release data
+        run: |
+          npm run generate
+          npm run build:core
+          git diff --exit-code -- \
+            preflight/Cargo.toml preflight/Cargo.lock cli/Cargo.toml cli/Cargo.lock core/Cargo.toml core/Cargo.lock \
+            package-lock.json charts/krab/Chart.yaml charts/krab/values.yaml charts/krab/templates/_kata-node-job-base.tpl \
+            charts/precheck/Chart.yaml charts/precheck/values.yaml \
+            Dockerfile.precheck upstream/precheck-image.lock.json \
+            upstream/architecture.yaml README.md charts/krab/README.md \
+            CHANGELOG.md src/generated
+
+      - name: Validate application and chart contracts
+        run: |
+          npm test
+          npm run test:chart
+          npm run lint
+          npm run build
+
+      - name: Build versioned release builder
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BASE_PATH="/${{ github.event.repository.name }}/releases/${CHART_VERSION}/" npm run build
+          mkdir -p dist-builder
+          builder_archive="dist-builder/krab-builder-${CHART_VERSION}.tar.gz"
+          tar -czf "${builder_archive}" -C dist .
+
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            existing_dir="${RUNNER_TEMP}/existing-builder"
+            local_dir="${RUNNER_TEMP}/local-builder"
+            mkdir -p "${existing_dir}" "${local_dir}"
+            if gh release download "${RELEASE_TAG}" \
+              --pattern "krab-builder-${CHART_VERSION}.tar.gz" \
+              --dir "${existing_dir}" >/dev/null 2>&1; then
+              tar -xzf "${builder_archive}" -C "${local_dir}"
+              published_archive="${existing_dir}/krab-builder-${CHART_VERSION}.tar.gz"
+              published_dir="${RUNNER_TEMP}/published-builder"
+              mkdir -p "${published_dir}"
+              tar -xzf "${published_archive}" -C "${published_dir}"
+              if ! diff --recursive --brief "${local_dir}" "${published_dir}"; then
+                echo "::error::Published builder ${CHART_VERSION} differs from this build"
+                exit 1
+              fi
+              cp "${published_archive}" "${builder_archive}"
+            fi
+          fi
+
+      - name: Verify upstream OCI dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          node --input-type=module > "${RUNNER_TEMP}/oci-dependencies.tsv" <<'NODE'
+          import { readFileSync } from 'node:fs'
+          import { parse } from 'yaml'
+
+          const chart = parse(readFileSync('charts/krab/Chart.yaml', 'utf8'))
+          for (const dependency of chart.dependencies ?? []) {
+            if (dependency.repository?.startsWith('oci://')) {
+              console.log([
+                `${dependency.repository}/${dependency.name}`,
+                dependency.version,
+              ].join('\t'))
+            }
+          }
+          NODE
+
+          missing=()
+          while IFS=$'\t' read -r reference version; do
+            if ! helm show chart "${reference}" --version "${version}" >/dev/null 2>&1; then
+              missing+=("${reference}:${version}")
+            fi
+          done < "${RUNNER_TEMP}/oci-dependencies.tsv"
+
+          if (( ${#missing[@]} > 0 )); then
+            printf '::error::KRAB chart publication is blocked. Missing upstream OCI chart: %s\n' "${missing[@]}"
+            exit 1
+          fi
+
+      - name: Validate pre-flight collector and probe
+        run: |
+          bash -n charts/precheck/files/collect.sh
+          cargo test --manifest-path preflight/Cargo.toml --locked
+          npm run verify:precheck-image
+
+      - name: Build and smoke test the collector image
+        run: |
+          docker build --file Dockerfile.collector --tag krab-collector:smoke .
+          docker run --rm --entrypoint /bin/bash \
+            --volume "${PWD}/test:/tests:ro" krab-collector:smoke \
+            /tests/collector-smoke.sh /usr/local/bin/krab-collect
+
+      - name: Build, lint, and render charts
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          helm dependency build "${CHART_PATH}"
+          helm lint "${CHART_PATH}"
+          helm template krab "${CHART_PATH}" --namespace kata-system \
+            > "${RUNNER_TEMP}/krab-default-render.yaml"
+
+          cat > "${RUNNER_TEMP}/nvidia-values.yaml" <<'VALUES'
+          nvidia:
+            enabled: true
+          kata-device-provisioner:
+            profiles:
+              release-smoke:
+                enabled: true
+                ccMode: "off"
+          VALUES
+          helm template krab "${CHART_PATH}" \
+            --namespace kata-system \
+            --values "${RUNNER_TEMP}/nvidia-values.yaml" \
+            > "${RUNNER_TEMP}/krab-nvidia-render.yaml"
+
+          helm lint "${PRECHECK_CHART_PATH}"
+          helm template krab-precheck "${PRECHECK_CHART_PATH}" --namespace krab-precheck \
+            > "${RUNNER_TEMP}/krab-precheck-render.yaml"
+
+          mkdir -p dist-chart dist-precheck
+          helm package "${CHART_PATH}" --destination dist-chart
+          helm package "${PRECHECK_CHART_PATH}" --destination dist-precheck
+
+      - name: Reconcile existing published chart
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          chart_package="dist-chart/krab-${CHART_VERSION}.tgz"
+          published_dir="${RUNNER_TEMP}/published-chart"
+          local_tree="${RUNNER_TEMP}/local-chart"
+          published_tree="${RUNNER_TEMP}/published-chart-tree"
+          mkdir -p "${published_dir}" "${local_tree}" "${published_tree}"
+
+          if helm pull "${CHART_REFERENCE}" \
+            --version "${CHART_VERSION}" \
+            --destination "${published_dir}" >/dev/null 2>&1; then
+            published_package="${published_dir}/krab-${CHART_VERSION}.tgz"
+            tar -xzf "${chart_package}" -C "${local_tree}"
+            tar -xzf "${published_package}" -C "${published_tree}"
+            if ! diff --recursive --brief --exclude Chart.lock \
+              "${local_tree}/krab" \
+              "${published_tree}/krab"; then
+              echo "::error::Published chart ${CHART_VERSION} differs from this build"
+              exit 1
+            fi
+            if ! diff --brief \
+              <(sed '/^generated:/d' "${local_tree}/krab/Chart.lock") \
+              <(sed '/^generated:/d' "${published_tree}/krab/Chart.lock"); then
+              echo "::error::Published chart ${CHART_VERSION} has a different dependency lock"
+              exit 1
+            fi
+            cp "${published_package}" "${chart_package}"
+            echo "PUBLISH_CHART=false" >> "${GITHUB_ENV}"
+            echo "Chart ${CHART_VERSION} is already published with identical content"
+          else
+            echo "PUBLISH_CHART=true" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Reconcile existing published pre-flight chart
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          chart_package="dist-precheck/krab-precheck-${CHART_VERSION}.tgz"
+          published_dir="${RUNNER_TEMP}/published-precheck-chart"
+          local_tree="${RUNNER_TEMP}/local-precheck-chart"
+          published_tree="${RUNNER_TEMP}/published-precheck-chart-tree"
+          mkdir -p "${published_dir}" "${local_tree}" "${published_tree}"
+
+          if helm pull "${PRECHECK_CHART_REFERENCE}" \
+            --version "${CHART_VERSION}" \
+            --destination "${published_dir}" >/dev/null 2>&1; then
+            published_package="${published_dir}/krab-precheck-${CHART_VERSION}.tgz"
+            tar -xzf "${chart_package}" -C "${local_tree}"
+            tar -xzf "${published_package}" -C "${published_tree}"
+            if ! diff --recursive --brief \
+              "${local_tree}/krab-precheck" \
+              "${published_tree}/krab-precheck"; then
+              echo "::error::Published pre-flight chart ${CHART_VERSION} differs from this build"
+              exit 1
+            fi
+            cp "${published_package}" "${chart_package}"
+            echo "PUBLISH_PRECHECK_CHART=false" >> "${GITHUB_ENV}"
+            echo "Pre-flight chart ${CHART_VERSION} is already published with identical content"
+          else
+            echo "PUBLISH_PRECHECK_CHART=true" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Generate chart SBOMs from packaged dependencies
+        run: |
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          mkdir -p dist-sbom
+          node --import tsx scripts/chart-sbom.ts \
+            "dist-chart/krab-${CHART_VERSION}.tgz" \
+            "dist-sbom/krab-${CHART_VERSION}.spdx.json"
+          node --import tsx scripts/chart-sbom.ts \
+            "dist-precheck/krab-precheck-${CHART_VERSION}.tgz" \
+            "dist-sbom/krab-precheck-${CHART_VERSION}.spdx.json"
+
+      - name: Check rendered images against chart SBOMs
+        run: |
+          node --import tsx scripts/verify-sbom-images.ts \
+            "dist-sbom/krab-${CHART_VERSION}.spdx.json" \
+            "${RUNNER_TEMP}/krab-default-render.yaml" \
+            "${RUNNER_TEMP}/krab-nvidia-render.yaml"
+          node --import tsx scripts/verify-sbom-images.ts \
+            "dist-sbom/krab-precheck-${CHART_VERSION}.spdx.json" \
+            "${RUNNER_TEMP}/krab-precheck-render.yaml"
+
+      - name: Check main before publishing attestations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/verify-release-head.sh
+
+      - name: Attest KRAB chart SBOM
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-path: dist-chart/krab-${{ env.CHART_VERSION }}.tgz
+          sbom-path: dist-sbom/krab-${{ env.CHART_VERSION }}.spdx.json
+
+      - name: Attest pre-flight chart SBOM
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-path: dist-precheck/krab-precheck-${{ env.CHART_VERSION }}.tgz
+          sbom-path: dist-sbom/krab-precheck-${{ env.CHART_VERSION }}.spdx.json
+
+      - name: Check existing pre-flight image
+        shell: bash
+        run: |
+          set -euo pipefail
+          if docker pull --platform linux/amd64 "${PRECHECK_IMAGE}" >/dev/null 2>&1; then
+            revision="$(docker image inspect "${PRECHECK_IMAGE}" \
+              --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+            if [[ "${revision}" != "${GITHUB_SHA}" ]]; then
+              echo "::error::Existing pre-flight image ${PRECHECK_IMAGE} was built from ${revision}, not ${GITHUB_SHA}"
+              exit 1
+            fi
+            echo "PUBLISH_PRECHECK_IMAGE=false" >> "${GITHUB_ENV}"
+          else
+            echo "PUBLISH_PRECHECK_IMAGE=true" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Check existing collector image
+        shell: bash
+        run: |
+          set -euo pipefail
+          if docker pull --platform linux/amd64 "${COLLECTOR_IMAGE}" >/dev/null 2>&1; then
+            revision="$(docker image inspect "${COLLECTOR_IMAGE}" \
+              --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+            if [[ "${revision}" != "${GITHUB_SHA}" ]]; then
+              echo "::error::Existing collector image ${COLLECTOR_IMAGE} was built from ${revision}, not ${GITHUB_SHA}"
+              exit 1
+            fi
+            echo "PUBLISH_COLLECTOR_IMAGE=false" >> "${GITHUB_ENV}"
+          else
+            echo "PUBLISH_COLLECTOR_IMAGE=true" >> "${GITHUB_ENV}"
+          fi
+
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check main before publishing the pre-flight image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/verify-release-head.sh
+
+      - name: Publish pre-flight image
+        if: env.PUBLISH_PRECHECK_IMAGE == 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          file: Dockerfile.precheck
+          push: true
+          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          tags: ${{ env.PRECHECK_IMAGE }}
+          cache-from: |
+            type=gha,scope=preflight-release
+            type=gha,scope=preflight-amd64
+            type=gha,scope=preflight-arm64
+            type=gha,scope=preflight-ppc64le
+            type=gha,scope=preflight-s390x
+          cache-to: type=gha,scope=preflight-release,mode=max
+          labels: |
+            org.opencontainers.image.source=https://github.com/kata-containers/krab
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Check main before publishing the collector image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/verify-release-head.sh
+
+      - name: Publish collector image
+        if: env.PUBLISH_COLLECTOR_IMAGE == 'true'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          file: Dockerfile.collector
+          push: true
+          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+          tags: ${{ env.COLLECTOR_IMAGE }}
+          cache-from: type=gha,scope=collector-release
+          cache-to: type=gha,scope=collector-release,mode=max
+          labels: |
+            org.opencontainers.image.source=https://github.com/kata-containers/krab
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Verify anonymous pre-flight and collector image access
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker logout ghcr.io
+          for image in "${PRECHECK_IMAGE}" "${COLLECTOR_IMAGE}"; do
+            accessible=false
+            for attempt in {1..6}; do
+              if docker buildx imagetools inspect "${image}" >/dev/null 2>&1; then
+                accessible=true
+                break
+              fi
+              sleep 10
+            done
+            if [[ "${accessible}" != true ]]; then
+              echo "::error::Image ${image} is not anonymously pullable"
+              exit 1
+            fi
+          done
+
+      - name: Install checksum-verified Syft through the release API
+        id: syft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/install-syft.py
+
+      - name: Generate a pre-flight image SBOM for each architecture
+        id: image_sbom
+        shell: bash
+        env:
+          SYFT: ${{ steps.syft.outputs.cmd }}
+        run: |
+          set -euo pipefail
+          image_digest="$(oras manifest fetch --descriptor "${PRECHECK_IMAGE}" | jq -r '.digest')"
+          [[ "${image_digest}" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+            echo "::error::Could not resolve the published pre-flight image digest"
+            exit 1
+          }
+          echo "index_digest=${image_digest}" >> "${GITHUB_OUTPUT}"
+          manifest="$(oras manifest fetch "${PRECHECK_IMAGE}@${image_digest}")"
+          for arch in amd64 arm64 ppc64le s390x; do
+            platform_digest="$(jq -r --arg arch "${arch}" \
+              '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == $arch) | .digest] | if length == 1 then .[0] else empty end' \
+              <<<"${manifest}")"
+            [[ "${platform_digest}" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+              echo "::error::Expected one published linux/${arch} manifest"
+              exit 1
+            }
+            echo "${arch}_digest=${platform_digest}" >> "${GITHUB_OUTPUT}"
+            "${SYFT}" "${PRECHECK_IMAGE}@${image_digest}" \
+              --from registry \
+              --platform "linux/${arch}" \
+              -o "spdx-json=dist-sbom/krab-preflight-${CHART_VERSION}-linux-${arch}.spdx.json"
+          done
+
+      - name: Generate a collector image SBOM for each architecture
+        id: collector_sbom
+        shell: bash
+        env:
+          SYFT: ${{ steps.syft.outputs.cmd }}
+        run: |
+          set -euo pipefail
+          image_digest="$(oras manifest fetch --descriptor "${COLLECTOR_IMAGE}" | jq -r '.digest')"
+          [[ "${image_digest}" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+            echo "::error::Could not resolve the published collector image digest"
+            exit 1
+          }
+          echo "index_digest=${image_digest}" >> "${GITHUB_OUTPUT}"
+          manifest="$(oras manifest fetch "${COLLECTOR_IMAGE}@${image_digest}")"
+          for arch in amd64 arm64 ppc64le s390x; do
+            platform_digest="$(jq -r --arg arch "${arch}" \
+              '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == $arch) | .digest] | if length == 1 then .[0] else empty end' \
+              <<<"${manifest}")"
+            [[ "${platform_digest}" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+              echo "::error::Expected one published linux/${arch} manifest"
+              exit 1
+            }
+            echo "${arch}_digest=${platform_digest}" >> "${GITHUB_OUTPUT}"
+            "${SYFT}" "${COLLECTOR_IMAGE}@${image_digest}" \
+              --from registry \
+              --platform "linux/${arch}" \
+              -o "spdx-json=dist-sbom/krab-collector-${CHART_VERSION}-linux-${arch}.spdx.json"
+          done
+
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check main before publishing image SBOM attestations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/verify-release-head.sh
+
+      - name: Attest amd64 pre-flight image SBOM
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-name: ghcr.io/kata-containers/krab-preflight
+          subject-digest: ${{ steps.image_sbom.outputs.amd64_digest }}
+          sbom-path: dist-sbom/krab-preflight-${{ env.CHART_VERSION }}-linux-amd64.spdx.json
+          push-to-registry: true
+
+      - name: Attest arm64 pre-flight image SBOM
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-name: ghcr.io/kata-containers/krab-preflight
+          subject-digest: ${{ steps.image_sbom.outputs.arm64_digest }}
+          sbom-path: dist-sbom/krab-preflight-${{ env.CHART_VERSION }}-linux-arm64.spdx.json
+          push-to-registry: true
+
+      - name: Attest ppc64le pre-flight image SBOM
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-name: ghcr.io/kata-containers/krab-preflight
+          subject-digest: ${{ steps.image_sbom.outputs.ppc64le_digest }}
+          sbom-path: dist-sbom/krab-preflight-${{ env.CHART_VERSION }}-linux-ppc64le.spdx.json
+          push-to-registry: true
+
+      - name: Attest s390x pre-flight image SBOM
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-name: ghcr.io/kata-containers/krab-preflight
+          subject-digest: ${{ steps.image_sbom.outputs.s390x_digest }}
+          sbom-path: dist-sbom/krab-preflight-${{ env.CHART_VERSION }}-linux-s390x.spdx.json
+          push-to-registry: true
+
+      - name: Attest amd64 collector image SBOM
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-name: ghcr.io/kata-containers/krab-collector
+          subject-digest: ${{ steps.collector_sbom.outputs.amd64_digest }}
+          sbom-path: dist-sbom/krab-collector-${{ env.CHART_VERSION }}-linux-amd64.spdx.json
+          push-to-registry: true
+
+      - name: Attest arm64 collector image SBOM
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-name: ghcr.io/kata-containers/krab-collector
+          subject-digest: ${{ steps.collector_sbom.outputs.arm64_digest }}
+          sbom-path: dist-sbom/krab-collector-${{ env.CHART_VERSION }}-linux-arm64.spdx.json
+          push-to-registry: true
+
+      - name: Attest ppc64le collector image SBOM
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-name: ghcr.io/kata-containers/krab-collector
+          subject-digest: ${{ steps.collector_sbom.outputs.ppc64le_digest }}
+          sbom-path: dist-sbom/krab-collector-${{ env.CHART_VERSION }}-linux-ppc64le.spdx.json
+          push-to-registry: true
+
+      - name: Attest s390x collector image SBOM
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-name: ghcr.io/kata-containers/krab-collector
+          subject-digest: ${{ steps.collector_sbom.outputs.s390x_digest }}
+          sbom-path: dist-sbom/krab-collector-${{ env.CHART_VERSION }}-linux-s390x.spdx.json
+          push-to-registry: true
+
+      - name: Prepare release checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum "dist-chart/krab-${CHART_VERSION}.tgz" \
+            "dist-precheck/krab-precheck-${CHART_VERSION}.tgz" \
+            "dist-builder/krab-builder-${CHART_VERSION}.tar.gz" \
+            dist-binaries/*.tar.gz \
+            dist-cli/*.tar.gz \
+            dist-sbom/*.spdx.json \
+            | sed 's#dist-chart/##; s#dist-precheck/##; s#dist-builder/##; s#dist-binaries/##; s#dist-cli/##; s#dist-sbom/##' \
+            > dist-chart/SHA256SUMS
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: krab-chart-${{ env.CHART_VERSION }}
+          path: |
+            dist-chart/krab-*.tgz
+            dist-precheck/krab-precheck-*.tgz
+            dist-builder/krab-builder-*.tar.gz
+            dist-binaries/*.tar.gz
+            dist-cli/*.tar.gz
+            dist-sbom/*.spdx.json
+            dist-chart/SHA256SUMS
+          if-no-files-found: error
+
+      - name: Check main before publishing build attestations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/verify-release-head.sh
+
+      - name: Attest chart package
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-path: dist-chart/krab-*.tgz
+
+      - name: Attest pre-flight chart package
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-path: dist-precheck/krab-precheck-*.tgz
+
+      - name: Attest release builder
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-path: dist-builder/krab-builder-*.tar.gz
+
+      - name: Attest standalone checker archives
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-path: dist-binaries/*.tar.gz
+
+      - name: Attest native CLI archives
+        uses: ./.github/actions/attest-retry
+        with:
+          subject-path: dist-cli/*.tar.gz
+
+      - name: Publish and verify charts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          bash scripts/verify-release-head.sh
+
+          chart_package="dist-chart/krab-${CHART_VERSION}.tgz"
+          precheck_package="dist-precheck/krab-precheck-${CHART_VERSION}.tgz"
+          if [[ "${PUBLISH_CHART}" == "true" || "${PUBLISH_PRECHECK_CHART}" == "true" ]]; then
+            echo "${{ secrets.GITHUB_TOKEN }}" |
+              helm registry login ghcr.io \
+                --username "${{ github.actor }}" \
+                --password-stdin
+          fi
+          if [[ "${PUBLISH_PRECHECK_CHART}" == "true" ]]; then
+            helm push "${precheck_package}" "${CHART_REGISTRY}"
+          fi
+          if [[ "${PUBLISH_CHART}" == "true" ]]; then
+            helm push "${chart_package}" "${CHART_REGISTRY}"
+          fi
+          if [[ "${PUBLISH_CHART}" == "true" || "${PUBLISH_PRECHECK_CHART}" == "true" ]]; then
+            helm registry logout ghcr.io
+          fi
+
+          for attempt in {1..6}; do
+            if helm show chart "${CHART_REFERENCE}" --version "${CHART_VERSION}" >/dev/null 2>&1 && \
+               helm show chart "${PRECHECK_CHART_REFERENCE}" --version "${CHART_VERSION}" >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "::error::Published charts are not anonymously pullable"
+          exit 1
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/verify-release-head.sh
+
+          if [[ "${IS_PRERELEASE}" == "true" ]]; then
+            release_type_flags=(--prerelease --latest=false)
+          else
+            release_type_flags=(--prerelease=false --latest)
+          fi
+
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            release_info="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" \
+              --jq '[.draft, .target_commitish] | @tsv')"
+            IFS=$'\t' read -r is_draft release_sha <<<"${release_info}"
+            if [[ "${is_draft}" == "true" ]]; then
+              echo "::error::Release ${RELEASE_TAG} is still a draft; resolve it before rerunning"
+              exit 1
+            fi
+            if [[ "${release_sha}" != "${GITHUB_SHA}" ]]; then
+              echo "::error::Release ${RELEASE_TAG} points to ${release_sha}, not ${GITHUB_SHA}"
+              exit 1
+            fi
+            published_dir="${RUNNER_TEMP}/published-release"
+            mkdir -p "${published_dir}"
+            gh release download "${RELEASE_TAG}" --dir "${published_dir}"
+            diff -u dist-chart/SHA256SUMS "${published_dir}/SHA256SUMS"
+            (cd "${published_dir}" && sha256sum --check SHA256SUMS)
+            echo "Release ${RELEASE_TAG} is already published with identical assets"
+          else
+            gh release create "${RELEASE_TAG}" \
+              dist-chart/krab-*.tgz \
+              dist-precheck/krab-precheck-*.tgz \
+              dist-builder/krab-builder-*.tar.gz \
+              dist-binaries/*.tar.gz \
+              dist-cli/*.tar.gz \
+              dist-sbom/*.spdx.json \
+              dist-chart/SHA256SUMS \
+              --target "${GITHUB_SHA}" \
+              --title "KRAB ${CHART_VERSION}" \
+              --generate-notes \
+              "${release_type_flags[@]}"
+          fi
+
+      - name: Refresh Pages after publishing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          if [[ "${IS_PRERELEASE}" == "false" ]]; then
+            gh workflow run pages.yml --ref main --repo "${GITHUB_REPOSITORY}"
+          fi

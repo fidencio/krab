@@ -1,0 +1,132 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/kata-containers/krab/blob/main/contracts/precheck-v2.schema.json",
+  "title": "KRAB pre-check report v2",
+  "oneOf": [
+    { "$ref": "#/definitions/nodeReport" },
+    { "$ref": "#/definitions/clusterReport" }
+  ],
+  "definitions": {
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason"],
+      "properties": {
+        "status": { "enum": ["yes", "no", "unknown", "review"] },
+        "reason": { "type": "string" }
+      }
+    },
+    "nodeReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "node", "checks", "gpus"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "kind": { "const": "krab-node-precheck" },
+        "node": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["architecture", "kernel", "machineID", "bootID", "checkerVersion", "checkedAtUnixSeconds"],
+          "properties": {
+            "architecture": { "type": "string" },
+            "kernel": { "type": "string" },
+            "machineID": { "type": "string", "minLength": 1 },
+            "bootID": { "type": "string", "minLength": 1 },
+            "checkerVersion": { "type": "string", "minLength": 1 },
+            "checkedAtUnixSeconds": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kvm", "tdx", "snp", "se", "iommufd", "erofs"],
+          "properties": {
+            "kvm": { "$ref": "#/definitions/probe" },
+            "tdx": { "$ref": "#/definitions/probe" },
+            "snp": { "$ref": "#/definitions/probe" },
+            "se": { "$ref": "#/definitions/probe" },
+            "iommufd": { "$ref": "#/definitions/probe" },
+            "erofs": { "$ref": "#/definitions/probe" }
+          }
+        },
+        "erofsVersion": { "type": ["string", "null"] },
+        "gpus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["present", "nvidia", "cc", "ppcie", "nvswitch", "devices"],
+          "properties": {
+            "present": { "$ref": "#/definitions/probe" },
+            "nvidia": { "$ref": "#/definitions/probe" },
+            "cc": { "$ref": "#/definitions/probe" },
+            "ppcie": { "$ref": "#/definitions/probe" },
+            "nvswitch": { "$ref": "#/definitions/probe" },
+            "devices": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["pciBusId", "name"],
+                "properties": {
+                  "pciBusId": { "type": "string" },
+                  "name": { "type": "string" },
+                  "chip": { "type": ["string", "null"] }
+                }
+              }
+            }
+          }
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["detected", "layout"],
+          "properties": {
+            "detected": { "type": "array", "items": { "type": "string" } },
+            "layout": { "$ref": "#/definitions/probe" }
+          }
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "uid", "machineID", "bootID"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "uid": { "type": "string", "minLength": 1 },
+        "machineID": { "type": "string", "minLength": 1 },
+        "bootID": { "type": "string", "minLength": 1 }
+      }
+    },
+    "clusterReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "scope", "nodes"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "kind": { "const": "krab-cluster-precheck" },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nodeSelector", "nodes"],
+          "properties": {
+            "nodeSelector": { "type": "string", "minLength": 1 },
+            "nodes": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/identity" } }
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["nodeName", "report"],
+            "properties": {
+              "nodeName": { "type": "string", "minLength": 1 },
+              "report": { "$ref": "#/definitions/nodeReport" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

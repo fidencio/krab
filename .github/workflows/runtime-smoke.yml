@@ -1,0 +1,175 @@
+name: Kubernetes runtime smoke tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - charts/krab/**
+      - core/**
+      - preflight/**
+      - cli/**
+      - src/generated/catalog.json
+      - src/generated/provenance.json
+      - scripts/ci/runtime-smoke.py
+      - scripts/build-cli-release.py
+      - .github/workflows/runtime-smoke.yml
+      - Dockerfile.precheck
+      - upstream/**
+  push:
+    branches: [main]
+    paths:
+      - charts/krab/**
+      - core/**
+      - preflight/**
+      - cli/**
+      - src/generated/catalog.json
+      - src/generated/provenance.json
+      - scripts/ci/runtime-smoke.py
+      - scripts/build-cli-release.py
+      - .github/workflows/runtime-smoke.yml
+      - Dockerfile.precheck
+      - upstream/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tools:
+    runs-on: ubuntu-24.04
+    outputs:
+      kata-ref: ${{ steps.kata.outputs.ref }}
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_INCREMENTAL: "0"
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER: rust-lld
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the Kata revision already pinned by KRAB
+        id: kata
+        run: |
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          provenance = json.loads(Path('src/generated/provenance.json').read_text())
+          source = next(s for s in provenance['generatedFrom'] if s['id'] == 'kata-chart')
+          assert re.fullmatch('[0-9a-f]{40}', source['ref'])
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"ref={source['ref']}\n")
+          PY
+      - name: Install the native builder toolchain
+        run: |
+          rustup toolchain install 1.95.0 --profile minimal --target x86_64-unknown-linux-musl
+          krab_sysroot="$(rustc +1.95.0 --print sysroot)"
+          krab_host="$(rustc +1.95.0 -vV | sed -n 's/^host: //p')"
+          echo "${krab_sysroot}/lib/rustlib/${krab_host}/bin" >> "${GITHUB_PATH}"
+      # These binaries are used only by read-only smoke jobs, never release promotion.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # zizmor: ignore[cache-poisoning] CI-only tools; no publication permissions.
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            cli/target
+          key: smoke-cli-1.95-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('cli/Cargo.lock', 'core/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            smoke-cli-1.95-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('cli/Cargo.lock', 'core/Cargo.lock') }}-
+            cli-rust-1.95-${{ runner.os }}-${{ runner.arch }}-x86_64-unknown-linux-musl-${{ hashFiles('cli/Cargo.lock', 'core/Cargo.lock') }}-
+      - name: Build the current KRAB configuration engine
+        run: |
+          python3 scripts/build-cli-release.py --target x86_64-unknown-linux-musl
+          mkdir -p smoke-tools
+          cp cli/target/x86_64-unknown-linux-musl/release/krab smoke-tools/krab
+          smoke-tools/krab --version
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - name: Build the current node helper without publishing it
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          file: Dockerfile.precheck
+          platforms: linux/amd64
+          tags: docker.io/krab-ci/preflight:smoke
+          outputs: type=docker,dest=${{ github.workspace }}/smoke-tools/preflight.tar
+          cache-from: |
+            type=gha,scope=runtime-smoke-helper
+            type=gha,scope=preflight-amd64
+            type=gha,scope=preflight-release
+          cache-to: type=gha,scope=runtime-smoke-helper,mode=max
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: runtime-smoke-tools
+          path: smoke-tools
+          retention-days: 3
+
+  smoke:
+    needs: tools
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        distribution: [kubeadm, k0s, k3s, microk8s, rke2]
+    env:
+      KUBERNETES: ${{ matrix.distribution }}
+      CONTAINER_ENGINE: containerd
+      CONTAINER_ENGINE_VERSION: latest
+      KATA_HYPERVISOR: qemu-runtime-rs
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Clone the pinned Kata Kubernetes helpers
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: kata-containers/kata-containers
+          ref: ${{ needs.tools.outputs.kata-ref }}
+          path: kata-upstream
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: runtime-smoke-tools
+          path: smoke-tools
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5
+      - name: Verify hardware virtualization is available
+        run: |
+          sudo python3 - <<'PY'
+          import fcntl, os
+          with open('/dev/kvm', 'rb+', buffering=0) as kvm:
+              assert fcntl.ioctl(kvm, 0xae00, 0) == 12
+              vm = fcntl.ioctl(kvm, 0xae01, 0)
+              os.close(vm)
+          PY
+      - name: Pin the previously verified RKE2 release
+        if: matrix.distribution == 'rke2'
+        # The upstream installer currently resolves the stable channel to the literal
+        # word "stable", whose download URL returns 404. Keep Kata's script intact.
+        run: |
+          echo 'INSTALL_RKE2_VERSION=v1.37.2+rke2r1' >> "$GITHUB_ENV"
+          echo 'Defaults env_keep += "INSTALL_RKE2_VERSION"' | sudo tee /etc/sudoers.d/krab-rke2-version
+          sudo visudo -cf /etc/sudoers.d/krab-rke2-version
+      - name: Set up Kubernetes using Kata's scripts directly
+        working-directory: kata-upstream
+        run: bash tests/integration/kubernetes/gha-run.sh deploy-k8s
+      - name: Install KRAB and run the runtime smoke pods
+        run: |
+          chmod +x smoke-tools/krab
+          helm dependency build charts/krab
+          python3 scripts/ci/runtime-smoke.py --distribution '${{ matrix.distribution }}'
+      - name: Collect deployment diagnostics
+        if: always()
+        run: |
+          mkdir -p smoke-results
+          kubectl get nodes,runtimeclasses -o yaml > smoke-results/nodes-and-runtimes.yaml 2>&1 || true
+          kubectl get pods,jobs,daemonsets,events -A -o yaml > smoke-results/cluster.yaml 2>&1 || true
+          kubectl -n kata-system logs -l app.kubernetes.io/name=kata-deploy --all-containers --prefix --tail=300 > smoke-results/kata-deploy.log 2>&1 || true
+          sudo journalctl --no-pager -n 300 -u containerd -u k0scontroller -u k3s -u rke2-server -u snap.microk8s.daemon-containerd > smoke-results/container-runtime.log 2>&1 || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: runtime-smoke-${{ matrix.distribution }}
+          path: smoke-results
+          retention-days: 7

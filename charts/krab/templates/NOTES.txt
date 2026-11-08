@@ -1,0 +1,16 @@
+KRAB {{ .Chart.AppVersion }} has installed the Kata reference architecture.
+
+Kubernetes distribution:
+  {{ (index .Values "kata-deploy").k8sDistribution }}
+
+NVIDIA integration:
+  {{ ternary "enabled" "disabled" .Values.nvidia.enabled }}
+
+{{- if .Values.nvidia.enabled }}
+Provisioner profiles:
+{{- range $name, $profile := (index .Values "kata-device-provisioner").profiles }}
+  - {{ $name }}: {{ $profile.ccMode }}
+{{- else }}
+  No NVIDIA hardware profiles were configured.
+{{- end }}
+{{- end }}

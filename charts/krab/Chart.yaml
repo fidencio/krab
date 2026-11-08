@@ -1,0 +1,48 @@
+apiVersion: v2
+name: krab
+description: Kata Reference Architecture Builder umbrella chart
+type: application
+version: 0.2.11
+appVersion: "0.2.11"
+home: https://github.com/kata-containers/krab
+icon: https://kata-containers.github.io/krab/favicon.png
+sources:
+  - https://github.com/kata-containers/krab
+keywords:
+  - kata-containers
+  - confidential-containers
+  - reference-architecture
+  - gpu
+maintainers:
+  - name: Fabiano Fidêncio
+    url: https://github.com/fidencio
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/changes: |
+    - kind: added
+      description: Add supervised host conformance and opt-in expiring NFD labels.
+    - kind: added
+      description: Add the native CLI and static Linux checker release archives.
+# Run npm run generate to refresh these dependencies from pinned charts.
+dependencies:
+  - name: node-feature-discovery
+    version: "0.20.0"
+    repository: oci://registry.k8s.io/nfd/charts
+    condition: node-feature-discovery.enabled
+  - name: kata-deploy
+    version: "4.3.1"
+    repository: oci://ghcr.io/kata-containers/kata-deploy-charts
+    condition: kata-deploy.enabled
+  - name: kata-device-plugin
+    version: "0.2.0-rc.2"
+    repository: oci://ghcr.io/kata-containers/kata-device-plugin-charts
+    condition: kata-device-plugin.enabled,nvidia.enabled
+  - name: kata-device-provisioner
+    version: "0.1.0-alpha.3"
+    repository: oci://ghcr.io/kata-containers/kata-device-provisioner-charts
+    condition: kata-device-provisioner.enabled,nvidia.enabled
+  - name: intel-tdx-qgs
+    version: "0.27.0-alpha.1"
+    repository: oci://ghcr.io/intel
+    condition: intel-tdx-qgs.enabled

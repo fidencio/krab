@@ -1,0 +1,60 @@
+{
+  "apiVersion": "krab/product/v1alpha1",
+  "id": "confidential-containers",
+  "name": "Confidential Containers",
+  "description": "Kata based Confidential runtimes for Kubernetes",
+  "logo": "./product-logo.svg",
+  "theme": {
+    "light": {
+      "pageBackground": "#f4f8fc",
+      "panelBackground": "#ffffff",
+      "text": "#152d45",
+      "mutedText": "#52677b",
+      "accent": "#005c94",
+      "border": "#c9d8e5"
+    },
+    "dark": {
+      "pageBackground": "#091827",
+      "panelBackground": "#122a3e",
+      "text": "#edf6ff",
+      "mutedText": "#b1c5d7",
+      "accent": "#62c8ff",
+      "border": "#35546d"
+    }
+  },
+  "available": {
+    "vendors": ["intel", "amd", "ibm", "nvidia", "custom"],
+    "runtimes": [
+      "qemu-snp-runtime-rs",
+      "qemu-tdx-runtime-rs",
+      "qemu-se-runtime-rs",
+      "qemu-nvidia-gpu-snp-runtime-rs",
+      "qemu-nvidia-gpu-tdx-runtime-rs",
+      "qemu-coco-dev-runtime-rs"
+    ],
+    "distributions": ["kubeadm", "k0s", "k3s", "microk8s", "rke2"],
+    "architectures": ["amd64", "s390x"],
+    "hardwareFamilies": ["blackwell", "hopper", "pcie-gpu"]
+  },
+  "features": {
+    "advanced": true,
+    "customRuntimes": false,
+    "continuousConformance": false,
+    "newNodes": false,
+    "imageOverrides": true,
+    "components": false,
+    "helmOverrides": false
+  },
+  "defaults": {
+    "vendor": "custom",
+    "distribution": "kubeadm",
+    "architectures": ["amd64"],
+    "runtimes": [
+      "qemu-snp-runtime-rs",
+      "qemu-tdx-runtime-rs",
+      "qemu-coco-dev-runtime-rs"
+    ],
+    "release": "coco",
+    "namespace": "coco-system"
+  }
+}

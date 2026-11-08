@@ -1,0 +1,31 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:04.000
+Start with the builder. The header gives you documentation, theme, and release choices.
+
+00:00:04.000 --> 00:00:07.000
+Choose Custom to combine runtime and hardware paths, or start with a vendor path. [Click Custom]
+
+00:00:07.000 --> 00:00:11.000
+The configuration page starts with target architectures and the Kubernetes distribution. [Custom]
+
+00:00:11.000 --> 00:00:14.000
+Choose the architecture of your target nodes. [Click AMD64]
+
+00:00:14.000 --> 00:00:17.000
+Select the Kubernetes distribution used by your cluster. [Click kubeadm]
+
+00:00:17.000 --> 00:00:20.000
+Choose a runtime. The highlighted option is QEMU. [Click QEMU]
+
+00:00:20.000 --> 00:00:24.000
+Select the runtime you want to install. KRAB checks the architecture coverage as you choose. [AMD64 · kubeadm · QEMU]
+
+00:00:24.000 --> 00:00:28.000
+Review the version-pinned Helm command and generated values before deploying. [Review the output]
+
+00:00:28.000 --> 00:00:31.000
+Export the same configuration to continue in your terminal. [Click Continue in TUI / CLI]
+
+00:00:31.000 --> 00:00:35.000
+Download values for Helm, or export krab.json to keep working in the TUI and CLI. [Continue in TUI / CLI]

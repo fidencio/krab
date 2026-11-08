@@ -1,0 +1,61 @@
+{{- $name := include "krab-precheck.name" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-files
+data:
+  collect.sh: |
+{{ .Files.Get "files/collect.sh" | indent 4 }}
+  node-job.yaml: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: krab-precheck-template
+    spec:
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 3600
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          hostPID: true
+          tolerations:
+            - operator: Exists
+          containers:
+            - name: precheck
+              image: {{ printf "%s:%s" .Values.probeImage.repository .Chart.Version | quote }}
+              args:
+                {{- if .Values.cache.enabled }}
+                - --cache-dir
+                - /var/cache/krab-preflight
+                {{- if or .Values.cache.forceRefresh .Values.conformance.enabled }}
+                - --force-refresh
+                {{- end }}
+                {{- else }}
+                - --no-cache
+                {{- end }}
+              securityContext:
+                privileged: true
+              volumeMounts:
+                {{- if .Values.cache.enabled }}
+                - {name: preflight-cache, mountPath: /var/cache/krab-preflight}
+                {{- end }}
+                - {name: host, mountPath: /host, readOnly: true}
+                - {name: host-proc, mountPath: /host/proc, readOnly: true}
+                - {name: host-sys, mountPath: /host/sys, readOnly: true}
+                - {name: host-dev, mountPath: /host/dev, readOnly: true}
+                - {name: host-sys, mountPath: /sys, readOnly: true}
+          volumes:
+            {{- if .Values.cache.enabled }}
+            - name: preflight-cache
+              hostPath: {path: {{ .Values.cache.hostPath | quote }}, type: DirectoryOrCreate}
+            {{- end }}
+            - name: host
+              hostPath: {path: /, type: Directory}
+            - name: host-proc
+              hostPath: {path: /proc, type: Directory}
+            - name: host-sys
+              hostPath: {path: /sys, type: Directory}
+            - name: host-dev
+              hostPath: {path: /dev, type: Directory}

@@ -1,0 +1,49 @@
+{
+  "apiVersion": "krab/product/v1alpha1",
+  "id": "coco-example",
+  "name": "CoCo deployment builder",
+  "description": "Configure a Confidential Containers deployment",
+  "logo": "./product-logo.svg",
+  "theme": {
+    "light": {
+      "pageBackground": "#f4f8fc",
+      "panelBackground": "#ffffff",
+      "text": "#152d45",
+      "mutedText": "#52677b",
+      "accent": "#006b9e",
+      "border": "#c9d8e5"
+    },
+    "dark": {
+      "pageBackground": "#091827",
+      "panelBackground": "#122a3e",
+      "text": "#edf6ff",
+      "mutedText": "#b1c5d7",
+      "accent": "#62c8ff",
+      "border": "#35546d"
+    }
+  },
+  "available": {
+    "vendors": ["custom"],
+    "runtimes": ["qemu-coco-dev-runtime-rs"],
+    "distributions": ["kubeadm", "k0s", "k3s", "microk8s", "rke2"],
+    "architectures": ["amd64"],
+    "hardwareFamilies": []
+  },
+  "features": {
+    "advanced": true,
+    "customRuntimes": false,
+    "continuousConformance": true,
+    "newNodes": true,
+    "imageOverrides": false,
+    "components": false,
+    "helmOverrides": false
+  },
+  "defaults": {
+    "vendor": "custom",
+    "distribution": "kubeadm",
+    "architectures": ["amd64"],
+    "runtimes": ["qemu-coco-dev-runtime-rs"],
+    "release": "coco",
+    "namespace": "kata-system"
+  }
+}

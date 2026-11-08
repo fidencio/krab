@@ -1,0 +1,119 @@
+{
+  "tui": {
+    "title": "Configure in the TUI",
+    "version": "krab 0.2.9",
+    "duration": 36,
+    "steps": [
+      {
+        "caption": "Start KRAB. Choose a deployment path; Custom combines runtime choices.",
+        "keys": "krab"
+      },
+      {
+        "caption": "Select the architectures of your cluster nodes.",
+        "keys": "Enter"
+      },
+      {
+        "caption": "Choose the Kubernetes distribution used by your cluster.",
+        "keys": "Enter"
+      },
+      {
+        "caption": "The overview keeps every configuration section within reach.",
+        "keys": "Enter"
+      },
+      {
+        "caption": "Press F1 for contextual help on any screen.",
+        "keys": "F1"
+      },
+      {
+        "caption": "Open Runtimes. Arrow keys navigate; checked entries are selected.",
+        "keys": "↓ × 5, Enter"
+      },
+      {
+        "caption": "Space toggles a runtime and updates the live configuration panel.",
+        "keys": "Space"
+      },
+      {
+        "caption": "Preview the generated, version-pinned Helm values before saving.",
+        "keys": "Enter, p"
+      },
+      {
+        "caption": "Save your configuration to a file you can edit or automate later.",
+        "keys": "Esc, s"
+      },
+      {
+        "caption": "Review the destination and confirm the save.",
+        "keys": "Enter"
+      }
+    ]
+  },
+  "cli": {
+    "title": "Generate values from the CLI",
+    "version": "krab 0.2.9",
+    "duration": 21,
+    "steps": [
+      {
+        "caption": "Create a starter configuration without opening the TUI.",
+        "keys": ""
+      },
+      {
+        "caption": "Validate the configuration offline before generating values.",
+        "keys": ""
+      },
+      {
+        "caption": "Generate the Helm values file using the same pinned catalog as the website.",
+        "keys": ""
+      },
+      {
+        "caption": "The output includes its format, chart version, and deployment path. Review it before deploying.",
+        "keys": ""
+      }
+    ]
+  },
+  "website": {
+    "title": "Navigate the website builder",
+    "version": "KRAB 0.2.9",
+    "duration": 35,
+    "steps": [
+      {
+        "caption": "Start with the builder. The header gives you documentation, theme, and release choices.",
+        "keys": ""
+      },
+      {
+        "caption": "Choose Custom to combine runtime and hardware paths, or start with a vendor path.",
+        "keys": "Click Custom"
+      },
+      {
+        "caption": "The configuration page starts with target architectures and the Kubernetes distribution.",
+        "keys": "Custom"
+      },
+      {
+        "caption": "Choose the architecture of your target nodes.",
+        "keys": "Click AMD64"
+      },
+      {
+        "caption": "Select the Kubernetes distribution used by your cluster.",
+        "keys": "Click kubeadm"
+      },
+      {
+        "caption": "Choose a runtime. The highlighted option is QEMU.",
+        "keys": "Click QEMU"
+      },
+      {
+        "caption": "Select the runtime you want to install. KRAB checks the architecture coverage as you choose.",
+        "keys": "AMD64 · kubeadm · QEMU"
+      },
+      {
+        "caption": "Review the version-pinned Helm command and generated values before deploying.",
+        "keys": "Review the output"
+      },
+      {
+        "caption": "Export the same configuration to continue in your terminal.",
+        "keys": "Click Continue in TUI / CLI"
+      },
+      {
+        "caption": "Download values for Helm, or export krab.json to keep working in the TUI and CLI.",
+        "keys": "Continue in TUI / CLI"
+      }
+    ]
+  }
+}

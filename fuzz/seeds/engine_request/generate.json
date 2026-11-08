@@ -1,0 +1,1 @@
+{"operation":"generate","config":{"apiVersion":"krab/v1alpha1","vendor":"custom","distribution":"kubeadm","architectures":["amd64"],"runtimes":["qemu-runtime-rs"]}}

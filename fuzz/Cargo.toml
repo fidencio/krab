@@ -1,0 +1,27 @@
+[package]
+name = "krab-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+license = "Apache-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+krab-core = { path = "../core" }
+
+[[bin]]
+name = "engine_request"
+path = "fuzz_targets/engine_request.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cpu_profile"
+path = "fuzz_targets/cpu_profile.rs"
+test = false
+doc = false
+bench = false

@@ -1,0 +1,13 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:05.000
+Create a starter configuration without opening the TUI.
+
+00:00:05.000 --> 00:00:10.000
+Validate the configuration offline before generating values.
+
+00:00:10.000 --> 00:00:15.000
+Generate the Helm values file using the same pinned catalog as the website.
+
+00:00:15.000 --> 00:00:21.000
+The output includes its format, chart version, and deployment path. Review it before deploying.

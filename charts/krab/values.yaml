@@ -1,0 +1,81 @@
+# Run npm run generate to refresh the image pins below from locked sources.
+# Legacy GPU default; each dependency can override it with its own enabled value.
+nvidia:
+  enabled: false
+
+# Shared with the per-node Kata installation pipeline. The builder manages the
+# internal image, CPU profile and policy fields; conformance is one switch.
+global:
+  krab:
+    continuousConformance: false
+    nodeImage: ghcr.io/kata-containers/krab-preflight:0.2.11
+    nvidiaCpuTees: []
+    conformancePolicy: []
+
+# KRAB owns the shared NFD release.
+node-feature-discovery:
+  enabled: true
+  image:
+    repository: registry.k8s.io/nfd/node-feature-discovery
+    tag: v0.20.0
+  worker:
+    # KRAB renders the pinned worker template with its conformance result mount.
+    enable: false
+    config:
+      core:
+        # Match the default host conformance interval and upstream NFD default.
+        sleepInterval: 60s
+
+kata-deploy:
+  enabled: true
+  # NFD is installed directly by KRAB, so the nested dependency stays disabled.
+  node-feature-discovery:
+    enabled: false
+  k8sDistribution: k8s
+  selinux:
+    enabled: false
+  image:
+    reference: quay.io/kata-containers/kata-deploy
+    tag: "4.3.1"
+  kubectlImage:
+    reference: quay.io/kata-containers/kubectl
+    tag: v1.37.0
+  job:
+    dispatcherImage:
+      reference: ghcr.io/kata-containers/k8s-job-dispatcher
+      tag: "0.3.0"
+  shims:
+    disableAll: true
+
+# Set enabled explicitly to override the nvidia.enabled fallback.
+kata-device-plugin:
+  # NFD detects NVIDIA GPU PCI hardware even when it is bound to VFIO.
+  nodeSelector:
+    # Clear the upstream chart's Kata installation selector during Helm merging.
+    katacontainers.io/kata-runtime: null
+    feature.node.kubernetes.io/pci-0302_10de.present: "true"
+  image:
+    repository: ghcr.io/kata-containers/kata-device-plugin
+    tag: v0.2.0-rc.2
+  resourceNaming: alias
+
+# Multi-profile contract released by kata-device-provisioner.
+# Each key renders an independently named profile Job/resource set.
+kata-device-provisioner:
+  node-feature-discovery:
+    enabled: false
+  image:
+    reference: ghcr.io/kata-containers/kata-device-provisioner
+    tag: 0.1.0-alpha.3
+  job:
+    dispatcherImage:
+      reference: ghcr.io/kata-containers/k8s-job-dispatcher
+      tag: "0.4.0"
+  profiles: {}
+
+# Enabled by generated values when a TDX runtime is selected.
+intel-tdx-qgs:
+  enabled: false
+  global:
+    nodeSelector:
+      intel.feature.node.kubernetes.io/tdx: "true"

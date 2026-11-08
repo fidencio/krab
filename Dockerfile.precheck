@@ -1,0 +1,61 @@
+# Use the released read-only inventory command; do not rebuild its Rust sources.
+FROM --platform=linux/amd64 ghcr.io/kata-containers/kata-device-provisioner:0.1.0-alpha.3@sha256:51e611b31ac6f447b7fd71e57ea74f6d85c65bafaaaccb6827ede779d71cf2c3 AS provisioner-amd64
+FROM --platform=linux/arm64 ghcr.io/kata-containers/kata-device-provisioner:0.1.0-alpha.3@sha256:51e611b31ac6f447b7fd71e57ea74f6d85c65bafaaaccb6827ede779d71cf2c3 AS provisioner-arm64
+
+# Run rustc on the builder CPU. Only the resulting checker targets other CPUs;
+# compiling Rust under QEMU made releases wait on PowerPC and s390x for minutes.
+FROM --platform=$BUILDPLATFORM rust:1.98-slim AS cross-toolchain
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc-x86-64-linux-gnu gcc-aarch64-linux-gnu \
+    gcc-powerpc64le-linux-gnu gcc-s390x-linux-gnu \
+    libc6-dev-amd64-cross libc6-dev-arm64-cross \
+    libc6-dev-ppc64el-cross libc6-dev-s390x-cross && \
+    rm -rf /var/lib/apt/lists/*
+RUN rustup target add x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu \
+    powerpc64le-unknown-linux-gnu s390x-unknown-linux-gnu
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+    CARGO_TARGET_POWERPC64LE_UNKNOWN_LINUX_GNU_LINKER=powerpc64le-linux-gnu-gcc \
+    CARGO_TARGET_S390X_UNKNOWN_LINUX_GNU_LINKER=s390x-linux-gnu-gcc \
+    RUSTFLAGS="-C target-feature=+crt-static"
+
+FROM cross-toolchain AS preflight-builder
+ARG TARGETARCH
+WORKDIR /build/preflight
+RUN case "$TARGETARCH" in \
+      amd64) echo x86_64-unknown-linux-gnu ;; \
+      arm64) echo aarch64-unknown-linux-gnu ;; \
+      ppc64le) echo powerpc64le-unknown-linux-gnu ;; \
+      s390x) echo s390x-unknown-linux-gnu ;; \
+      *) exit 1 ;; \
+    esac > rust-target
+COPY preflight/Cargo.toml preflight/Cargo.lock ./
+COPY core/Cargo.toml /build/core/Cargo.toml
+COPY core/src /build/core/src
+# Cache dependency compilation separately from the frequently changing sources.
+RUN mkdir src && echo 'fn main() {}' > src/main.rs && \
+    cargo build --release --locked --target "$(cat rust-target)" && rm -r src
+COPY preflight/src ./src
+RUN find src -type f -exec touch {} + && \
+    cargo build --release --locked --target "$(cat rust-target)" && \
+    cp "target/$(cat rust-target)/release/krab-preflight" /build/krab-preflight && \
+    test -z "$(readelf -l /build/krab-preflight | sed -n '/INTERP/p')"
+COPY --from=provisioner-amd64 /kata-device-provisioner /build/provisioner-amd64
+COPY --from=provisioner-arm64 /kata-device-provisioner /build/provisioner-arm64
+RUN mkdir -p /build/runtime/usr/local/bin /build/runtime/opt/krab && \
+    cp /build/krab-preflight /build/runtime/usr/local/bin/ && \
+    sha256sum /build/krab-preflight > /build/runtime/opt/krab/krab-preflight.sha256 && \
+    case "$TARGETARCH" in \
+      amd64|arm64) cp "/build/provisioner-$TARGETARCH" "/build/runtime/opt/krab/kata-device-provisioner-$TARGETARCH" ;; \
+      ppc64le|s390x) ;; \
+      *) exit 1 ;; \
+    esac
+
+FROM gcr.io/distroless/cc-debian13:latest
+
+LABEL org.opencontainers.image.source="https://github.com/kata-containers/krab"
+LABEL org.opencontainers.image.description="KRAB read-only node capability pre-check"
+
+COPY --from=preflight-builder /build/runtime/ /
+ENV KRAB_PREFLIGHT_HOST_ROOT=/host
+ENTRYPOINT ["/usr/local/bin/krab-preflight", "--node-report"]

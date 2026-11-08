@@ -1,0 +1,1219 @@
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+import test from 'node:test'
+import { parse, stringify } from 'yaml'
+import packageData from '../package.json'
+import {
+  buildCustomRuntimeClass,
+  buildInstallScript,
+  buildValuesFileName,
+  buildValuesBundle,
+  createAdvancedConfiguration,
+  customRuntimeSnapshotter,
+  importValuesBundle,
+  type ExplorerCatalog,
+  usesConfidentialComputing,
+  validateCustomRuntimes,
+} from '../src/lib/artifacts.ts'
+
+const root = resolve(import.meta.dirname, '..')
+const krabVersion = packageData.version
+
+const loadJson = async <T>(path: string) =>
+  JSON.parse(await readFile(resolve(root, path), 'utf8')) as T
+
+const pinned = async (id: string) => {
+  const lock = parse(await readFile(resolve(root, 'upstream/sources.lock.yaml'), 'utf8')) as {
+    sources: Array<{ id: string; cache: string; ref: string; release: string; repository: string; path: string }>
+  }
+  const source = lock.sources.find((item) => item.id === id)
+  assert.ok(source, `Missing pinned source ${id}`)
+  return {
+    source,
+    values: parse(await readFile(resolve(root, 'upstream/cache', source.cache), 'utf8')),
+  }
+}
+
+test('generated catalog carries accurate upstream chart data', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const kataChart = await pinned('kata-chart')
+  const kataVersions = await pinned('kata-versions')
+  const nfdChart = await pinned('nfd-chart')
+  const nfdValues = await pinned('nfd-values')
+  const devicePluginChart = await pinned('device-plugin-chart')
+  const provisionerChart = await pinned('provisioner-chart')
+  const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
+  const local = catalog.vendors.find(({ id }) => id === 'custom')!
+
+  assert.deepEqual(
+    catalog.vendors.map(({ id }) => id),
+    ['nvidia', 'custom', 'amd', 'ibm', 'intel'],
+  )
+  assert.equal(vendor.displayName, 'NVIDIA')
+  assert.deepEqual(
+    vendor.runtime.shims.map(({ id }) => id),
+    [
+      'qemu-nvidia-gpu-runtime-rs',
+      'qemu-nvidia-gpu-snp-runtime-rs',
+      'qemu-nvidia-gpu-tdx-runtime-rs',
+      'qemu-nvidia-cpu-runtime-rs',
+      'qemu-nvidia-cpu-snp-runtime-rs',
+      'qemu-nvidia-cpu-tdx-runtime-rs',
+    ],
+  )
+  const vendorCpuRuntime = vendor.runtime.shims.find(shim => shim.id === 'qemu-nvidia-cpu-runtime-rs')!
+  assert.equal(vendorCpuRuntime.runtimeClass, 'kata-qemu-nvidia-cpu-runtime-rs')
+  assert.equal(vendorCpuRuntime.userSelectable, true)
+  assert.equal(vendorCpuRuntime.selectionGroup, 'cpu')
+  assert.deepEqual(vendorCpuRuntime.supportedArches, ['amd64', 'arm64'])
+  assert.equal(vendorCpuRuntime.snapshotter, 'erofs')
+  assert.equal(local.displayName, 'Custom')
+  assert.equal(local.logo, 'custom.svg')
+  assert.equal(local.hardwareFamilies.length, 4)
+  assert.deepEqual(
+    local.runtime.shims.map(({ id }) => id),
+    [
+      'clh-runtime-rs',
+      'clh-azure-runtime-rs',
+      'dragonball',
+      'qemu-runtime-rs',
+      'openvmm-azure-runtime-rs',
+      'qemu-nvidia-cpu-runtime-rs',
+      'qemu-coco-dev-runtime-rs',
+      'qemu-snp-runtime-rs',
+      'qemu-se-runtime-rs',
+      'qemu-tdx-runtime-rs',
+      'qemu-nvidia-gpu-runtime-rs',
+      'qemu-nvidia-gpu-snp-runtime-rs',
+      'qemu-nvidia-gpu-tdx-runtime-rs',
+      'qemu-nvidia-cpu-snp-runtime-rs',
+      'qemu-nvidia-cpu-tdx-runtime-rs',
+    ],
+  )
+  const nvidiaCpuRuntime = local.runtime.shims.find(
+    ({ id }) => id === 'qemu-nvidia-cpu-runtime-rs',
+  )!
+  const cpuProfile = await pinned('kata-nvidia-cpu-profile')
+  assert.deepEqual(
+    vendor.runtime.chart.values.shims['qemu-nvidia-cpu-runtime-rs'],
+    cpuProfile.values.shims['qemu-nvidia-cpu-runtime-rs'],
+  )
+  assert.ok(nvidiaCpuRuntime.sourceUrl.endsWith(cpuProfile.source.path))
+  const teeProfile = await pinned('kata-tee-profile')
+  for (const id of ['amd', 'ibm', 'intel']) {
+    const runtime = catalog.vendors.find(vendor => vendor.id === id)!.runtime
+    const shim = runtime.shims[0]
+    assert.deepEqual(runtime.chart.values.shims[shim.id], teeProfile.values.shims[shim.id])
+    assert.ok(shim.sourceUrl.endsWith(teeProfile.source.path))
+  }
+  assert.equal(nvidiaCpuRuntime.snapshotter, 'erofs')
+  assert.deepEqual(nvidiaCpuRuntime.snapshotterConfiguration, {
+    erofsSnapshotterMode: 'memory',
+    erofsDmverity: true,
+    containerdUserDropIn:
+      "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n",
+  })
+  assert.deepEqual(
+    catalog.vendors
+      .filter(({ id }) => ['amd', 'ibm', 'intel'].includes(id))
+      .map(({ id, runtime }) => ({
+        id,
+        shimId: runtime.shims[0]?.id,
+        arches: runtime.shims[0]?.supportedArches,
+        snapshotter: runtime.shims[0]?.snapshotter,
+      })),
+    [
+      {
+        id: 'amd',
+        shimId: 'qemu-snp-runtime-rs',
+        arches: ['amd64'],
+        snapshotter: 'nydus',
+      },
+      {
+        id: 'ibm',
+        shimId: 'qemu-se-runtime-rs',
+        arches: ['s390x'],
+        snapshotter: 'nydus',
+      },
+      {
+        id: 'intel',
+        shimId: 'qemu-tdx-runtime-rs',
+        arches: ['amd64'],
+        snapshotter: 'nydus',
+      },
+    ],
+  )
+  assert.match(vendor.sourceUrl, /^https:\/\/github\.com\/kata-containers\//)
+  assert.equal(vendor.runtime.chart.version, String(kataChart.values.version))
+  assert.equal(
+    vendor.runtime.chart.ociReference,
+    'oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy',
+  )
+  assert.equal(vendor.workload.resourceName, 'nvidia.com/gpu')
+  assert.equal(catalog.plannedArchitecture.charts.nfd.required, false)
+  assert.equal(catalog.plannedArchitecture.charts.nfd.version, nfdChart.source.release.slice(1))
+  assert.equal(catalog.plannedArchitecture.charts.nfd.appVersion, String(nfdChart.values.appVersion))
+  assert.deepEqual(catalog.plannedArchitecture.charts.nfd.image, {
+    ...nfdValues.values.image,
+    tag: nfdValues.values.image.tag || String(nfdChart.values.appVersion),
+  })
+  assert.equal(catalog.plannedArchitecture.charts.kataDeploy.version, String(kataChart.values.version))
+  assert.equal(
+    catalog.plannedArchitecture.charts.devicePlugin.version,
+    String(devicePluginChart.values.version),
+  )
+  assert.equal(
+    catalog.plannedArchitecture.charts.provisioner.version,
+    String(provisionerChart.values.version),
+  )
+  assert.equal(
+    catalog.plannedArchitecture.charts.krab.version,
+    krabVersion,
+  )
+  const trustee = kataVersions.values.externals['coco-trustee']
+  const trusteeRepository = trustee.url.replace(/\.git$/, '')
+  assert.deepEqual(catalog.plannedArchitecture.attestation.trustee, {
+    displayName: 'Trustee',
+    repository: trusteeRepository,
+    commit: trustee.version,
+    sourceUrl: `${trusteeRepository}/commit/${trustee.version}`,
+    documentationUrl: `${trusteeRepository}/blob/${trustee.version}/README.md`,
+    kataSourceUrl: `https://github.com/${kataVersions.source.repository}/blob/${kataVersions.source.ref}/${kataVersions.source.path}`,
+  })
+  const dependencies = catalog.plannedArchitecture.charts.krab.dependencies
+  assert.equal(dependencies.nfdRequired, false)
+  assert.equal(dependencies.runtimeRequired, false)
+  assert.equal(dependencies.devicePluginRequired, false)
+  assert.deepEqual(dependencies.devicePluginRequiredBy, ['nvidia'])
+  assert.equal(dependencies.provisionerRequired, false)
+  assert.deepEqual(dependencies.provisionerRequiredBy, ['nvidia'])
+  assert.deepEqual(
+    catalog.plannedArchitecture.cluster.distributions.map(({ id }) => id),
+    ['kubeadm', 'k0s', 'k3s', 'microk8s', 'rke2'],
+  )
+  assert.deepEqual(
+    vendor.hardwareFamilies.map(({ id }) => id),
+    ['grace-blackwell', 'blackwell', 'hopper', 'pcie-gpu'],
+  )
+  const graceBlackwell = vendor.hardwareFamilies.find(
+    ({ id }) => id === 'grace-blackwell',
+  )
+  assert.deepEqual(graceBlackwell?.supportedArches, ['arm64'])
+  assert.equal(graceBlackwell?.availability, 'pending')
+  assert.equal(
+    graceBlackwell?.availabilityReason,
+    'Kata Containers support pending',
+  )
+  assert.deepEqual(
+    vendor.hardwareFamilies.map(({ modes }) => modes.map(({ id }) => id)),
+    [['off'], ['off', 'on'], ['off', 'ppcie'], ['off', 'on']],
+  )
+  assert.deepEqual(
+    vendor.hardwareFamilies.map(({ modes }) =>
+      modes.map(({ supportedCpuTeeIds }) => supportedCpuTeeIds),
+    ),
+    [[[]], [[], ['snp', 'tdx']], [[], ['tdx']], [[], ['snp', 'tdx']]],
+  )
+  assert.ok(vendor.runtime.shims.every(({ id }) => id.endsWith('-runtime-rs')))
+  assert.deepEqual(
+    vendor.runtime.cpuTees.map(({ id }) => id),
+    ['snp', 'tdx'],
+  )
+})
+
+test('attestation guidance follows confidential runtime selections', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const nvidia = catalog.vendors.find(({ id }) => id === 'nvidia')!
+  const local = catalog.vendors.find(({ id }) => id === 'custom')!
+  const amd = catalog.vendors.find(({ id }) => id === 'amd')!
+  const runtime = (selectedShimIds: string[]) => ({
+    selectedShimIds,
+    runtimeHttpsProxy: '',
+    runtimeNoProxy: '',
+    nvidiaDcgmEnabled: false,
+  })
+
+  assert.equal(
+    usesConfidentialComputing(
+      nvidia,
+      { hopper: { modeId: 'off', cpuTeeIds: [] } },
+      runtime([]),
+    ),
+    false,
+  )
+  assert.equal(
+    usesConfidentialComputing(
+      nvidia,
+      { hopper: { modeId: 'ppcie', cpuTeeIds: ['tdx'] } },
+      runtime([]),
+    ),
+    true,
+  )
+  assert.equal(
+    usesConfidentialComputing(local, {}, runtime(['qemu-runtime-rs'])),
+    false,
+  )
+  assert.equal(
+    usesConfidentialComputing(
+      local,
+      {},
+      runtime(['qemu-coco-dev-runtime-rs']),
+    ),
+    true,
+  )
+  assert.equal(
+    usesConfidentialComputing(
+      amd,
+      {},
+      runtime(['qemu-snp-runtime-rs']),
+    ),
+    true,
+  )
+})
+
+test('Custom limits default runtimes to chosen architectures and restores that choice', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const values = buildValuesBundle(
+    catalog,
+    custom,
+    {},
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+    { selectedShimIds: ['qemu-runtime-rs'], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    createAdvancedConfiguration(),
+  )
+  assert.deepEqual(parse(values)['kata-deploy'].defaultShim, { amd64: 'qemu-runtime-rs' })
+  const imported = importValuesBundle(catalog, values, `krab-${krabVersion}-values.yaml`)
+  assert.equal(imported.vendorId, 'custom')
+  assert.deepEqual(imported.cluster.architectures, ['amd64'])
+})
+
+test('Custom combines CPU TEEs and NVIDIA GPU profiles in one deployment', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const hopper = custom.hardwareFamilies.find(({ id }) => id === 'hopper')!
+  const passthrough = hopper.modes.find(({ id }) => id === 'off')!
+  const values = buildValuesBundle(
+    catalog,
+    custom,
+    { hopper: { enabled: true, modeId: 'off', cpuTeeIds: [] } },
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+    { selectedShimIds: ['qemu-tdx-runtime-rs', 'qemu-snp-runtime-rs'], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    createAdvancedConfiguration(),
+  )
+  const generated = parse(values)
+  const shims = generated['kata-deploy'].shims
+  assert.deepEqual(Object.keys(shims), [
+    'disableAll', 'qemu-tdx-runtime-rs', 'qemu-snp-runtime-rs', 'qemu-nvidia-gpu-runtime-rs',
+  ])
+  assert.deepEqual(shims['qemu-tdx-runtime-rs'].runtimeClass.nodeSelector,
+    { 'intel.feature.node.kubernetes.io/tdx': 'true' })
+  assert.deepEqual(shims['qemu-snp-runtime-rs'].runtimeClass.nodeSelector,
+    { 'amd.feature.node.kubernetes.io/snp': 'true' })
+  assert.equal(generated.nvidia.enabled, true)
+  assert.ok(generated['kata-device-plugin'])
+  assert.equal(generated['kata-device-provisioner'].profiles[passthrough.profileName].enabled, true)
+  assert.equal(generated['kata-deploy'].defaultShim, undefined)
+  const imported = importValuesBundle(catalog, values)
+  assert.equal(imported.vendorId, 'custom')
+  assert.deepEqual(imported.runtime.selectedShimIds, ['qemu-tdx-runtime-rs', 'qemu-snp-runtime-rs'])
+  assert.equal(imported.selections.hopper.modeId, 'off')
+})
+
+test('Custom installs CPU TEEs without GPU dependencies', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const values = buildValuesBundle(
+    catalog,
+    custom,
+    {},
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64', 's390x'] },
+    { selectedShimIds: ['qemu-tdx-runtime-rs', 'qemu-snp-runtime-rs', 'qemu-se-runtime-rs'], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    createAdvancedConfiguration(),
+  )
+  const generated = parse(values)
+  assert.equal(generated.nvidia.enabled, false)
+  assert.equal(generated['kata-device-plugin'].enabled, false)
+  assert.equal(generated['kata-device-provisioner'].enabled, false)
+  assert.deepEqual(generated['kata-deploy'].shims['qemu-se-runtime-rs'].runtimeClass.nodeSelector,
+    { 'feature.node.kubernetes.io/cpu-security.se.enabled': 'true' })
+  assert.deepEqual(importValuesBundle(catalog, values).cluster.architectures, ['amd64', 's390x'])
+})
+
+test('Custom GPU-only selection imports as Custom', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const values = buildValuesBundle(
+    catalog,
+    custom,
+    { hopper: { enabled: true, modeId: 'off', cpuTeeIds: [] } },
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+    { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    createAdvancedConfiguration(),
+  )
+  const imported = importValuesBundle(catalog, values)
+  assert.equal(imported.vendorId, 'custom')
+  assert.equal(imported.selections.hopper.modeId, 'off')
+  assert.deepEqual(imported.cluster.architectures, ['amd64'])
+})
+
+test('every configured Custom GPU mode enables both GPU dependencies', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const hopper = custom.hardwareFamilies.find(({ id }) => id === 'hopper')!
+  for (const mode of hopper.modes) {
+    const tee = mode.supportedCpuTeeIds[0]
+    const generated = parse(buildValuesBundle(
+      catalog,
+      custom,
+      { hopper: { enabled: true, modeId: mode.id, cpuTeeIds: tee ? [tee] : [] } },
+      { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+      { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+      createAdvancedConfiguration(),
+    ))
+    assert.equal(generated.nvidia.enabled, true, mode.id)
+    assert.ok(generated['kata-device-plugin'], mode.id)
+    assert.ok(generated['kata-device-provisioner'], mode.id)
+    assert.ok(Object.keys(generated['kata-device-provisioner'].profiles).length > 0, mode.id)
+  }
+})
+
+test('Custom artifacts install only the selected upstream RuntimeClasses', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const local = catalog.vendors.find(({ id }) => id === 'custom')!
+  const defaultAdvanced = createAdvancedConfiguration()
+  assert.equal(defaultAdvanced.erofsDiskSize, '256M')
+  assert.equal(defaultAdvanced.scheduledReconcileEnabled, false)
+  assert.equal(defaultAdvanced.scheduledReconcileSchedule, '*/15 * * * *')
+  const generatedValues = parse(
+    buildValuesBundle(
+      catalog,
+      local,
+      {},
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: ['qemu-runtime-rs', 'qemu-nvidia-cpu-runtime-rs'],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: true,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+  const shims = generatedValues['kata-deploy'].shims
+
+  assert.equal(generatedValues.nvidia.enabled, false)
+  assert.equal(generatedValues['kata-device-plugin'].enabled, false)
+  assert.equal(generatedValues['kata-device-provisioner'].enabled, false)
+  assert.deepEqual(Object.keys(shims), [
+    'disableAll',
+    'qemu-runtime-rs',
+    'qemu-nvidia-cpu-runtime-rs',
+  ])
+  assert.equal(shims['qemu-runtime-rs'].enabled, true)
+  assert.equal(shims['qemu-runtime-rs'].nvrc, undefined)
+  assert.equal(shims['qemu-nvidia-cpu-runtime-rs'].enabled, true)
+  assert.deepEqual(generatedValues['kata-deploy'].defaultShim, {
+    amd64: 'qemu-runtime-rs',
+    arm64: 'qemu-runtime-rs',
+    s390x: 'qemu-runtime-rs',
+    ppc64le: 'qemu-runtime-rs',
+  })
+  assert.deepEqual(generatedValues['kata-deploy'].image, local.runtime.chart.values.image)
+  assert.deepEqual(generatedValues['kata-deploy'].kubectlImage, local.runtime.chart.values.kubectlImage)
+  assert.deepEqual(generatedValues['kata-deploy'].job, {
+    dispatcherImage: local.runtime.chart.values.job.dispatcherImage,
+  })
+  assert.deepEqual(generatedValues['node-feature-discovery'].image,
+    catalog.plannedArchitecture.charts.nfd.image)
+  assert.doesNotMatch(JSON.stringify(generatedValues), /latest/)
+  assert.equal(
+    shims['qemu-nvidia-cpu-runtime-rs'].containerd.snapshotter,
+    'erofs',
+  )
+  assert.deepEqual(generatedValues['kata-deploy'].snapshotter, {
+    setup: ['erofs'],
+    erofsSnapshotterMode: 'memory',
+    erofsDmverity: true,
+  })
+  assert.equal(
+    generatedValues['kata-deploy'].containerd.userDropIn,
+    "[plugins.'io.containerd.snapshotter.v1.erofs']\n  enable_fsverity = false\n",
+  )
+
+  const configuredValues = parse(
+    buildValuesBundle(
+      catalog,
+      local,
+      {},
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: ['qemu-nvidia-cpu-runtime-rs'],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      {
+        ...createAdvancedConfiguration(),
+        shimDropIns: {
+          'qemu-runtime-rs': '',
+          'qemu-nvidia-cpu-runtime-rs':
+            '[agent.kata]\ndial_timeout = 999\n',
+          'unselected-runtime': '[agent.kata]\ndebug_console = true\n',
+        },
+        containerdUserDropIn:
+          '[plugins."io.containerd.grpc.v1.cri"]\n  disable_tcp_service = true\n',
+        erofsSnapshotterMode: 'disk',
+        erofsDiskSize: '24G',
+        erofsDmverity: false,
+        erofsEnableFsverity: true,
+      },
+    ),
+  )
+  assert.deepEqual(configuredValues['kata-deploy'].snapshotter, {
+    setup: ['erofs'],
+    erofsSnapshotterMode: 'disk',
+    erofsDmverity: false,
+  })
+  assert.equal(
+    configuredValues['kata-deploy'].containerd.userDropIn,
+    "[plugins.'io.containerd.snapshotter.v1.erofs']\n" +
+      '  enable_fsverity = true\n  default_size = "24G"\n\n' +
+      '[plugins."io.containerd.grpc.v1.cri"]\n' +
+      '  disable_tcp_service = true\n',
+  )
+  assert.equal(
+    configuredValues['kata-deploy'].shims['qemu-nvidia-cpu-runtime-rs'].dropIn,
+    '[agent.kata]\ndial_timeout = 999\n',
+  )
+  const importedValues = importValuesBundle(
+    catalog,
+    `# KRAB values format: 2\n# KRAB chart version: ${krabVersion}\n${stringify(configuredValues)}`,
+    `local-lab-${krabVersion}-values.yaml`,
+  )
+  assert.equal(importedValues.vendorId, 'custom')
+  assert.equal(importedValues.deploymentName, 'local-lab')
+  assert.deepEqual(importedValues.runtime.selectedShimIds, [
+    'qemu-nvidia-cpu-runtime-rs',
+  ])
+  assert.equal(importedValues.advanced.erofsSnapshotterMode, 'disk')
+  assert.equal(importedValues.advanced.erofsDiskSize, '24G')
+  assert.equal(importedValues.advanced.erofsDmverity, false)
+  assert.equal(importedValues.advanced.erofsEnableFsverity, true)
+  assert.equal(
+    importedValues.advanced.containerdUserDropIn,
+    '[plugins."io.containerd.grpc.v1.cri"]\n' +
+      '  disable_tcp_service = true\n',
+  )
+  assert.deepEqual(
+    parse(
+      buildValuesBundle(
+        catalog,
+        local,
+        importedValues.selections,
+        importedValues.cluster,
+        importedValues.runtime,
+        importedValues.advanced,
+      ),
+    ),
+    configuredValues,
+  )
+  assert.equal(
+    configuredValues['kata-deploy'].shims['unselected-runtime'],
+    undefined,
+  )
+  assert.deepEqual(configuredValues['kata-deploy'].defaultShim, {
+    amd64: 'qemu-nvidia-cpu-runtime-rs',
+    arm64: 'qemu-nvidia-cpu-runtime-rs',
+  })
+
+  const cocoDevValues = parse(
+    buildValuesBundle(
+      catalog,
+      local,
+      {},
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: ['qemu-coco-dev-runtime-rs'],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      {
+        ...createAdvancedConfiguration(),
+        containerdUserDropIn: '[debug]\n  level = "debug"\n',
+      },
+    ),
+  )
+  assert.deepEqual(Object.keys(cocoDevValues['kata-deploy'].shims), [
+    'disableAll',
+    'qemu-coco-dev-runtime-rs',
+  ])
+  assert.deepEqual(cocoDevValues['kata-deploy'].snapshotter, {
+    setup: ['nydus'],
+  })
+  assert.deepEqual(cocoDevValues['kata-deploy'].defaultShim, {
+    amd64: 'qemu-coco-dev-runtime-rs',
+    arm64: 'qemu-coco-dev-runtime-rs',
+    s390x: 'qemu-coco-dev-runtime-rs',
+  })
+  assert.equal(
+    cocoDevValues['kata-deploy'].containerd.userDropIn,
+    '[debug]\n  level = "debug"\n',
+  )
+})
+
+test('NVIDIA artifacts pin every component image version', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
+  const generatedValues = parse(
+    buildValuesBundle(
+      catalog,
+      vendor,
+      {
+        hopper: { modeId: 'off', cpuTeeIds: [] },
+      },
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: [],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+
+  assert.deepEqual(generatedValues['kata-device-plugin'].image, vendor.devicePlugin.values.image)
+  assert.deepEqual(generatedValues['kata-device-provisioner'].image,
+    vendor.provisioner.values.image)
+  assert.deepEqual(
+    generatedValues['kata-device-provisioner'].job.dispatcherImage,
+    vendor.provisioner.values.job.dispatcherImage,
+  )
+  assert.doesNotMatch(JSON.stringify(generatedValues), /latest/)
+  assert.deepEqual(generatedValues['kata-deploy'].defaultShim, {
+    amd64: 'qemu-nvidia-gpu-runtime-rs',
+  })
+  assert.equal(
+    generatedValues['kata-deploy'].shims['qemu-nvidia-cpu-runtime-rs'],
+    undefined,
+  )
+
+  const tdxValues = parse(
+    buildValuesBundle(
+      catalog,
+      vendor,
+      {
+        hopper: { modeId: 'ppcie', cpuTeeIds: ['tdx'] },
+      },
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: [],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+  assert.deepEqual(tdxValues['kata-deploy'].shims, {
+    disableAll: true,
+    'qemu-nvidia-gpu-tdx-runtime-rs': {
+      ...vendor.runtime.chart.values.shims[
+        'qemu-nvidia-gpu-tdx-runtime-rs'
+      ],
+      enabled: true,
+      agent: { httpsProxy: '', noProxy: '' },
+      nvrc: { enableDCGM: false },
+    },
+  })
+  assert.deepEqual(tdxValues['kata-deploy'].defaultShim, {
+    amd64: 'qemu-nvidia-gpu-tdx-runtime-rs',
+  })
+
+  const cpuValues = parse(
+    buildValuesBundle(
+      catalog,
+      vendor,
+      {},
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: ['qemu-nvidia-cpu-runtime-rs'],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+  assert.equal(
+    cpuValues['kata-deploy'].shims['qemu-nvidia-cpu-runtime-rs'].enabled,
+    true,
+  )
+  assert.deepEqual(cpuValues['kata-deploy'].snapshotter.setup, ['erofs'])
+  assert.equal(cpuValues.nvidia.enabled, false)
+  assert.equal(cpuValues['kata-device-plugin'].enabled, false)
+  assert.equal(cpuValues['kata-device-provisioner'].enabled, false)
+})
+
+test('DCGM is only generated for NVIDIA GPU guests', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  for (const vendorId of ['nvidia', 'custom']) {
+    const vendor = catalog.vendors.find(({ id }) => id === vendorId)!
+    for (const dcgmEnabled of [false, true]) {
+      const values = buildValuesBundle(
+        catalog,
+        vendor,
+        { blackwell: { modeId: 'on', cpuTeeIds: ['snp', 'tdx'] } },
+        { distributionId: 'kubeadm', selinuxEnabled: false },
+        {
+          selectedShimIds: ['qemu-nvidia-cpu-runtime-rs'],
+          runtimeHttpsProxy: '',
+          runtimeNoProxy: '',
+          nvidiaDcgmEnabled: dcgmEnabled,
+        },
+        createAdvancedConfiguration(),
+      )
+      const shims = parse(values)['kata-deploy'].shims
+      assert.equal(shims['qemu-nvidia-cpu-runtime-rs'].nvrc?.enableDCGM, undefined)
+      for (const id of ['qemu-nvidia-gpu-snp-runtime-rs', 'qemu-nvidia-gpu-tdx-runtime-rs']) {
+        assert.equal(shims[id].nvrc.enableDCGM, dcgmEnabled)
+      }
+      const imported = importValuesBundle(catalog, values)
+      assert.equal(imported.runtime.nvidiaDcgmEnabled, dcgmEnabled)
+
+      const legacy = parse(values)
+      legacy['kata-deploy'].shims['qemu-nvidia-cpu-runtime-rs'].nvrc = {
+        enableDCGM: !dcgmEnabled,
+      }
+      const legacyValues = `${values.match(/^# KRAB .*$/gm)!.join('\n')}\n${stringify(legacy)}`
+      const repaired = importValuesBundle(catalog, legacyValues)
+      assert.equal(repaired.runtime.nvidiaDcgmEnabled, dcgmEnabled)
+      assert.ok(repaired.warnings.some((warning) => warning.includes('DCGM requires an NVIDIA GPU guest')))
+    }
+  }
+})
+
+test('custom runtimes generate independent RuntimeClasses and snapshotters', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const local = catalog.vendors.find(({ id }) => id === 'custom')!
+  const runtimeClass = buildCustomRuntimeClass('my-runtime')
+  const customRuntime = {
+    name: 'my-runtime',
+    baseConfig: 'qemu-nvidia-cpu-runtime-rs',
+    dropIn: '[hypervisor.qemu]\ndefault_memory = 1024\n',
+    runtimeClass,
+  }
+
+  assert.deepEqual(validateCustomRuntimes(local, [customRuntime]), [])
+  assert.equal(customRuntimeSnapshotter(local, customRuntime), 'erofs')
+  assert.equal(
+    customRuntimeSnapshotter(local, {
+      ...customRuntime,
+      baseConfig: 'qemu-runtime-rs',
+    }),
+    '',
+  )
+  assert.deepEqual(
+    validateCustomRuntimes(local, [
+      { ...customRuntime, runtimeClass: 'passed through as-is' },
+    ]),
+    [],
+  )
+
+  const generated = parse(
+    buildValuesBundle(
+      catalog,
+      local,
+      {},
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      {
+        selectedShimIds: [],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      {
+        ...createAdvancedConfiguration(),
+        customRuntimes: [customRuntime],
+      },
+    ),
+  )
+
+  assert.deepEqual(generated['kata-deploy'].shims, {
+    disableAll: true,
+    'qemu-nvidia-cpu-runtime-rs': {
+      ...local.runtime.chart.values.shims['qemu-nvidia-cpu-runtime-rs'],
+      enabled: false,
+    },
+  })
+  assert.equal(generated['kata-deploy'].defaultShim, undefined)
+  assert.deepEqual(generated['kata-deploy'].customRuntimes, {
+    enabled: true,
+    runtimes: {
+      'my-runtime': {
+        baseConfig: 'qemu-nvidia-cpu-runtime-rs',
+        dropIn: '[hypervisor.qemu]\ndefault_memory = 1024\n',
+        runtimeClass,
+        containerd: { snapshotter: 'erofs' },
+      },
+    },
+  })
+  assert.deepEqual(generated['kata-deploy'].snapshotter, {
+    setup: ['erofs'],
+    erofsSnapshotterMode: 'memory',
+    erofsDmverity: true,
+  })
+  assert.equal(
+    generated['kata-deploy'].containerd.userDropIn,
+    "[plugins.'io.containerd.snapshotter.v1.erofs']\n" +
+      '  enable_fsverity = false\n',
+  )
+
+  const validationErrors = validateCustomRuntimes(local, [
+    customRuntime,
+    {
+      ...customRuntime,
+      baseConfig: 'missing-runtime',
+    },
+  ])
+  assert.ok(validationErrors.some(({ field }) => field === 'name'))
+  assert.ok(validationErrors.some(({ field }) => field === 'baseConfig'))
+})
+
+test('custom-only TDX deployments preserve base architectures, CRI settings, and QGS', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const vendor = catalog.vendors.find(({ id }) => id === 'custom')!
+  const advanced = createAdvancedConfiguration()
+  advanced.customRuntimes = [{
+    name: 'cpu-tdx',
+    baseConfig: 'qemu-nvidia-gpu-tdx-runtime-rs',
+    dropIn: '[hypervisor.qemu]\ndefault_memory = 1024\n',
+    runtimeClass: buildCustomRuntimeClass('cpu-tdx'),
+    crioPullType: 'guest-pull',
+    inheritBaseOverhead: true,
+  }]
+  const source = buildValuesBundle(catalog, vendor, {},
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+    { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    advanced)
+  const generated = parse(source)
+  const base = generated['kata-deploy'].shims['qemu-nvidia-gpu-tdx-runtime-rs']
+  assert.equal(base.enabled, false)
+  assert.deepEqual(base.supportedArches, ['amd64'])
+  assert.equal(generated['intel-tdx-qgs'].enabled, true)
+  assert.equal(generated['kata-device-plugin'].enabled, false)
+  assert.equal(generated['kata-device-provisioner'].enabled, false)
+  const imported = importValuesBundle(catalog, source)
+  assert.deepEqual(imported.advanced.customRuntimes, advanced.customRuntimes)
+  assert.deepEqual(imported.cluster.architectures, ['amd64'])
+  assert.deepEqual(parse(buildValuesBundle(catalog, vendor, imported.selections,
+    imported.cluster, imported.runtime, imported.advanced)), generated)
+})
+
+test('artifacts wrap upstream profiles in the KRAB parent chart', async () => {
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
+  const selections = {
+    'grace-blackwell': { modeId: 'off', cpuTeeIds: [] },
+    hopper: { modeId: 'ppcie', cpuTeeIds: ['snp', 'tdx'] },
+    blackwell: { modeId: 'on', cpuTeeIds: ['tdx'] },
+  }
+  const values = buildValuesBundle(catalog, vendor, selections, {
+    distributionId: 'rke2',
+    selinuxEnabled: true,
+  }, {
+    selectedShimIds: [],
+    runtimeHttpsProxy: ' https://proxy.example.com:8443 ',
+    runtimeNoProxy: ' registry.internal,.svc ',
+    nvidiaDcgmEnabled: true,
+  }, {
+    ...createAdvancedConfiguration(),
+    installErofsUtils: true,
+    nodeSelector: [{ key: ' workload.example.com/kata ', value: ' true ' }],
+    nodeAffinity: [
+      {
+        key: ' topology.kubernetes.io/zone ',
+        operator: 'In',
+        values: [' zone-a ', ' zone-b '],
+      },
+    ],
+    tolerations: [
+      {
+        key: ' kata.example.com/runtime ',
+        operator: 'Equal',
+        value: ' enabled ',
+        effect: 'NoSchedule',
+      },
+    ],
+    scheduledReconcileEnabled: true,
+    scheduledReconcileSchedule: ' 0 */2 * * * ',
+    images: {
+      kataDeploy: {
+        ...createAdvancedConfiguration().images.kataDeploy,
+        pullPolicy: 'IfNotPresent',
+        pullSecrets: [' registry-secret '],
+        reference: 'registry.example.com/kata-deploy',
+        tag: 'test-kata',
+        kubectlReference: 'registry.example.com/kubectl',
+        dispatcherReference: 'registry.example.com/dispatcher',
+      },
+      nfd: {
+        ...createAdvancedConfiguration().images.nfd,
+        pullPolicy: 'IfNotPresent',
+        pullSecrets: [' nfd-secret '],
+        reference: 'registry.example.com/node-feature-discovery',
+        tag: 'test-nfd',
+      },
+      devicePlugin: {
+        ...createAdvancedConfiguration().images.devicePlugin,
+        pullPolicy: 'Always',
+        pullSecrets: [' plugin-secret '],
+        reference: 'registry.example.com/kata-device-plugin',
+        tag: 'test-plugin',
+      },
+      provisioner: {
+        ...createAdvancedConfiguration().images.provisioner,
+        pullPolicy: 'IfNotPresent',
+        pullSecrets: [' provisioner-secret '],
+        reference: 'registry.example.com/kata-device-provisioner',
+        tag: 'test-provisioner',
+        dispatcherReference: 'registry.example.com/provisioner-dispatcher',
+      },
+    },
+    debug: true,
+  })
+  const install = buildInstallScript(catalog)
+  const generatedValues = parse(values)
+  const shims = generatedValues['kata-deploy'].shims
+
+  assert.doesNotMatch(values, /qemu-nvidia-gpu-snp-runtime-rs:/)
+  assert.doesNotMatch(values, /qemuNvidiaGpu/)
+  assert.doesNotMatch(values, /gpuCount/)
+  assert.match(values, /node-feature-discovery:/)
+  assert.match(values, /nvidia:\n  enabled: true/)
+  assert.match(values, /kata-deploy:/)
+  assert.match(values, /kata-device-plugin:/)
+  assert.match(values, /kata-device-provisioner:/)
+  assert.equal(
+    generatedValues['kata-device-provisioner'].profiles['HGX-Bx00-CC-TDX']
+      .ccMode,
+    'on',
+  )
+  assert.equal(
+    generatedValues['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-SNP'],
+    undefined,
+  )
+  assert.equal(
+    generatedValues['kata-device-provisioner'].profiles.GBx00,
+    undefined,
+  )
+  assert.ok(
+    generatedValues['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX'],
+  )
+  assert.equal(
+    generatedValues['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX']
+      .nodeSelector['intel.feature.node.kubernetes.io/tdx'],
+    'true',
+  )
+  assert.equal(shims['qemu-nvidia-gpu'], undefined)
+  assert.equal(shims['qemu-nvidia-gpu-runtime-rs'], undefined)
+  assert.equal(shims['qemu-nvidia-gpu-snp-runtime-rs'], undefined)
+  assert.equal(shims['qemu-nvidia-gpu-tdx-runtime-rs'].enabled, true)
+  assert.equal(
+    shims['qemu-nvidia-gpu-tdx-runtime-rs'].nvrc.enableDCGM,
+    true,
+  )
+  assert.deepEqual(shims['qemu-nvidia-gpu-tdx-runtime-rs'].agent, {
+    httpsProxy: 'https://proxy.example.com:8443',
+    noProxy: 'registry.internal,.svc',
+  })
+  assert.equal(generatedValues['kata-deploy'].k8sDistribution, 'rke2')
+  assert.equal(generatedValues['kata-deploy'].selinux.enabled, true)
+  assert.equal(generatedValues['kata-deploy'].deploymentMode, 'job')
+  assert.equal(generatedValues['kata-deploy'].debug, true)
+  assert.deepEqual(generatedValues['kata-deploy'].nodeSelector, {
+    'workload.example.com/kata': 'true',
+  })
+  assert.deepEqual(
+    generatedValues['kata-deploy'].affinity.nodeAffinity
+      .requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms,
+    [
+      {
+        matchExpressions: [
+          {
+            key: 'topology.kubernetes.io/zone',
+            operator: 'In',
+            values: ['zone-a', 'zone-b'],
+          },
+        ],
+      },
+    ],
+  )
+  assert.deepEqual(generatedValues['kata-deploy'].tolerations, [
+    {
+      key: 'kata.example.com/runtime',
+      operator: 'Equal',
+      value: 'enabled',
+      effect: 'NoSchedule',
+    },
+  ])
+  assert.equal(generatedValues['kata-deploy'].imagePullPolicy, 'IfNotPresent')
+  assert.deepEqual(generatedValues['kata-deploy'].imagePullSecrets, [
+    { name: 'registry-secret' },
+  ])
+  assert.equal(
+    generatedValues['kata-deploy'].image.reference,
+    'registry.example.com/kata-deploy',
+  )
+  assert.equal(
+    generatedValues['kata-deploy'].kubectlImage.reference,
+    'registry.example.com/kubectl',
+  )
+  assert.equal(
+    generatedValues['kata-deploy'].job.dispatcherImage.reference,
+    'registry.example.com/dispatcher',
+  )
+  assert.deepEqual(generatedValues['kata-deploy'].job.reconcile, {
+    enabled: true,
+    schedule: '0 */2 * * *',
+  })
+  assert.deepEqual(generatedValues['node-feature-discovery'].imagePullSecrets, [
+    { name: 'nfd-secret' },
+  ])
+  assert.equal(
+    generatedValues['node-feature-discovery'].image.repository,
+    'registry.example.com/node-feature-discovery',
+  )
+  assert.equal(
+    generatedValues['kata-device-plugin'].image.repository,
+    'registry.example.com/kata-device-plugin',
+  )
+  assert.equal(
+    generatedValues['kata-device-plugin'].image.pullPolicy,
+    'Always',
+  )
+  assert.deepEqual(generatedValues['kata-device-plugin'].imagePullSecrets, [
+    { name: 'plugin-secret' },
+  ])
+  assert.deepEqual(
+    generatedValues['kata-device-provisioner'].imagePullSecrets,
+    [{ name: 'provisioner-secret' }],
+  )
+  assert.equal(
+    generatedValues['kata-device-provisioner'].image.reference,
+    'registry.example.com/kata-device-provisioner',
+  )
+  assert.equal(
+    generatedValues['kata-device-provisioner'].job.dispatcherImage.reference,
+    'registry.example.com/provisioner-dispatcher',
+  )
+  assert.deepEqual(generatedValues['kata-deploy'].snapshotter.setup, ['nydus'])
+  assert.equal(generatedValues['kata-deploy'].nodeBinaries, undefined)
+  assert.equal(
+    generatedValues['kata-deploy'].snapshotter.erofsSnapshotterMode,
+    undefined,
+  )
+  assert.equal(generatedValues['kata-deploy'].containerd?.userDropIn, undefined)
+  assert.equal(
+    install,
+    `helm upgrade --install krab oci://ghcr.io/kata-containers/krab --version ${krabVersion} --namespace kata-system --create-namespace --values krab-${krabVersion}-values.yaml`,
+  )
+  assert.equal(
+    buildInstallScript(catalog, 'My production/Kata'),
+    `helm upgrade --install my-production-kata oci://ghcr.io/kata-containers/krab --version ${krabVersion} --namespace kata-system --create-namespace --values my-production-kata-${krabVersion}-values.yaml`,
+  )
+  assert.equal(
+    buildValuesFileName(catalog, ''),
+    `krab-${krabVersion}-values.yaml`,
+  )
+
+  const imported = importValuesBundle(
+    catalog,
+    values,
+    `production-kata-${krabVersion}-values.yaml`,
+  )
+  assert.equal(imported.vendorId, 'nvidia')
+  assert.equal(imported.deploymentName, 'production-kata')
+  assert.deepEqual(imported.selections.hopper, {
+    enabled: true,
+    modeId: 'ppcie',
+    cpuTeeIds: ['tdx'],
+  })
+  assert.deepEqual(imported.selections.blackwell, {
+    enabled: true,
+    modeId: 'on',
+    cpuTeeIds: ['tdx'],
+  })
+  assert.deepEqual(imported.cluster, {
+    distributionId: 'rke2',
+    selinuxEnabled: true,
+  })
+  assert.deepEqual(
+    parse(
+      buildValuesBundle(
+        catalog,
+        vendor,
+        imported.selections,
+        imported.cluster,
+        imported.runtime,
+        imported.advanced,
+      ),
+    ),
+    generatedValues,
+  )
+
+  const passthroughValues = parse(
+    buildValuesBundle(
+      catalog,
+      vendor,
+      {
+        hopper: { modeId: 'off', cpuTeeIds: [] },
+        blackwell: { modeId: null, cpuTeeIds: [] },
+      },
+      {
+        distributionId: 'kubeadm',
+        selinuxEnabled: false,
+      },
+      {
+        selectedShimIds: [],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      {
+        ...createAdvancedConfiguration(),
+        containerdConfigDir: ' /opt/containerd ',
+        containerdRuntimeSocket: ' unix:///run/custom-containerd.sock ',
+        containerdConfigFileName: ' custom.toml ',
+        installErofsUtils: true,
+        erofsUtilsImage: ' registry.example.com/erofs-utils:1.9.3 ',
+      },
+    ),
+  )
+  assert.deepEqual(passthroughValues['kata-deploy'].snapshotter.setup, ['erofs'])
+  assert.ok(passthroughValues['kata-deploy'].containerd)
+  assert.equal(
+    passthroughValues['kata-deploy'].containerd.configDir,
+    '/opt/containerd',
+  )
+  assert.equal(
+    passthroughValues['kata-deploy'].containerd.runtimeSocket,
+    'unix:///run/custom-containerd.sock',
+  )
+  assert.equal(
+    passthroughValues['kata-deploy'].containerd.configFileName,
+    'custom.toml',
+  )
+  assert.deepEqual(
+    passthroughValues['kata-deploy'].nodeBinaries['erofs-utils'],
+    {
+      image: 'registry.example.com/erofs-utils:1.9.3',
+      binaries: ['mkfs.erofs'],
+      pullPolicy: 'IfNotPresent',
+    },
+  )
+  const erofsLock = await loadJson<{ reference: string; tag: string; digest: string }>(
+    'upstream/erofs-utils-image.lock.json')
+  const defaultErofsValues = parse(buildValuesBundle(catalog, vendor,
+    { hopper: { modeId: 'off', cpuTeeIds: [] } },
+    { distributionId: 'kubeadm', selinuxEnabled: false },
+    { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    { ...createAdvancedConfiguration(), installErofsUtils: true }))
+  assert.equal(defaultErofsValues['kata-deploy'].nodeBinaries['erofs-utils'].image,
+    `${erofsLock.reference}:${erofsLock.tag}@${erofsLock.digest}`)
+  assert.equal(passthroughValues['kata-deploy'].k8sDistribution, 'k8s')
+
+  const emptyValues = parse(
+    buildValuesBundle(
+      catalog,
+      vendor,
+      {
+        hopper: { modeId: null, cpuTeeIds: [] },
+        blackwell: { modeId: null, cpuTeeIds: [] },
+      },
+      {
+        distributionId: 'k3s',
+        selinuxEnabled: false,
+      },
+      {
+        selectedShimIds: [],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      {
+        ...createAdvancedConfiguration(),
+        containerdUserDropIn: '[debug]\n  level = "debug"\n',
+      },
+    ),
+  )
+  assert.equal(emptyValues['kata-deploy'].snapshotter, undefined)
+  assert.equal(emptyValues['kata-deploy'].containerd, undefined)
+  assert.equal(emptyValues['kata-deploy'].k8sDistribution, 'k3s')
+
+  const nonNvidiaValues = parse(
+    buildValuesBundle(
+      catalog,
+      { ...vendor, id: 'other-vendor' },
+      {},
+      {
+        distributionId: 'kubeadm',
+        selinuxEnabled: false,
+      },
+      {
+        selectedShimIds: [],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+  assert.ok(nonNvidiaValues['node-feature-discovery'])
+  assert.ok(nonNvidiaValues['kata-deploy'])
+  assert.equal(nonNvidiaValues['kata-device-plugin'].enabled, false)
+  assert.equal(nonNvidiaValues['kata-device-provisioner'].enabled, false)
+})
+
+test('App contains no product catalog constants', async () => {
+  const app = await readFile(resolve(root, 'src/App.tsx'), 'utf8')
+
+  for (const forbidden of [
+    'H100',
+    'H200',
+    'B200',
+    'B300',
+    'ppcie',
+    'nvidia.com/gpu',
+    'qemu-nvidia',
+    'kata-deploy-charts',
+  ]) {
+    assert.equal(app.includes(forbidden), false, `App.tsx contains ${forbidden}`)
+  }
+})
+
+test('every generated item retains pinned provenance', async () => {
+  const provenance = await loadJson<{
+    generatedFrom: Array<{ ref: string; sha256: string; sourceUrl: string }>
+  }>('src/generated/provenance.json')
+
+  assert.ok(provenance.generatedFrom.length > 0)
+  for (const source of provenance.generatedFrom) {
+    assert.match(source.ref, /^(?:[a-f0-9]{40}|v?\d+\.\d+\.\d+)$/)
+    assert.match(source.sha256, /^[a-f0-9]{64}$/)
+    assert.match(source.sourceUrl, /^https:\/\/github\.com\//)
+  }
+})
+
+
+test('custom-only handlers cover target architectures without enabling their base handler', async () => {
+  const { uncoveredRuntimeArchitectures } = await import('../src/lib/artifacts.ts')
+  const catalog = await loadJson<ExplorerCatalog>('src/generated/catalog.json')
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const handler = { name: 'my-runtime', baseConfig: 'qemu-tdx-runtime-rs', dropIn: '', runtimeClass: 'kata-my-runtime' }
+  assert.deepEqual(uncoveredRuntimeArchitectures(custom, ['amd64'], [], [handler]), [])
+  assert.deepEqual(uncoveredRuntimeArchitectures(custom, ['amd64', 's390x'], [], [handler]), ['s390x'])
+})

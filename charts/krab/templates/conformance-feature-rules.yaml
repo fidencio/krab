@@ -1,0 +1,22 @@
+{{- if .Values.global.krab.continuousConformance }}
+apiVersion: nfd.k8s-sigs.io/v1alpha1
+kind: NodeFeatureRule
+metadata:
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-node-conformance
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  rules:
+{{- range $state := list "pass" "fail" "error" }}
+    - name: krab.conformance.{{ $state }}
+      labels:
+        feature.node.kubernetes.io/krab-conformance: {{ $state | quote }}
+      matchFeatures:
+        - feature: local.feature
+          matchExpressions:
+            krab.conformance.state:
+              op: In
+              value: [{{ $state | quote }}]
+{{- end }}
+{{- end }}

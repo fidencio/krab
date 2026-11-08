@@ -1,0 +1,57 @@
+schemaVersion: 1
+status: stable
+notice: KRAB 0.2.11. Review generated values before deploying.
+namespace: kata-system
+images:
+  kubectl:
+    reference: quay.io/kata-containers/kubectl
+    tag: v1.37.0
+  devicePlugin:
+    repository: ghcr.io/kata-containers/kata-device-plugin
+    tag: v0.2.0-rc.2
+cluster:
+  distributions:
+    - id: kubeadm
+      displayName: kubeadm
+      kataDeployValue: k8s
+      defaultConfigurationOnly: false
+    - id: k0s
+      displayName: k0s
+      kataDeployValue: k0s
+      defaultConfigurationOnly: true
+    - id: k3s
+      displayName: K3s
+      kataDeployValue: k3s
+      defaultConfigurationOnly: true
+    - id: microk8s
+      displayName: MicroK8s
+      kataDeployValue: microk8s
+      unsupportedSnapshotters:
+        erofs: MicroK8s bundles containerd older than 2.2; EROFS requires containerd 2.2 or newer.
+      defaultConfigurationOnly: true
+    - id: rke2
+      displayName: RKE2
+      kataDeployValue: rke2
+      defaultConfigurationOnly: true
+  selinuxValuesPath: selinux.enabled
+charts:
+  krab:
+    repository: kata-containers/krab
+    chartName: krab
+    releaseName: krab
+    ociReference: oci://ghcr.io/kata-containers/krab
+    valuesFileName: values.yaml
+    dependencies:
+      nvidiaValuesKey: nvidia
+      runtimeValuesKey: kata-deploy
+      runtimeRequired: false
+      devicePluginValuesKey: kata-device-plugin
+      devicePluginRequired: false
+      devicePluginRequiredBy:
+        - nvidia
+      provisionerValuesKey: kata-device-provisioner
+      provisionerRequired: false
+      provisionerRequiredBy:
+        - nvidia
+      nfdValuesKey: node-feature-discovery
+      nfdRequired: false

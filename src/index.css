@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&family=Roboto:wght@400;500;700&display=swap');
+
+:root {
+  color-scheme: light;
+  font-family: 'Roboto', sans-serif;
+  color: var(--product-text, #333);
+  background: var(--product-page-background, #fff);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --kata-primary: var(--product-accent, #f15b3e);
+  --kata-primary-bright: var(--product-accent, #f15b3e);
+  --kata-orange: var(--product-accent, #f15b3e);
+  --kata-orange-bright: var(--product-accent, #f15b3e);
+  --ink: var(--product-text, #222);
+  --surface: var(--product-page-background, #fff);
+  --surface-raised: var(--product-panel-background, #f6f7f8);
+  --line: var(--product-border, #d5d5d5);
+  --muted: var(--product-muted-text, #6b6b6b);
+  --status-error: #b42342;
+  --status-success: #157347;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  color: var(--product-text, #e8edf4);
+  background: var(--product-page-background, #0b1220);
+  --kata-primary: var(--product-accent, #f15b3e);
+  --kata-primary-bright: var(--product-accent, #ff765c);
+  --kata-orange: var(--product-accent, #f15b3e);
+  --kata-orange-bright: var(--product-accent, #ff8a70);
+  --ink: var(--product-text, #e8edf4);
+  --surface: var(--product-page-background, #0b1220);
+  --surface-raised: var(--product-panel-background, #121c2c);
+  --line: var(--product-border, #2c3a4d);
+  --muted: var(--product-muted-text, #a8b3c2);
+  --status-error: #ff718e;
+  --status-success: #69d9a3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--surface);
+}
+
+button,
+a {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--kata-primary-bright);
+  outline-offset: 3px;
+}
+
+a {
+  color: inherit;
+}

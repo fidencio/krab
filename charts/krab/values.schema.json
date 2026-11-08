@@ -1,0 +1,321 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KRAB values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nvidia": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Default for GPU dependencies when their individual enabled values are omitted."
+        }
+      }
+    },
+    "node-feature-discovery": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable this component independently of other KRAB dependencies."
+        }
+      }
+    },
+    "kata-deploy": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "k8sDistribution": {
+          "type": "string",
+          "enum": [
+            "k8s",
+            "k0s",
+            "k3s",
+            "microk8s",
+            "rke2"
+          ]
+        },
+        "selinux": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Confine kata-deploy installation containers on SELinux-enforcing nodes."
+            }
+          }
+        },
+        "shims": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "snapshotter": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "node-feature-discovery": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "const": false,
+              "description": "KRAB installs NFD as a direct dependency."
+            }
+          }
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable this component independently of other KRAB dependencies."
+        }
+      }
+    },
+    "kata-device-plugin": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable this component independently of other KRAB dependencies."
+        }
+      }
+    },
+    "kata-device-provisioner": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "node-feature-discovery": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "const": false,
+              "description": "KRAB installs NFD as a direct dependency."
+            }
+          }
+        },
+        "profiles": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "$ref": "#/definitions/provisionerProfile"
+          }
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "imagePullPolicy": {
+          "type": "string",
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ]
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "job": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable this component independently of other KRAB dependencies."
+        }
+      }
+    },
+    "intel-tdx-qgs": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Install Intel QGS and its SGX device plugin for TDX quote generation."
+        },
+        "tdxQuoteGenerationService": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "Online",
+                "Offline",
+                "External"
+              ]
+            }
+          }
+        },
+        "intel-sgx-plugin": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        },
+        "pcsApiKey": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "secretName": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "krab": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "continuousConformance": {
+              "type": "boolean",
+              "default": false
+            },
+            "nodeImage": {
+              "type": "string",
+              "minLength": 1
+            },
+            "nvidiaCpuTees": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "tdx",
+                  "snp"
+                ]
+              }
+            },
+            "conformancePolicy": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "architectures",
+                  "requirements"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "architectures": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "enum": [
+                        "amd64",
+                        "arm64",
+                        "ppc64le",
+                        "s390x"
+                      ]
+                    }
+                  },
+                  "requirements": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "enum": [
+                        "kvm",
+                        "cc",
+                        "tdx",
+                        "snp",
+                        "se",
+                        "gpu",
+                        "gpu-cc",
+                        "gpu-ppcie",
+                        "erofs"
+                      ]
+                    }
+                  },
+                  "gpuModels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "provisionerProfile": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "enabled",
+        "ccMode"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "ccMode": {
+          "type": "string",
+          "enum": [
+            "off",
+            "on",
+            "ppcie"
+          ]
+        },
+        "nodeSelector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "nodeSelectorExpressions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nodeFeatureRule": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "job": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

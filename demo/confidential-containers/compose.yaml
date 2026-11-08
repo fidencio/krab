@@ -1,0 +1,10 @@
+services:
+  website:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.website
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./krab-profile.json:/usr/share/nginx/html/krab-profile.json:ro
+      - ../../src/assets/brands/confidential-containers.svg:/usr/share/nginx/html/product-logo.svg:ro

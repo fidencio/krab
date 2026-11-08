@@ -1,0 +1,25 @@
+{{/*
+Render the worker from the pinned NFD dependency so KRAB can add its read-only
+result mount. Other NFD resources retain the dependency's templates and values.
+*/}}
+{{- if index .Values "node-feature-discovery" "enabled" -}}
+{{- $nfd := index .Subcharts "node-feature-discovery" -}}
+{{- $values := deepCopy $nfd.Values -}}
+{{- $_ := set $values.worker "enable" true -}}
+{{- $_ := set $values.master "enable" false -}}
+{{- $_ := set $values.gc "enable" false -}}
+{{- $_ := set $values.topologyUpdater "enable" false -}}
+{{- $base := printf "%s/charts/node-feature-discovery/templates" (trimSuffix "/templates" .Template.BasePath) -}}
+{{- $context := dict "Values" $values "Chart" $nfd.Chart "Release" .Release "Capabilities" .Capabilities "Files" $nfd.Files "Subcharts" $nfd.Subcharts "Template" (dict "BasePath" $base "Name" (printf "%s/worker.yaml" $base)) -}}
+{{- $worker := include (printf "%s/worker.yaml" $base) $context | fromYaml -}}
+{{- $pod := $worker.spec.template.spec -}}
+{{- $_ := set $pod "volumes" (append $pod.volumes (dict "name" "krab-features" "hostPath" (dict "path" "/run/krab/features" "type" "DirectoryOrCreate"))) -}}
+{{- range $container := $pod.containers -}}
+  {{- $_ := set $container "volumeMounts" (append $container.volumeMounts (dict "name" "krab-features" "mountPath" "/run/krab/features" "readOnly" true)) -}}
+{{- end -}}
+{{ toYaml $worker }}
+{{ range $file := list "nfd-worker-conf.yaml" "serviceaccount.yaml" "role.yaml" "rolebinding.yaml" "clusterrole.yaml" "clusterrolebinding.yaml" }}
+---
+{{ include (printf "%s/%s" $base $file) $context }}
+{{ end }}
+{{- end }}

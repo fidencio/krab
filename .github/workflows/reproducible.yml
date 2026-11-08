@@ -1,0 +1,58 @@
+name: Reproducible CLI
+
+on:
+  pull_request:
+    paths: ['core/**', 'cli/**', 'preflight/**', 'scripts/build-cli-release.py', '.github/workflows/reproducible.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: reproducible-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the actual release target and linker
+        run: |
+          rustup toolchain install 1.95.0 --profile minimal --target x86_64-unknown-linux-musl
+          krab_sysroot="$(rustc +1.95.0 --print sysroot)"
+          krab_host="$(rustc +1.95.0 -vV | sed -n 's/^host: //p')"
+          echo "$krab_sysroot/lib/rustlib/$krab_host/bin" >> "$GITHUB_PATH"
+      - name: Build twice with independent paths and Cargo homes
+        env:
+          CARGO_INCREMENTAL: '0'
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER: rust-lld
+          CARGO_PROFILE_RELEASE_STRIP: symbols
+        run: |
+          for build in first second-longer-path; do
+            krab_source="$RUNNER_TEMP/$build/source"
+            krab_cargo="$RUNNER_TEMP/$build/cargo-home"
+            mkdir -p "$krab_source" "$krab_cargo"
+            git archive HEAD | tar -x -C "$krab_source"
+            (
+              cd "$krab_source"
+              export CARGO_HOME="$krab_cargo"
+              python3 scripts/build-cli-release.py --target x86_64-unknown-linux-musl
+            )
+          done
+          krab_first="$RUNNER_TEMP/first/source/cli/target/x86_64-unknown-linux-musl/release/krab"
+          krab_second="$RUNNER_TEMP/second-longer-path/source/cli/target/x86_64-unknown-linux-musl/release/krab"
+          sha256sum "$krab_first" "$krab_second" | tee reproducibility.txt
+          if ! cmp "$krab_first" "$krab_second"; then
+            strings "$krab_first" > "$RUNNER_TEMP/first-strings.txt"
+            strings "$krab_second" > "$RUNNER_TEMP/second-strings.txt"
+            diff -u "$RUNNER_TEMP/first-strings.txt" "$RUNNER_TEMP/second-strings.txt" | head -100 || true
+            exit 1
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: cli-reproducibility
+          path: reproducibility.txt

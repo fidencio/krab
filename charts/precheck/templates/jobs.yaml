@@ -1,0 +1,72 @@
+{{- $name := include "krab-precheck.name" . -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "krab-precheck.dispatcherName" . }}
+  {{- if not .Values.conformance.enabled }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "0"
+    helm.sh/hook-delete-policy: before-hook-creation
+  {{- end }}
+spec:
+  {{- if .Values.conformance.enabled }}
+  ttlSecondsAfterFinished: 3600
+  {{- end }}
+  backoffLimit: 0
+  activeDeadlineSeconds: 1200
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ $name }}-dispatcher
+      containers:
+        - name: dispatcher
+          image: {{ .Values.dispatcherImage | quote }}
+          args:
+            - --job-template=/etc/krab/node-job.yaml
+            - --name-prefix={{ $name }}
+            - --namespace={{ .Release.Namespace }}
+            - --parallelism={{ .Values.parallelism }}
+            - --owner-job-name={{ include "krab-precheck.dispatcherName" . }}
+            - --tracking-label-prefix={{ $name }}
+            - {{ printf "--node-selector=%s" (include "krab-precheck.nodeSelector" .) | quote }}
+            - --wait-for-nodes-secs=0
+          volumeMounts:
+            - {name: scripts, mountPath: /etc/krab, readOnly: true}
+      volumes:
+        - name: scripts
+          configMap: {name: {{ $name }}-files}
+{{- if not .Values.conformance.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}-results
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 600
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ $name }}-collector
+      containers:
+        - name: collector
+          image: {{ printf "%s:%s" .Values.collectorImage.repository .Chart.Version | quote }}
+          command: [/bin/bash, /etc/krab/collect.sh]
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef: {fieldPath: metadata.namespace}
+            - {name: OWNER_LABEL, value: {{ $name | quote }}}
+            - {name: CHECKER_VERSION, value: {{ .Chart.Version | quote }}}
+            - {name: NODE_SELECTOR, value: {{ include "krab-precheck.nodeSelector" . | quote }}}
+          volumeMounts:
+            - {name: scripts, mountPath: /etc/krab, readOnly: true}
+      volumes:
+        - name: scripts
+          configMap: {name: {{ $name }}-files}
+{{- end }}

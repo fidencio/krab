@@ -1,0 +1,19 @@
+name: Cache browser engine compilation
+description: Reuse Rust dependencies, tools, and compilation; always rebuild and verify outputs.
+inputs:
+  source:
+    description: Repository checkout directory relative to the workspace
+    default: .
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          ${{ inputs.source }}/core/target
+        key: browser-rust-1.95-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(format('{0}/core/Cargo.lock', inputs.source)) }}-${{ github.sha }}
+        restore-keys: |
+          browser-rust-1.95-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(format('{0}/core/Cargo.lock', inputs.source)) }}-
+          browser-rust-1.95-${{ runner.os }}-${{ runner.arch }}-

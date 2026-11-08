@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "reference": "quay.io/kata-containers/erofs-utils",
+  "tag": "1.9.3",
+  "digest": "sha256:a67234f0d08d7798c035a208bc349a46eaa7646ec370094db7dc1e809c312bb8",
+  "platforms": ["linux/amd64", "linux/arm64"]
+}

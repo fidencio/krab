@@ -1,0 +1,42 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directories: [/core, /cli, /preflight, /fuzz]
+    open-pull-requests-limit: 1
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 7
+    groups:
+      rust-dependencies:
+        patterns: ['*']
+  - package-ecosystem: npm
+    directory: /
+    open-pull-requests-limit: 1
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      npm-dependencies:
+        patterns: ['*']
+  - package-ecosystem: github-actions
+    directory: /
+    groups:
+      github-actions:
+        patterns: ['*']
+    open-pull-requests-limit: 1
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+  - package-ecosystem: docker
+    directory: /
+    groups:
+      container-images:
+        patterns: ['*']
+    open-pull-requests-limit: 1
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7

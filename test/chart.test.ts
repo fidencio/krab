@@ -1,0 +1,231 @@
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+import test from 'node:test'
+import Ajv from 'ajv'
+import { parse } from 'yaml'
+import catalogData from '../src/generated/catalog.json' with { type: 'json' }
+import {
+  buildValuesBundle,
+  createAdvancedConfiguration,
+  type ExplorerCatalog,
+} from '../src/lib/artifacts.ts'
+
+const root = resolve(import.meta.dirname, '..')
+const catalog = catalogData as unknown as ExplorerCatalog
+const vendor = catalog.vendors.find(({ id }) => id === 'nvidia')!
+const runtimeVendors = catalog.vendors.filter(
+  ({ hardwareFamilies }) => hardwareFamilies.length === 0,
+)
+
+const readYaml = async (path: string) =>
+  parse(await readFile(resolve(root, path), 'utf8'))
+
+test('chart dependency gates allow each component to be enabled independently', async () => {
+  const chart = await readYaml('charts/krab/Chart.yaml')
+  const dependencies = Object.fromEntries(
+    chart.dependencies.map((dependency: { name: string }) => [
+      dependency.name,
+      dependency,
+    ]),
+  )
+
+  assert.equal(dependencies['intel-tdx-qgs'].condition, 'intel-tdx-qgs.enabled')
+  assert.equal(chart.name, 'krab')
+  assert.equal(dependencies['node-feature-discovery'].condition, 'node-feature-discovery.enabled')
+  assert.equal(dependencies['kata-deploy'].condition, 'kata-deploy.enabled')
+  assert.equal(dependencies['kata-device-plugin'].condition, 'kata-device-plugin.enabled,nvidia.enabled')
+  assert.equal(
+    dependencies['kata-device-provisioner'].condition,
+    'kata-device-provisioner.enabled,nvidia.enabled',
+  )
+})
+
+test('catalog component versions match the declared chart dependencies', async () => {
+  const chart = await readYaml('charts/krab/Chart.yaml')
+  const precheck = await readYaml('charts/precheck/Chart.yaml')
+  const packageData = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
+  const versions = catalog.plannedArchitecture.charts
+  const dependencies = Object.fromEntries(
+    chart.dependencies.map((dependency: { name: string; version: string }) =>
+      [dependency.name, dependency.version]),
+  )
+
+  assert.equal(versions.krab.version, chart.version)
+  assert.equal(versions.kataDeploy.version, dependencies['kata-deploy'])
+  assert.equal(versions.nfd.version, dependencies['node-feature-discovery'])
+  assert.equal(versions.devicePlugin.version, dependencies['kata-device-plugin'])
+  assert.equal(versions.provisioner.version, dependencies['kata-device-provisioner'])
+  assert.equal(precheck.version, packageData.version)
+})
+
+test('NFD dependency uses the version and registry pinned by the source lock', async () => {
+  const chart = await readYaml('charts/krab/Chart.yaml')
+  const lock = await readYaml('upstream/sources.lock.yaml')
+  const nfd = lock.sources.find((source: { id: string }) => source.id === 'nfd-chart')
+  const dependency = chart.dependencies.find(
+    (item: { name: string }) => item.name === 'node-feature-discovery',
+  )
+
+  assert.ok(nfd?.release?.startsWith('v'))
+  assert.equal(dependency.version, nfd.release.slice(1))
+  assert.equal(dependency.repository, 'oci://registry.k8s.io/nfd/charts')
+  assert.equal(catalog.plannedArchitecture.charts.nfd.version, dependency.version)
+})
+
+test('chart prerelease annotation agrees with its SemVer version', async () => {
+  const chart = await readYaml('charts/krab/Chart.yaml')
+  const match = chart.version.match(
+    /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/,
+  )
+
+  assert.ok(match, `${chart.version} must be valid SemVer`)
+  assert.equal(
+    chart.annotations['artifacthub.io/prerelease'],
+    String(match[1] !== undefined),
+  )
+})
+
+test('default, NVIDIA, Custom, and CPU-only values satisfy the KRAB schema', async () => {
+  const schema = JSON.parse(
+    await readFile(resolve(root, 'charts/krab/values.schema.json'), 'utf8'),
+  )
+  const validate = new Ajv({ allErrors: true }).compile(schema)
+  const defaults = await readYaml('charts/krab/values.yaml')
+
+  assert.equal(validate(defaults), true, JSON.stringify(validate.errors))
+  assert.equal(
+    defaults['kata-device-provisioner']['node-feature-discovery'].enabled,
+    false,
+  )
+  const architecture = await readYaml('upstream/architecture.yaml')
+  assert.deepEqual(defaults['kata-device-plugin'].image,
+    architecture.images.devicePlugin)
+
+  const generated = parse(
+    buildValuesBundle(
+      catalog,
+      vendor,
+      {
+        hopper: { modeId: 'ppcie', cpuTeeIds: ['snp', 'tdx'] },
+        blackwell: { modeId: 'on', cpuTeeIds: ['tdx'] },
+      },
+      {
+        distributionId: 'rke2',
+        selinuxEnabled: true,
+      },
+      {
+        selectedShimIds: [],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+
+  assert.equal(validate(generated), true, JSON.stringify(validate.errors))
+  const custom = catalog.vendors.find(({ id }) => id === 'custom')!
+  const mixed = parse(buildValuesBundle(
+    catalog,
+    custom,
+    { hopper: { enabled: true, modeId: 'off', cpuTeeIds: [] } },
+    { distributionId: 'kubeadm', selinuxEnabled: false, architectures: ['amd64'] },
+    { selectedShimIds: ['qemu-tdx-runtime-rs', 'qemu-snp-runtime-rs'], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+    createAdvancedConfiguration(),
+  ))
+  assert.equal(validate(mixed), true, JSON.stringify(validate.errors))
+  assert.equal(generated.nvidia.enabled, true)
+  assert.equal(
+    generated['kata-device-provisioner']['node-feature-discovery'].enabled,
+    false,
+  )
+  assert.equal(
+    generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-SNP'],
+    undefined,
+  )
+  assert.ok(
+    generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX'],
+  )
+  assert.equal(
+    generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX'].ccMode,
+    'ppcie',
+  )
+  assert.equal(
+    generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX'].values,
+    undefined,
+  )
+  assert.equal(
+    generated['kata-device-provisioner'].profiles['HGX-Hx00-PPCIE-TDX'].profile,
+    undefined,
+  )
+
+  for (const runtimeVendor of runtimeVendors) {
+    const runtimeGenerated = parse(
+      buildValuesBundle(
+        catalog,
+        runtimeVendor,
+        {},
+        { distributionId: 'kubeadm', selinuxEnabled: false },
+        {
+          selectedShimIds: [runtimeVendor.runtime.shims[0].id],
+          runtimeHttpsProxy: '',
+          runtimeNoProxy: '',
+          nvidiaDcgmEnabled: false,
+        },
+        createAdvancedConfiguration(),
+      ),
+    )
+    assert.equal(
+      validate(runtimeGenerated),
+      true,
+      JSON.stringify(validate.errors),
+    )
+    assert.equal(runtimeGenerated.nvidia.enabled, false)
+    assert.equal(
+      runtimeGenerated['kata-deploy'].snapshotter?.erofsMergeMode,
+      undefined,
+    )
+  }
+})
+
+test('CPU-only values disable NVIDIA charts and retain NFD and kata-deploy', () => {
+  const generated = parse(
+    buildValuesBundle(
+      catalog,
+      { ...vendor, id: 'other-vendor' },
+      {},
+      {
+        distributionId: 'kubeadm',
+        selinuxEnabled: false,
+      },
+      {
+        selectedShimIds: [],
+        runtimeHttpsProxy: '',
+        runtimeNoProxy: '',
+        nvidiaDcgmEnabled: false,
+      },
+      createAdvancedConfiguration(),
+    ),
+  )
+
+  assert.equal(generated.nvidia.enabled, false)
+  assert.equal(generated['kata-device-plugin'].enabled, false)
+  assert.equal(generated['kata-device-provisioner'].enabled, false)
+  assert.ok(generated['node-feature-discovery'])
+  assert.ok(generated['kata-deploy'])
+})
+
+test('generated Helm values quote on and off GPU modes as strings', () => {
+  for (const modeId of ['off', 'on']) {
+    const values = buildValuesBundle(
+      catalog,
+      vendor,
+      { blackwell: { enabled: true, modeId, cpuTeeIds: modeId === 'on' ? ['tdx'] : [] } },
+      { distributionId: 'kubeadm', selinuxEnabled: false },
+      { selectedShimIds: [], runtimeHttpsProxy: '', runtimeNoProxy: '', nvidiaDcgmEnabled: false },
+      createAdvancedConfiguration(),
+    )
+    assert.match(values, new RegExp(`ccMode: ["']${modeId}["']`))
+  }
+})

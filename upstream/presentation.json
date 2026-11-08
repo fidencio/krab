@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "vendors": [
+    {
+      "id": "nvidia",
+      "displayName": "NVIDIA",
+      "tagline": "GPU and confidential computing",
+      "description": "Run GPU-accelerated workloads with Kata, from standard workloads to confidential ones.",
+      "logo": "nvidia.svg"
+    },
+    {
+      "id": "custom",
+      "displayName": "Custom",
+      "tagline": "Custom Kata deployment",
+      "description": "Combine Kata runtimes for different node types in one deployment.",
+      "logo": "custom.svg"
+    },
+    {
+      "id": "amd",
+      "displayName": "AMD",
+      "tagline": "SEV-SNP",
+      "description": "Run AMD SEV-SNP confidential workloads with Kata.",
+      "logo": "amd.svg"
+    },
+    {
+      "id": "ibm",
+      "displayName": "IBM",
+      "tagline": "Secure Execution for Linux",
+      "description": "Run IBM Z Secure Execution confidential workloads with Kata.",
+      "logo": "ibm.png"
+    },
+    {
+      "id": "intel",
+      "displayName": "Intel",
+      "tagline": "TDX",
+      "description": "Run Intel TDX confidential workloads with Kata.",
+      "logo": "intel.png"
+    }
+  ]
+}

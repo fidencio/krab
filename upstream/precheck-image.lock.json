@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "reference": "ghcr.io/kata-containers/kata-device-provisioner",
+  "tag": "0.1.0-alpha.3",
+  "digest": "sha256:51e611b31ac6f447b7fd71e57ea74f6d85c65bafaaaccb6827ede779d71cf2c3",
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ]
+}
