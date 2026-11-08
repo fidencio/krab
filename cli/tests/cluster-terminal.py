@@ -38,10 +38,16 @@ with tempfile.TemporaryDirectory(prefix='krab-cluster-terminal-') as directory:
     subprocess.run([binary,'init','--non-interactive'],cwd=directory,check=True,capture_output=True)
     original=(root/'krab.yaml').read_bytes()
     checker_version=subprocess.check_output([binary,'--version'],text=True).strip().split()[-1]
-    environment={'PATH':str(root/'bin')+os.pathsep+os.environ['PATH'],
+    profile = root / 'profile.json'
+    profile.write_text(json.dumps({'apiVersion':'krab/product/v1alpha1', 'id':'cluster-theme',
+        'name':'Cluster theme', 'theme':{'dark':{'pageBackground':'#091827',
+        'panelBackground':'#122a3e', 'text':'#edf6ff', 'accent':'#62c8ff'}}}))
+    environment={'KRAB_PROFILE':str(profile), 'KRAB_THEME':'dark', 'PATH':str(root/'bin')+os.pathsep+os.environ['PATH'],
                  'KRAB_TEST_CHECKER_VERSION':checker_version}
     session=Session(directory,[],extra_env=environment)
+    start = len(session.transcript)
     session.key(b'\r')
+    assert b'48;2;18;42;62' in session.transcript[start:], 'Cluster checks must retain the profile panel colour'
     session.key(b'fake-kubeconfig\r')
     session.wait_for(b'Select Kubernetes context')
     session.key(b'\r')

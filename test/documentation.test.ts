@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import test from 'node:test'
@@ -39,4 +40,18 @@ test('documentation is an on-site route and the compact terminal strip has no in
   assert.doesNotMatch(docs, /<track\b/)
   assert.match(docs, /Read the walkthrough/)
   assert.match(docs, /preload="none"/)
+})
+
+
+test('terminal recordings preserve indexed selection and status colours', () => {
+  const result = execFileSync('python3', ['-c', [
+    'import json, runpy, sys',
+    'screen = runpy.run_path(sys.argv[1])["screen"]',
+    'cells = screen("\\x1b[38;5;0;48;2;98;200;255mX\\x1b[38;5;2mY\\x1b[48;5;232mZ")',
+    'print(json.dumps(cells[0][:3]))',
+  ].join('\n'), resolve(root, 'scripts/record-terminal.py')], { encoding: 'utf8' })
+  const cells = JSON.parse(result) as Array<[string, string, string, boolean]>
+  assert.deepEqual(cells.map(([ch, fg, bg]) => [ch, fg, bg]), [
+    ['X', '#101722', '#62c8ff'], ['Y', '#83d29d', '#62c8ff'], ['Z', '#83d29d', '#080808'],
+  ])
 })

@@ -1,4 +1,7 @@
 //! Display the original webpage logo as an inline image, never as character art.
+use serde_json::Value;
+use std::path::Path;
+
 use ratatui::{
     layout::{Rect, Size},
     Frame,
@@ -12,17 +15,27 @@ use ratatui_image::{
 pub struct Logo(Protocol);
 
 impl Logo {
-    pub fn from_terminal() -> Option<Self> {
-        let picker = detect()?;
-        let image = image::load_from_memory(include_bytes!(
-            "../../src/assets/brands/krab-kata-hybrid.png"
-        ))
-        .ok()?;
+    pub fn from_terminal(
+        background: &mut Option<(u8, u8, u8)>,
+        catalog: &Value,
+        profile_path: Option<&Path>,
+    ) -> Option<Self> {
+        let picker = detect(background)?;
+        let image = load(catalog, profile_path)?;
         let font = picker.font_size();
         let width = u32::from(font.width) * 6;
         let height = u32::from(font.height) * 3;
         let mark = image.resize(width, height, image::imageops::FilterType::Lanczos3);
-        let mut canvas = image::RgbaImage::new(width, height);
+        let theme = crate::theme::Theme::from_catalog(
+            catalog,
+            crate::theme::Mode::terminal(*background).ok()?,
+        );
+        let mut canvas = match theme.page.bg {
+            Some(ratatui::style::Color::Rgb(r, g, b)) => {
+                image::RgbaImage::from_pixel(width, height, image::Rgba([r, g, b, 255]))
+            }
+            _ => image::RgbaImage::new(width, height),
+        };
         image::imageops::overlay(
             &mut canvas,
             &mark.to_rgba8(),
@@ -60,8 +73,29 @@ impl Logo {
     }
 }
 
+// Profile-relative local PNGs are shared website/TUI assets. URLs and unsupported
+// formats keep the product's text heading; opening the TUI never fetches a logo.
+fn load(catalog: &Value, profile_path: Option<&Path>) -> Option<image::DynamicImage> {
+    if catalog["product"].is_object() {
+        let logo = catalog["product"]["logo"]
+            .as_str()
+            .filter(|s| !s.is_empty())?;
+        if logo.contains("://") {
+            return None;
+        }
+        let base = profile_path?.parent()?;
+        let data = std::fs::read(base.join(logo)).ok()?;
+        image::load_from_memory(&data).ok()
+    } else {
+        image::load_from_memory(include_bytes!(
+            "../../src/assets/brands/krab-kata-hybrid.png"
+        ))
+        .ok()
+    }
+}
+
 #[cfg(unix)]
-fn detect() -> Option<Picker> {
+fn detect(background: &mut Option<(u8, u8, u8)>) -> Option<Picker> {
     use ratatui_image::picker::cap_parser::{Parser, QueryStdioOptions, Response};
     use rustix::event::{poll, PollFd, PollFlags, Timespec};
     use std::{
@@ -83,8 +117,17 @@ fn detect() -> Option<Picker> {
     // protocol, including over Lima/SSH where TERM_PROGRAM may be missing.
     let (start, escape, end) = Parser::tmux_start_escape_end(tmux);
     write!(tty, "{start}{escape}[>q{end}").ok()?;
-    tty.write_all(Parser::query(tmux, QueryStdioOptions::default()).as_bytes())
-        .ok()?;
+    tty.write_all(
+        Parser::query(
+            tmux,
+            QueryStdioOptions {
+                terminal_background_color_osc: true,
+                ..QueryStdioOptions::default()
+            },
+        )
+        .as_bytes(),
+    )
+    .ok()?;
     tty.flush().ok()?;
     let deadline = Instant::now() + Duration::from_millis(300);
     let mut parser = Parser::new();
@@ -107,6 +150,7 @@ fn detect() -> Option<Picker> {
             replies.push(char::from(*byte));
             for response in parser.push(char::from(*byte)) {
                 match response {
+                    Response::Background(r, g, b) => *background = Some((r, g, b)),
                     Response::Kitty => protocol = Some(ProtocolType::Kitty),
                     Response::Sixel if protocol.is_none() => protocol = Some(ProtocolType::Sixel),
                     Response::CellSize(Some((width, height))) => {
@@ -140,6 +184,31 @@ fn detect() -> Option<Picker> {
 }
 
 #[cfg(not(unix))]
-fn detect() -> Option<Picker> {
+fn detect(_background: &mut Option<(u8, u8, u8)>) -> Option<Picker> {
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn product_icon_is_resolved_beside_profile_independently_of_working_directory() {
+        let profile = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../demo/confidential-containers/krab-profile.json");
+        let source: Value =
+            serde_json::from_str(&std::fs::read_to_string(&profile).unwrap()).unwrap();
+        let catalog = json!({"product": {"logo": source["logo"]}});
+        let icon = load(&catalog, Some(&profile)).unwrap();
+        assert_eq!((icon.width(), icon.height()), (512, 512));
+        assert!(load(
+            &json!({"product":{"logo":"https://example.com/logo.png"}}),
+            Some(&profile)
+        )
+        .is_none());
+        assert!(load(&json!({"product":{"logo":"missing.png"}}), Some(&profile)).is_none());
+        assert!(load(&json!({"product":{}}), Some(&profile)).is_none());
+        assert!(load(&json!({}), None).is_some());
+    }
 }

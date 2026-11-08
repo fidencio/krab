@@ -459,6 +459,7 @@ pub(super) fn modes(family: &Value, vendor: &Value, arches: &[String]) -> Vec<Ch
 
 #[derive(Clone, Copy)]
 pub struct Defaults<'a> {
+    pub profile_path: Option<&'a Path>,
     pub vendor: &'a str,
     pub distribution: &'a str,
     pub architecture: &'a str,

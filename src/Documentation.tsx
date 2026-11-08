@@ -284,7 +284,7 @@ krab --profile krab-profile.json generate --config krab.yaml --output values.yam
           Invalid profiles block the builder with an explanation.</p>
         <p>Product profiles are available in KRAB 0.2.11 and later. Use matching website and CLI releases,
           or development artifacts from the same source revision.</p>
-        <h3>Set your website colours</h3>
+        <h3>Set your website and TUI colours</h3>
         <p>Add independent <code>theme.light</code> and <code>theme.dark</code> palettes to the profile.
           The website follows the visitor’s system preference and light/dark toggle.</p>
         <Command>{`"theme": {
@@ -295,8 +295,13 @@ krab --profile krab-profile.json generate --config krab.yaml --output values.yam
           <code> mutedText</code>, <code>accent</code>, and <code>border</code> as opaque
           <code> #RGB</code> or <code>#RRGGBB</code> colours. Omitted colours retain the selected KRAB palette.
           Choose readable text/background combinations; solid accent buttons use black or white text automatically.
-          Replace the profile and reload to apply changes without rebuilding. These settings affect the website;
-          the TUI keeps its terminal palette and generated deployments stay the same.</p>
+          Replace the profile and reload to apply website changes without rebuilding.
+          The TUI maps the same colours onto the editor and cluster-check screens; restart it after profile changes.
+          It detects the terminal background, falls back to COLORFGBG, and otherwise uses the dark palette.
+          Set <code>KRAB_THEME=light</code>, <code>KRAB_THEME=dark</code>, or <code>KRAB_THEME=auto</code> to override it.
+          Missing colours retain terminal defaults or inherit page/text colours; a missing palette keeps the existing appearance.
+          This TUI mapping is newer than 0.3.0 and requires a development build until the next release.
+          Generated deployments stay the same.</p>
         <h3>Choose the available controls</h3>
         <p><code>available</code> can restrict vendors, runtimes, distributions, architectures, and
           hardwareFamilies using their existing catalog IDs. Omit a list to keep all its choices;

@@ -1,11 +1,11 @@
 //! Interactive checks share the CLI collector/evaluator and never modify the editor draft.
-use crate::checks;
+use crate::{checks, theme::Theme};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use krab_preflight::cluster::Options;
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Layout},
-    widgets::{Block, List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{List, ListItem, ListState, Paragraph, Wrap},
     Terminal,
 };
 use std::{
@@ -114,6 +114,7 @@ fn nodes(options: Options) -> Screen {
 pub fn run(
     terminal: &mut Terminal<CrosstermBackend<io::Stderr>>,
     kind: Kind,
+    theme: Theme,
 ) -> Result<(), String> {
     let mut options = Options::default();
     if matches!(kind, Kind::Precheck) {
@@ -151,6 +152,7 @@ pub fn run(
             }
         }
         terminal.draw(|frame| {
+            theme.paint(frame);
             let area = frame.area();
             let layout = Layout::vertical([Constraint::Length(3), Constraint::Min(5), Constraint::Length(3)]).split(area);
             frame.render_widget(Paragraph::new(format!("{}\nContext: {}", if matches!(kind, Kind::Precheck) { "Node pre-check" } else { "Cluster conformance" }, options.context.as_deref().unwrap_or("not selected"))), layout[0]);
@@ -169,8 +171,8 @@ pub fn run(
                             let parts = Layout::vertical([Constraint::Length(2), Constraint::Percentage(45), Constraint::Min(3)]).split(layout[1]);
                             frame.render_widget(Paragraph::new(summary).wrap(Wrap{trim:false}), parts[0]);
                             let mut state = ListState::default().with_selected(Some((*pos).min(entries.len()-1)));
-                            frame.render_stateful_widget(List::new(entries.iter().map(|(name,_)| ListItem::new(name.as_str()))).block(Block::bordered().title(if *failed { "Failed/error nodes" } else { "All nodes" })).highlight_symbol("› ").highlight_style(ratatui::style::Style::default().fg(ratatui::style::Color::Cyan)), parts[1], &mut state);
-                            frame.render_widget(Paragraph::new(entries[(*pos).min(entries.len()-1)].1.as_str()).scroll((*scroll,0)).block(Block::bordered().title("Reasons / evidence")).wrap(Wrap{trim:false}), parts[2]);
+                            frame.render_stateful_widget(List::new(entries.iter().map(|(name,_)| ListItem::new(name.as_str()))).block(theme.block(if *failed { "Failed/error nodes" } else { "All nodes" })).highlight_symbol("› ").highlight_style(theme.check_selection), parts[1], &mut state);
+                            frame.render_widget(Paragraph::new(entries[(*pos).min(entries.len()-1)].1.as_str()).scroll((*scroll,0)).block(theme.block("Reasons / evidence")).wrap(Wrap{trim:false}), parts[2]);
                         }
                         Err(error) => frame.render_widget(Paragraph::new(error), layout[1]),
                     }
@@ -180,16 +182,16 @@ pub fn run(
                 Screen::Error(error) => ("Cannot run checks", format!("{error}\n\nCheck kubeconfig, credentials, kubectl, Helm, and cluster permissions. Press Enter to choose the connection again."), "Enter retries connection setup · Esc returns · [?] Help"),
             };
             if !title.is_empty() {
-                if rows.is_empty() { frame.render_widget(Paragraph::new(text).block(Block::bordered().title(title)).wrap(Wrap{trim:false}), layout[1]); }
+                if rows.is_empty() { frame.render_widget(Paragraph::new(text).block(theme.block(title)).wrap(Wrap{trim:false}), layout[1]); }
                 else {
                     let mut state = ListState::default().with_selected(Some(cursor));
-                    frame.render_stateful_widget(List::new(rows).block(Block::bordered().title(title)).highlight_symbol("› ").highlight_style(ratatui::style::Style::default().fg(ratatui::style::Color::Cyan)), layout[1], &mut state);
+                    frame.render_stateful_widget(List::new(rows).block(theme.block(title)).highlight_symbol("› ").highlight_style(theme.check_selection), layout[1], &mut state);
                 }
             }
-            frame.render_widget(Paragraph::new(format!("{controls}\n{message}")).wrap(Wrap{trim:false}), layout[2]);
+            frame.render_widget(Paragraph::new(format!("{controls}\n{message}")).style(theme.subtle).wrap(Wrap{trim:false}), layout[2]);
             if help {
                 frame.render_widget(ratatui::widgets::Clear, layout[1]);
-                frame.render_widget(Paragraph::new("Choose a kubeconfig and context, then the node or cluster scope. Enter confirms single selections; Space toggles requirement checkboxes. Choose at most one CPU TEE policy. Review shows the target before installing the pre-check chart.\n\nResults initially show failed/error nodes for conformance. Use f for all nodes, arrow keys to select a node, and PgUp/PgDn to read its reasons. e exports full JSON evidence. PASS covers host prerequisites, not workload launch or attestation.\n\nEsc, Enter, ? or F1 closes help.").block(Block::bordered().title("Help · Cluster checks")).wrap(Wrap{trim:false}), layout[1]);
+                frame.render_widget(Paragraph::new("Choose a kubeconfig and context, then the node or cluster scope. Enter confirms single selections; Space toggles requirement checkboxes. Choose at most one CPU TEE policy. Review shows the target before installing the pre-check chart.\n\nResults initially show failed/error nodes for conformance. Use f for all nodes, arrow keys to select a node, and PgUp/PgDn to read its reasons. e exports full JSON evidence. PASS covers host prerequisites, not workload launch or attestation.\n\nEsc, Enter, ? or F1 closes help.").block(theme.block("Help · Cluster checks")).wrap(Wrap{trim:false}), layout[1]);
             }
         }).map_err(|e| e.to_string())?;
         if !event::poll(Duration::from_millis(100)).map_err(|e| e.to_string())? {

@@ -21,7 +21,7 @@ static website container, so those changes do not need an image rebuild.
 
 For any portable KRAB static-site artifact, copy this profile to
 `krab-profile.json` beside `index.html` and copy
-`src/assets/brands/confidential-containers.svg` to `product-logo.svg` in that directory.
+`demo/confidential-containers/product-logo.png` to `product-logo.png` in that directory.
 Serve those files with any static host; a subdirectory also works with the portable artifact.
 
 ## Available choices
@@ -70,3 +70,25 @@ krab --profile demo/confidential-containers/krab-profile.json generate \
 
 Use the same KRAB version for the site and CLI. For a bundled CLI distribution,
 place this file beside the binary as `krab-profile.json`.
+
+With a development build newer than 0.3.0, the TUI uses this profile's colours too.
+To choose its light palette explicitly:
+
+```sh
+KRAB_THEME=light krab --profile demo/confidential-containers/krab-profile.json
+```
+
+Without the override, it detects the terminal background and falls back to the
+dark palette when the terminal does not report its appearance.
+
+The shared PNG icon is rendered from `src/assets/brands/confidential-containers.svg`.
+The development TUI loads it beside the profile on graphics-capable terminals;
+text-only terminals retain the product heading.
+
+## Terminal preview
+
+Captured from the development CLI with the CoCo profile and its local icon:
+
+![CoCo TUI using the dark profile palette](tui-dark.png)
+
+![CoCo TUI using the light profile palette](tui-light.png)

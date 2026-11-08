@@ -18,7 +18,8 @@ import time
 binary = str(Path(sys.argv[1]).resolve())
 
 class Session:
-    def __init__(self, directory, args, graphics=None, extra_env=None):
+    def __init__(self, directory, args, graphics=None, extra_env=None, background=None):
+        self.background = background
         self.graphics = graphics
         self.probe_answered = False
         self.query_buffer = bytearray()
@@ -68,7 +69,7 @@ class Session:
                         'kitty': b'\x1b_Gi=31;OK\x1b\\\x1b[6;16;8t',
                         'sixel': b'\x1b[?64;4c\x1b[6;16;8t',
                     }.get(self.graphics, b'')
-                    os.write(self.master, capabilities + b'\x1b[0n')
+                    os.write(self.master, capabilities + (self.background or b'') + b'\x1b[0n')
                     self.probe_answered = True
                 received = True
             elif (received and b'KRAB' in self.transcript) or self.child.poll() is not None:
@@ -245,6 +246,27 @@ def main():
             source = session.finish()
             assert b'\x1b' not in source
             assert b'apiVersion:' in source
+    # Product themes work with terminal background replies even without graphics
+    # or a font-size response; explicit mode overrides win over that reply.
+    for requested, background, page in (
+        ('auto', b'\x1b]11;rgb:ffff/ffff/ffff\x07', b'48;2;244;248;252'),
+        ('auto', b'\x1b]11;rgb:0000/0000/0000\x07', b'48;2;9;24;39'),
+        ('dark', b'\x1b]11;rgb:ffff/ffff/ffff\x07', b'48;2;9;24;39'),
+    ):
+        with tempfile.TemporaryDirectory(prefix='krab-theme-terminal-') as directory:
+            profile = Path(directory) / 'profile.json'
+            source = json.loads((Path(__file__).resolve().parents[2] / 'demo/confidential-containers/krab-profile.json').read_text())
+            source['logo'] = str(Path(__file__).resolve().parents[2] / 'demo/confidential-containers/product-logo.png')
+            profile.write_text(json.dumps(source))
+            subprocess.run([binary, '--profile', str(profile), 'init', '--non-interactive'], cwd=directory, check=True, capture_output=True)
+            session = Session(directory, ['--profile', str(profile), 'edit'],
+                              extra_env={'KRAB_THEME': requested}, background=background, graphics='iterm2-without-env')
+            assert page in session.transcript, session.transcript
+            assert b'Confidential Containers' in session.transcript
+            assert b'\x1b]1337;File=' in session.transcript, 'Missing CoCo profile icon'
+            session.key(b'q')
+            assert not session.finish()
+    print('Product palettes, terminal background detection, and mode overrides passed.')
     print('Ratatui keyboard input, live selections, bare command routing, save/discard, stdout, and terminal restoration passed.')
 
 if __name__ == "__main__":

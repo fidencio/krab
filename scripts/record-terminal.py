@@ -57,6 +57,23 @@ def screen(source):
                         elif v == 49: bg = '#0b1220'
                         elif 30 <= v <= 37 or 90 <= v <= 97: fg = PALETTE[v % 10]
                         elif 40 <= v <= 47 or 100 <= v <= 107: bg = PALETTE[v % 10]
+                        elif v in (38, 48) and j+2 < len(values) and values[j+1] == 5:
+                            index = values[j+2]
+                            if 0 <= index < 8:
+                                color = PALETTE[index]
+                            elif 8 <= index < 16:
+                                color = ['#586575', '#ff8a8a', '#a7efb8', '#ffe29a', '#a8caff', '#e0bbff', '#a0f0ee', '#ffffff'][index-8]
+                            elif 16 <= index < 232:
+                                index -= 16
+                                levels = [0, 95, 135, 175, 215, 255]
+                                color = '#%02x%02x%02x' % (levels[index//36], levels[(index//6)%6], levels[index%6])
+                            elif 232 <= index < 256:
+                                color = '#%02x%02x%02x' % ((8 + (index-232)*10,) * 3)
+                            else:
+                                color = fg if v == 38 else bg
+                            if v == 38: fg = color
+                            else: bg = color
+                            j += 2
                         elif v in (38, 48) and j+4 < len(values) and values[j+1] == 2:
                             color = '#%02x%02x%02x' % tuple(values[j+2:j+5])
                             if v == 38: fg = color
