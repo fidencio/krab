@@ -31,7 +31,9 @@ krab --profile examples/product-profiles/coco.json edit --config coco.yaml
 krab --profile examples/product-profiles/coco.json generate --config coco.yaml --output values.yaml
 ```
 
-`KRAB_PROFILE=/path/to/profile.json` also works. For a bundled CLI, place `krab-profile.json` beside the executable; it loads automatically. An explicit `--profile` takes precedence over the environment and bundled profile. The TUI uses the product name and retains KRAB attribution; the profile's optional logo is a website asset.
+`KRAB_PROFILE=/path/to/profile.json` also works. For a bundled CLI, place `krab-profile.json` beside the executable; it loads automatically. An explicit `--profile` takes precedence over the environment and bundled profile. The TUI uses the product name and retains KRAB attribution; the development TUI can also show a local PNG logo on graphics-capable terminals.
+Relative logo paths resolve beside the profile file. HTTPS URLs and unsupported
+formats remain website assets; the TUI keeps its product heading without fetching them.
 
 ## Configure the profile
 
@@ -45,7 +47,7 @@ Start with [the CoCo example](../examples/product-profiles/coco.json). It illust
 | `apiVersion` | `krab/product/v1alpha1` |
 | `id`, `name`, `description` | Product identity and website/TUI title |
 | `logo` | Optional relative website asset path or HTTPS image URL |
-| `theme.light`, `theme.dark` | Optional website colours for each appearance mode |
+| `theme.light`, `theme.dark` | Optional website and TUI colours for each appearance mode |
 | `available.vendors` | Allowed existing vendor/path IDs |
 | `available.runtimes` | Allowed existing runtime IDs, across the selected vendors |
 | `available.distributions` | Allowed Kubernetes distribution IDs |
@@ -71,7 +73,7 @@ A disabled feature can still be enabled by the operator in `defaults`; end users
 
 Validate a profile offline with `krab --profile profile.json list catalog --json`. Inspect `product.defaults` in that output for the engine's fully resolved starting configuration.
 
-## Set website colours
+## Set website and TUI colours
 
 Add `theme.light` and/or `theme.dark` to `krab-profile.json`. Each palette accepts `pageBackground`, `panelBackground`, `text`, `mutedText`, `accent`, and `border` as opaque `#RGB` or `#RRGGBB` colours. For example:
 
@@ -84,4 +86,18 @@ Add `theme.light` and/or `theme.dark` to `krab-profile.json`. Each palette accep
 
 The website follows the visitor's system preference and its light/dark toggle. Omitted colours retain KRAB's palette for that mode; the example profile includes matching muted text and borders. Choose text and backgrounds with sufficient contrast; text on solid accent buttons automatically uses black or white. Replace the profile file and reload to apply changes, without rebuilding the website or WASM. Unknown fields and invalid colours block the profile with an explanation.
 
-These colours apply to the website. The TUI retains its terminal palette, and theme settings do not change generated deployments.
+The TUI maps the same six fields onto page and panel backgrounds, body and muted
+text, headings and selections, and borders, including the cluster-check screens.
+Selected rows use black or white text for contrast with the accent colour.
+Validation and message emphasis use the supplied accent (or text colour),
+with explicit status labels retained.
+It detects a light or dark terminal through its background-colour response, then
+uses `COLORFGBG` when available, and otherwise selects the dark palette.
+Use `KRAB_THEME=light`, `KRAB_THEME=dark`, or `KRAB_THEME=auto` to override that
+choice. Restart the TUI after changing the profile; no rebuild is needed.
+Omitted colours retain terminal defaults or inherit the supplied page/text colours;
+without a palette, the existing terminal appearance is preserved. True-colour
+terminals display the supplied RGB values; other terminals may approximate them.
+
+Theme settings do not change generated deployments. This TUI mapping is newer
+than the 0.3.0 release; use a matching development build until the next release.

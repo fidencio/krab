@@ -1,5 +1,6 @@
 use crate::config::{find, items, text, Config, Hardware, Result};
 use crate::editor::{self, Defaults};
+use crate::theme::{Mode, Theme};
 use crate::values;
 use crossterm::{
     cursor::{Hide, Show},
@@ -13,9 +14,8 @@ use crossterm::{
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Layout, Rect},
-    style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Clear, List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{Clear, List, ListItem, ListState, Paragraph, Wrap},
     Frame, Terminal,
 };
 use serde_json::{json, Value};
@@ -117,6 +117,7 @@ enum Screen {
 
 pub(super) struct App<'a> {
     catalog: &'a Value,
+    theme: Theme,
     defaults: Defaults<'a>,
     config: Config,
     original: Config,
@@ -175,6 +176,7 @@ impl<'a> App<'a> {
         };
         let mut app = Self {
             catalog,
+            theme: Theme::from_catalog(catalog, Mode::Dark),
             defaults,
             original: config.clone(),
             section_baseline: config.clone(),
@@ -1128,27 +1130,31 @@ fn options(ids: &[&str]) -> Vec<OptionItem> {
         .collect()
 }
 
-fn list(frame: &mut Frame<'_>, area: Rect, title: &str, rows: Vec<String>, selected: usize) {
+fn list(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    title: &str,
+    rows: Vec<String>,
+    selected: usize,
+    theme: Theme,
+) {
     let mut state = ListState::default().with_selected(Some(selected));
     let widget = List::new(rows.into_iter().map(|row| {
         if row.starts_with('─') {
-            ListItem::new(row).style(Style::default().fg(Color::DarkGray))
+            ListItem::new(row).style(theme.muted)
         } else {
             ListItem::new(row)
         }
     }))
-    .block(Block::bordered().title(title.to_string()))
-    .highlight_style(
-        Style::default()
-            .fg(Color::Black)
-            .bg(Color::Cyan)
-            .add_modifier(Modifier::BOLD),
-    )
+    .block(theme.block(title.to_string()))
+    .highlight_style(theme.selection)
     .highlight_symbol("› ");
     frame.render_stateful_widget(widget, area, &mut state);
 }
 
 fn render(frame: &mut Frame<'_>, app: &App<'_>) {
+    let theme = app.theme;
+    theme.paint(frame);
     let area = frame.area();
     if area.width < 65 || area.height < 24 {
         let help = if matches!(app.screen, Screen::ConfirmExit(_)) {
@@ -1187,19 +1193,20 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
                     " {} ",
                     app.catalog["product"]["name"].as_str().unwrap_or("KRAB")
                 ),
-                Style::default()
-                    .fg(Color::Rgb(252, 94, 51))
-                    .add_modifier(Modifier::BOLD),
+                theme.heading,
             ),
-            Span::raw(format!(
-                "{} · {}",
-                app.defaults.path.display(),
-                if app.dirty() {
-                    "unsaved changes"
-                } else {
-                    "no unsaved changes"
-                }
-            )),
+            Span::styled(
+                format!(
+                    "{} · {}",
+                    app.defaults.path.display(),
+                    if app.dirty() {
+                        "unsaved changes"
+                    } else {
+                        "no unsaved changes"
+                    }
+                ),
+                theme.subtle,
+            ),
         ])),
         header,
     );
@@ -1255,31 +1262,22 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
     let verdict = if matches!(&app.screen, Screen::Input(i) if matches!(i.field, Field::Overrides | Field::WebsiteAdvanced))
         && !app.message.is_empty()
     {
-        Line::styled(
-            format!("NEEDS ATTENTION · {}", app.message),
-            Style::default().fg(Color::Yellow),
-        )
+        Line::styled(format!("NEEDS ATTENTION · {}", app.message), theme.warning)
     } else {
         match values::build(&app.config, app.catalog) {
-            Ok(_) => Line::styled(
-                "VALID · configuration matches chart",
-                Style::default().fg(Color::Green),
-            ),
-            Err(error) => Line::styled(
-                format!("NEEDS ATTENTION · {error}"),
-                Style::default().fg(Color::Yellow),
-            ),
+            Ok(_) => Line::styled("VALID · configuration matches chart", theme.success),
+            Err(error) => Line::styled(format!("NEEDS ATTENTION · {error}"), theme.warning),
         }
     };
     frame.render_widget(
         Paragraph::new(summary)
-            .block(Block::bordered().title("Live configuration"))
+            .block(theme.block("Live configuration"))
             .wrap(Wrap { trim: false }),
         right[0],
     );
     frame.render_widget(
         Paragraph::new(verdict)
-            .block(Block::bordered().title("Live validation"))
+            .block(theme.block("Live validation"))
             .wrap(Wrap { trim: false }),
         right[1],
     );
@@ -1300,6 +1298,7 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
                 })
                 .collect(),
             app.selected + usize::from(app.selected >= 2),
+            theme,
         ),
         Screen::Advanced => {
             let rows = app
@@ -1326,6 +1325,7 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
                 "Advanced settings · Esc returns",
                 rows,
                 app.advanced_selected,
+                theme,
             );
         }
         Screen::Choices(menu) => {
@@ -1353,7 +1353,7 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
                     )
                 })
                 .collect();
-            list(frame, body[0], &menu.title, rows, menu.cursor);
+            list(frame, body[0], &menu.title, rows, menu.cursor, theme);
         }
         Screen::Input(input) => {
             let lines = input.value[..input.cursor].matches('\n').count() as u16;
@@ -1368,7 +1368,7 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
             frame.render_widget(
                 Paragraph::new(input.value.as_str())
                     .scroll((scroll, horizontal))
-                    .block(Block::bordered().title(input.title.clone())),
+                    .block(theme.block(input.title.clone())),
                 body[0],
             );
             if !app.help_open {
@@ -1381,7 +1381,7 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
         Screen::Preview(source, scroll) => frame.render_widget(
             Paragraph::new(source.as_str())
                 .scroll((*scroll, 0))
-                .block(Block::bordered().title("Generated values · Esc returns")),
+                .block(theme.block("Generated values · Esc returns")),
             body[0],
         ),
         Screen::ConfirmSave(path, yes) => frame.render_widget(
@@ -1390,7 +1390,7 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
                 path.display(),
                 if *yes { "[Yes]   No" } else { " Yes   [No]" }
             ))
-            .block(Block::bordered().title("Confirm save"))
+            .block(theme.block("Confirm save"))
             .wrap(Wrap { trim: false }),
             body[0],
         ),
@@ -1399,7 +1399,7 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
                 "Discard unsaved changes and exit?\n\n{}",
                 if *yes { "[Yes]   No" } else { " Yes   [No]" }
             ))
-            .block(Block::bordered().title("Unsaved changes")),
+            .block(theme.block("Unsaved changes")),
             body[0],
         ),
     }
@@ -1419,8 +1419,9 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
                     ""
                 }
             )),
-            Line::styled(app.message.as_str(), Style::default().fg(Color::Yellow)),
+            Line::styled(app.message.as_str(), theme.warning),
         ])
+        .style(theme.subtle)
         .wrap(Wrap { trim: false }),
         vertical[2],
     );
@@ -1437,7 +1438,7 @@ fn render(frame: &mut Frame<'_>, app: &App<'_>) {
                 "{}\n\n{}\n\nChanges preview live. Esc cancels a section and restores its earlier settings.\n\n[?]/[F1]: help in menus. Text fields: [F1] for help; [?] types normally.\n\nClose help: [Enter], [Esc], [?], [F1], or [q].",
                 controls(&app.screen), help_details(&app.screen)
             ))
-            .block(Block::bordered().title("Help · Keyboard controls"))
+            .block(theme.block("Help · Keyboard controls"))
             .wrap(Wrap { trim: false }),
             popup,
         );
@@ -1501,7 +1502,9 @@ pub fn run(catalog: &Value, defaults: Defaults<'_>) -> Result<Option<(Config, Pa
         Hide
     )
     .map_err(|e| e.to_string())?;
-    app.logo = crate::logo::Logo::from_terminal();
+    let mut background = None;
+    app.logo = crate::logo::Logo::from_terminal(&mut background, catalog, defaults.profile_path);
+    app.theme = Theme::from_catalog(catalog, Mode::terminal(background)?);
     let mut terminal =
         Terminal::new(CrosstermBackend::new(io::stderr())).map_err(|e| e.to_string())?;
     loop {
@@ -1518,7 +1521,7 @@ pub fn run(catalog: &Value, defaults: Defaults<'_>) -> Result<Option<(Config, Pa
             _ => {}
         }
         if let Some(kind) = app.pending_check.take() {
-            crate::cluster_ui::run(&mut terminal, kind)?;
+            crate::cluster_ui::run(&mut terminal, kind, app.theme)?;
             // Fullscreen resize invalidates the buffers without querying the
             // cursor on stdout (which may be reserved for exported YAML).
             let size = terminal.size().map_err(|e| e.to_string())?;
@@ -1532,10 +1535,11 @@ pub fn run(catalog: &Value, defaults: Defaults<'_>) -> Result<Option<(Config, Pa
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ratatui::backend::TestBackend;
+    use ratatui::{backend::TestBackend, style::Color};
 
     fn defaults(config: &Config) -> Defaults<'_> {
         Defaults {
+            profile_path: None,
             vendor: &config.vendor,
             distribution: &config.distribution,
             architecture: "amd64",
@@ -1559,6 +1563,48 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect()
+    }
+
+    #[test]
+    fn product_palettes_reach_editor_panels_selection_footer_help_and_small_screens() {
+        let mut source: Value =
+            serde_json::from_str(include_str!("../../examples/product-profiles/coco.json"))
+                .unwrap();
+        for mode in [Mode::Light, Mode::Dark] {
+            let mode_name = if mode == Mode::Light { "light" } else { "dark" };
+            source["theme"] = json!({mode_name: {
+                "pageBackground": "#123", "panelBackground": "#234",
+                "text": "#def", "mutedText": "#abc", "accent": "#369", "border": "#789"
+            }});
+            let catalog = krab_core::product::apply(&crate::config::catalog(), &source).unwrap();
+            let config: Config =
+                serde_json::from_value(catalog["product"]["defaults"].clone()).unwrap();
+            let mut app = App::new(&catalog, defaults(&config)).unwrap();
+            app.theme = Theme::from_catalog(&catalog, mode);
+            let mut terminal = Terminal::new(TestBackend::new(160, 40)).unwrap();
+            terminal.draw(|frame| render(frame, &app)).unwrap();
+            let buffer = terminal.backend().buffer();
+            assert_eq!(buffer[(0, 0)].bg, Color::Rgb(17, 34, 51));
+            assert_eq!(buffer[(0, 2)].bg, Color::Rgb(34, 51, 68));
+            assert_eq!(buffer[(0, 2)].fg, Color::Rgb(119, 136, 153));
+            assert_eq!(buffer[(4, 4)].fg, Color::Rgb(221, 238, 255));
+            assert_eq!(buffer[(3, 3)].bg, Color::Rgb(51, 102, 153));
+            assert_eq!(buffer[(3, 3)].fg, Color::White);
+            assert_eq!(buffer[(0, 37)].fg, Color::Rgb(170, 187, 204));
+            app.help_open = true;
+            terminal.draw(|frame| render(frame, &app)).unwrap();
+            assert_eq!(
+                terminal.backend().buffer()[(1, 1)].bg,
+                Color::Rgb(34, 51, 68)
+            );
+            assert_eq!(
+                terminal.backend().buffer()[(1, 1)].fg,
+                Color::Rgb(119, 136, 153)
+            );
+            let mut small = Terminal::new(TestBackend::new(40, 10)).unwrap();
+            small.draw(|frame| render(frame, &app)).unwrap();
+            assert_eq!(small.backend().buffer()[(0, 0)].bg, Color::Rgb(17, 34, 51));
+        }
     }
 
     #[test]

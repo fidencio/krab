@@ -4,6 +4,7 @@ mod cluster_ui;
 mod edit;
 mod editor;
 mod logo;
+mod theme;
 mod tui;
 
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
@@ -290,7 +291,7 @@ fn install(config: &Config, catalog: &Value, context: &str, execute: bool) -> Re
     }
 }
 
-fn run(action: Action, catalog: Value) -> Result<()> {
+fn run(action: Action, catalog: Value, profile_path: Option<&Path>) -> Result<()> {
     match action {
         Action::Edit {
             config: path,
@@ -307,6 +308,7 @@ fn run(action: Action, catalog: Value) -> Result<()> {
             let result = editor::run(
                 &catalog,
                 editor::Defaults {
+                    profile_path,
                     vendor: &document.config.vendor,
                     distribution: &document.config.distribution,
                     architecture: document
@@ -382,6 +384,7 @@ fn run(action: Action, catalog: Value) -> Result<()> {
                 match editor::run(
                     &catalog,
                     editor::Defaults {
+                        profile_path,
                         vendor: &vendor,
                         distribution: &distribution,
                         architecture: &architecture,
@@ -464,8 +467,9 @@ fn main() -> ExitCode {
                 .filter(|p| p.is_file())
         });
     let catalog = match profile
+        .as_ref()
         .map(|path| {
-            let source = fs::read_to_string(&path)
+            let source = fs::read_to_string(path)
                 .map_err(|e| format!("Cannot read product profile {}: {e}", path.display()))?;
             let value: Value = serde_json::from_str(&source)
                 .map_err(|e| format!("Invalid product profile {}: {e}", path.display()))?;
@@ -532,7 +536,7 @@ Remote runs require Helm and kubectl, install the pre-check chart, and emit JSON
         Action::Precheck { args } if checks::remote(&args) => checks::run_precheck(args),
         Action::Precheck { args } => krab_preflight::run(args),
         Action::Conformance { args } => krab_preflight::conformance::run(&args),
-        other => match run(other, catalog) {
+        other => match run(other, catalog, profile.as_deref()) {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
                 eprintln!("krab: {error}");

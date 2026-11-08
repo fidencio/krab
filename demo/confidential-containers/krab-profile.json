@@ -3,7 +3,7 @@
   "id": "confidential-containers",
   "name": "Confidential Containers",
   "description": "Kata based Confidential runtimes for Kubernetes",
-  "logo": "./product-logo.svg",
+  "logo": "./product-logo.png",
   "theme": {
     "light": {
       "pageBackground": "#f4f8fc",

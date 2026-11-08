@@ -2,6 +2,14 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [Unreleased]
+
+- Apply product light/dark colours to the TUI editor and cluster-check screens,
+  detect terminal appearance, and support an explicit `KRAB_THEME` override.
+- Load local profile PNG icons in graphics-capable terminals, including the
+  shared CoCo website/TUI icon. Preserve the unprofiled terminal appearance.
+- Preserve indexed terminal colours when recording walkthroughs and screenshots.
+
 ## [0.3.0] - Unreleased
 
 ### Changed
