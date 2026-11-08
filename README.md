@@ -104,7 +104,7 @@ for installation, advanced settings, deployment, and conformance.
 
 ## Node pre-check
 
-KRAB 0.2.2 uses Helm values format 2 and pre-check schema v2.
+KRAB uses Helm values format 2 and pre-check schema v2.
 Regenerate values and rerun pre-flight checks: format 1 values, unversioned
 values, and v1 pre-check reports are not accepted. Archived builders remain
 available for older releases.
@@ -114,7 +114,7 @@ Install the published pre-check chart to check every Linux node in the cluster:
 ```sh
 helm install krab-precheck \
   oci://ghcr.io/kata-containers/krab-precheck \
-  --version 0.2.11 \
+  --version 0.3.0 \
   --timeout 35m \
   --namespace krab-precheck --create-namespace &&
 kubectl --namespace krab-precheck logs \
@@ -279,7 +279,7 @@ For the GPU OR selection instead, use `anyOf: [gpu-cc, gpu-ppcie]` under
 ```sh
 helm upgrade --install krab-conformance \
   oci://ghcr.io/kata-containers/krab-precheck \
-  --version 0.2.11 \
+  --version 0.3.0 \
   --namespace krab-conformance --create-namespace \
   --timeout 35m --values conformance-values.yaml
 ```
@@ -430,8 +430,8 @@ generation check must finish with no diff.
 ## Releases
 
 KRAB chart, pre-flight chart, pre-flight image, and application versions are
-kept identical. Alpha releases use a `chart-vX.Y.Z-alpha.N` Git tag; for
-example, the first release is tagged `chart-v0.1.0-alpha.0`.
+kept identical. The first Kata Containers release is tagged `chart-v0.3.0`.
+Stable releases use `chart-vX.Y.Z`; alpha releases use `chart-vX.Y.Z-alpha.N`.
 
 To bump the KRAB release version, edit only `version` in `package.json` and run
 `npm run generate`. It updates `package-lock.json`, the pre-flight Rust package
@@ -474,7 +474,7 @@ For a prerelease, specify its version explicitly when installing with Helm:
 
 ```sh
 helm upgrade --install krab oci://ghcr.io/kata-containers/krab \
-  --version 0.2.11 \
+  --version 0.3.0 \
   --namespace kata-system \
   --create-namespace \
   --values values.yaml

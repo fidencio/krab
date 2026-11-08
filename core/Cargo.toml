@@ -1,6 +1,6 @@
 [package]
 name = "krab-core"
-version = "0.2.11"
+version = "0.3.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Shared KRAB configuration engine for native and browser clients"

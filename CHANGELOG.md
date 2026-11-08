@@ -2,6 +2,30 @@
 
 All notable changes to KRAB are documented in this file.
 
+## [0.3.0] - Unreleased
+
+### Changed
+
+- Publish KRAB from `kata-containers/krab`, with website, release downloads,
+  Helm charts, container images, attestations, and provenance using the Kata
+  Containers organization.
+- Move upstream pin maintenance to an external agent while retaining the manual
+  discovery, verification, and generation commands.
+
+### Added
+
+- Runnable Confidential Containers product demo with configurable branding,
+  colours, runtime choices, and shared website/CLI generation.
+- Repository bootstrap instructions for Pages, publication, and project settings.
+
+### Fixed
+
+- Select a supported architecture when switching vendor paths under a product
+  profile, including IBM Secure Execution on s390x.
+- Keep filtered hardware defaults valid when changing architectures and hide
+  empty NVIDIA CPU sections.
+- Improve product header layout for longer names and descriptions.
+
 ## [0.2.11] - 2026-11-08
 
 ### Added

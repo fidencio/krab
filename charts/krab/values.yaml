@@ -8,7 +8,7 @@ nvidia:
 global:
   krab:
     continuousConformance: false
-    nodeImage: ghcr.io/kata-containers/krab-preflight:0.2.11
+    nodeImage: ghcr.io/kata-containers/krab-preflight:0.3.0
     nvidiaCpuTees: []
     conformancePolicy: []
 

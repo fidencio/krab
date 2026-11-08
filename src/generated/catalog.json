@@ -3,7 +3,7 @@
   "plannedArchitecture": {
     "schemaVersion": 1,
     "status": "stable",
-    "notice": "KRAB 0.2.11. Review generated values before deploying.",
+    "notice": "KRAB 0.3.0. Review generated values before deploying.",
     "namespace": "kata-system",
     "images": {
       "kubectl": {
@@ -83,8 +83,8 @@
           "nfdValuesKey": "node-feature-discovery",
           "nfdRequired": false
         },
-        "version": "0.2.11",
-        "appVersion": "0.2.11"
+        "version": "0.3.0",
+        "appVersion": "0.3.0"
       },
       "qgs": {
         "chartName": "intel-tdx-qgs",
@@ -735,7 +735,7 @@
             "nodeSelector": {
               "amd.feature.node.kubernetes.io/snp": "true"
             },
-            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.2.11/core/src/cpu.rs"
+            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.3.0/core/src/cpu.rs"
           },
           {
             "id": "qemu-nvidia-cpu-tdx-runtime-rs",
@@ -751,7 +751,7 @@
             "nodeSelector": {
               "intel.feature.node.kubernetes.io/tdx": "true"
             },
-            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.2.11/core/src/cpu.rs"
+            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.3.0/core/src/cpu.rs"
           }
         ],
         "cpuTees": [
@@ -1625,7 +1625,7 @@
             "nodeSelector": {
               "amd.feature.node.kubernetes.io/snp": "true"
             },
-            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.2.11/core/src/cpu.rs"
+            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.3.0/core/src/cpu.rs"
           },
           {
             "id": "qemu-nvidia-cpu-tdx-runtime-rs",
@@ -1641,7 +1641,7 @@
             "nodeSelector": {
               "intel.feature.node.kubernetes.io/tdx": "true"
             },
-            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.2.11/core/src/cpu.rs"
+            "sourceUrl": "https://github.com/kata-containers/krab/blob/chart-v0.3.0/core/src/cpu.rs"
           }
         ],
         "cpuTees": [

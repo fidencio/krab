@@ -2,8 +2,8 @@ apiVersion: v2
 name: krab
 description: Kata Reference Architecture Builder umbrella chart
 type: application
-version: 0.2.11
-appVersion: "0.2.11"
+version: 0.3.0
+appVersion: "0.3.0"
 home: https://github.com/kata-containers/krab
 icon: https://kata-containers.github.io/krab/favicon.png
 sources:
@@ -20,10 +20,13 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/prerelease: "false"
   artifacthub.io/changes: |
+    - kind: changed
+      description: Publish KRAB releases and packages from the Kata Containers organization.
     - kind: added
-      description: Add supervised host conformance and opt-in expiring NFD labels.
-    - kind: added
-      description: Add the native CLI and static Linux checker release archives.
+      description: Add a runnable Confidential Containers product demo.
+    - kind: fixed
+      description: Fix architecture selection and filtered controls in product profiles.
+
 # Run npm run generate to refresh these dependencies from pinned charts.
 dependencies:
   - name: node-feature-discovery

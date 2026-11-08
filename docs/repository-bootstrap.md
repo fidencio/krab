@@ -44,9 +44,10 @@ must allow its `GITHUB_TOKEN` permissions and the `github-pages` environment.
 
 ## Publish the first release
 
-The imported version is **0.2.11**. Run the checks on the imported `main` first;
-then dispatch **Release KRAB Helm chart** from that branch. The workflow builds
-fresh artifacts for this repository and creates `chart-v0.2.11`. Do not copy
+The initial import was based on **0.2.11**; the first release from this repository
+is **0.3.0**. Merge the release preparation through a reviewed PR and wait for
+checks on `main` to pass. Then dispatch **Release KRAB Helm chart** from that
+branch. The workflow builds fresh artifacts and creates `chart-v0.3.0`. Do not copy
 previously built binaries or static builders: their embedded catalogs, links,
 image defaults, revision metadata, and provenance identify a different build.
 
