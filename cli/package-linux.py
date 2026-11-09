@@ -16,7 +16,7 @@ root = Path(__file__).resolve().parents[1]
 args.output.mkdir(parents=True, exist_ok=True)
 inputs = sorted([*root.glob('cli/src/**/*'), *root.glob('core/src/**/*'), root/'core/Cargo.toml', root/'core/Cargo.lock', *root.glob('preflight/src/**/*'),
                  root/'cli/Cargo.toml', root/'cli/Cargo.lock', root/'preflight/Cargo.toml',
-                 root/'src/generated/catalog.json', root/'src/assets/brands/krab-kata-hybrid.png',
+                 root/'src/generated/catalog.json',
                  root/'charts/krab/values.schema.json'])
 fingerprint = hashlib.sha256()
 for path in inputs:

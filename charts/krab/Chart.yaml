@@ -5,7 +5,6 @@ type: application
 version: 0.3.0
 appVersion: "0.3.0"
 home: https://github.com/kata-containers/krab
-icon: https://kata-containers.github.io/krab/favicon.png
 sources:
   - https://github.com/kata-containers/krab
 keywords:

@@ -4,20 +4,6 @@
   min-height: 100vh;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  z-index: 2;
-  top: 50%;
-  left: 50%;
-  width: min(82vw, 82vh, 1100px);
-  aspect-ratio: 1;
-  pointer-events: none;
-  background: url('./assets/brands/krab-kata-hybrid-light.png') center / contain no-repeat;
-  opacity: 0;
-  transform: translate(-50%, -50%);
-}
-
 .app-shell {
   width: min(1180px, calc(100% - 48px));
   min-height: 100vh;
@@ -182,10 +168,14 @@ nav a:hover {
 .intro {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, max-content) clamp(120px, 12vw, 150px);
+  grid-template-columns: minmax(0, max-content);
   align-items: center;
   justify-content: center;
   padding: 62px 0 60px;
+}
+
+.intro-with-logo {
+  grid-template-columns: minmax(0, max-content) clamp(120px, 12vw, 150px);
 }
 
 .intro-logo {
@@ -3998,11 +3988,6 @@ nav a:hover,
 }
 
 /* Kata dark theme: navy infrastructure surfaces with Kata orange actions. */
-:root[data-theme='dark'] body::before {
-  background-image: url('./assets/brands/krab-kata-hybrid.png');
-  opacity: 0;
-}
-
 :root[data-theme='dark'] .app-shell {
   color: var(--product-text, #e8edf4);
 }
