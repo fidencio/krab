@@ -92,8 +92,8 @@ editor and cluster-check screens. Terminal background detection chooses the
 palette, with `COLORFGBG` as a fallback and dark as the default. Override it with
 `KRAB_THEME=light`, `KRAB_THEME=dark`, or `KRAB_THEME=auto`. Omitted colours keep
 the terminal defaults or inherit the supplied page/text colours. No palette keeps
-the existing appearance. Restart after editing the profile. This mapping is newer
-than 0.3.0; use a development build until the next release.
+the existing appearance. Restart after editing the profile. This mapping is available
+starting with KRAB 0.3.1.
 A local PNG `logo` is resolved beside the profile and shown on graphics-capable
 terminals. Remote URLs and unsupported formats keep the product's text heading.
 

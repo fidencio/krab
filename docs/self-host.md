@@ -99,5 +99,5 @@ Omitted colours retain terminal defaults or inherit the supplied page/text colou
 without a palette, the existing terminal appearance is preserved. True-colour
 terminals display the supplied RGB values; other terminals may approximate them.
 
-Theme settings do not change generated deployments. This TUI mapping is newer
-than the 0.3.0 release; use a matching development build until the next release.
+Theme settings do not change generated deployments. This TUI mapping is available
+starting with KRAB 0.3.1.

@@ -71,7 +71,7 @@ krab --profile demo/confidential-containers/krab-profile.json generate \
 Use the same KRAB version for the site and CLI. For a bundled CLI distribution,
 place this file beside the binary as `krab-profile.json`.
 
-With a development build newer than 0.3.0, the TUI uses this profile's colours too.
+Starting with KRAB 0.3.1, the TUI uses this profile's colours too.
 To choose its light palette explicitly:
 
 ```sh

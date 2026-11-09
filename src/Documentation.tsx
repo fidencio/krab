@@ -300,7 +300,7 @@ krab --profile krab-profile.json generate --config krab.yaml --output values.yam
           It detects the terminal background, falls back to COLORFGBG, and otherwise uses the dark palette.
           Set <code>KRAB_THEME=light</code>, <code>KRAB_THEME=dark</code>, or <code>KRAB_THEME=auto</code> to override it.
           Missing colours retain terminal defaults or inherit page/text colours; a missing palette keeps the existing appearance.
-          This TUI mapping is newer than 0.3.0 and requires a development build until the next release.
+          This TUI mapping is available starting with KRAB 0.3.1.
           Generated deployments stay the same.</p>
         <h3>Choose the available controls</h3>
         <p><code>available</code> can restrict vendors, runtimes, distributions, architectures, and

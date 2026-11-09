@@ -4,13 +4,18 @@ All notable changes to KRAB are documented in this file.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-09
+
+- Remove the KRAB logo after OpenInfra Foundation flagged it as a copyright
+  infringement, including the favicon and website walkthrough imagery.
+
 - Apply product light/dark colours to the TUI editor and cluster-check screens,
   detect terminal appearance, and support an explicit `KRAB_THEME` override.
 - Load local profile PNG icons in graphics-capable terminals, including the
   shared CoCo website/TUI icon. Preserve the unprofiled terminal appearance.
 - Preserve indexed terminal colours when recording walkthroughs and screenshots.
 
-## [0.3.0] - Unreleased
+## [0.3.0] - 2026-11-08
 
 ### Changed
 
