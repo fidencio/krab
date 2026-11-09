@@ -6,6 +6,11 @@ The browser contains no product catalog or GitHub API integration: technical
 data is generated from checksum-validated, pinned upstream files before Vite
 builds the site.
 
+## Logo removal
+
+The KRAB logo was removed after OpenInfra Foundation flagged it as a copyright
+infringement. KRAB now uses its name without that logo.
+
 ## Data flow
 
 1. `upstream/sources.lock.yaml` pins repository commits, paths, and checksums.

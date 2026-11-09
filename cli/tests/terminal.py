@@ -162,6 +162,8 @@ def main():
         # Bare krab starts setup, then saves from the overview.
         session = Session(directory, [])
         assert b'KRAB' in session.transcript and b'configuration' in session.transcript, repr(session.transcript)
+        assert b'\x1b]1337;File=' not in session.transcript
+        assert b'a=T,U=1,f=32,' not in session.transcript
         for _ in range(3):
             session.key(b'\r')
         session.key(b's')
@@ -218,10 +220,14 @@ def main():
                                  capture_output=True, check=True)
         assert json.loads(verdict.stdout)['valid']
 
-        # Graphics-capable terminals get the actual image in the header; UI and
+        # Explicit product profiles retain their image in the header; UI and
         # capability probes still leave stdout clean and terminal modes restored.
         for graphics in ('iterm2', 'iterm2-without-env', 'kitty', 'sixel'):
-            session = Session(directory, ['edit', '--output', '-'], graphics=graphics)
+            profile = Path(__file__).resolve().parents[2] / 'demo/confidential-containers/krab-profile.json'
+            product_directory = tempfile.mkdtemp(dir=directory)
+            subprocess.run([binary, '--profile', str(profile), 'init', '--non-interactive'],
+                           cwd=product_directory, check=True, capture_output=True)
+            session = Session(product_directory, ['--profile', str(profile), 'edit', '--output', '-'], graphics=graphics)
             transcript = bytes(session.transcript)
             if graphics.startswith('iterm2'):
                 match = re.search(rb'\x1b\]1337;File=[^:]+:([^\x07]+)\x07', transcript)

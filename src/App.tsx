@@ -19,8 +19,6 @@ import {
 import { coreCatalog, coreRequest } from './lib/core'
 import { productDefaults, productFeature, productTheme, websiteConfiguration } from './lib/product'
 import packageData from '../package.json'
-import krabLogoDark from './assets/brands/krab-kata-hybrid.png'
-import krabLogoLight from './assets/brands/krab-kata-hybrid-light.png'
 import { CliGuide } from './CliGuide'
 import { Documentation } from './Documentation'
 import { IommufdSetupNote } from './IommufdSetupNote'
@@ -925,7 +923,7 @@ function App() {
       <main>
         {showDocs ? <Documentation version={packageData.version} development={isDevelopmentBuild} /> : <>
         {step === 1 && (
-          <section className="intro">
+          <section className={`intro${catalog.product?.logo ? ' intro-with-logo' : ''}`}>
             <div className="intro-copy">
               <h1>
                 Deploy the full Kata stack
@@ -935,12 +933,12 @@ function App() {
               </h1>
               <p>KRAB generates version-pinned Helm values and a deployment command.</p>
             </div>
-            <img
+            {catalog.product?.logo && <img
               className="intro-logo"
-              src={catalog.product?.logo || (theme === 'dark' ? krabLogoDark : krabLogoLight)}
+              src={catalog.product.logo}
               alt=""
               aria-hidden="true"
-            />
+            />}
           </section>
         )}
 

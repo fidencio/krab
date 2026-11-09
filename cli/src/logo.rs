@@ -1,4 +1,4 @@
-//! Display the original webpage logo as an inline image, never as character art.
+//! Display an explicitly configured product logo as an inline image.
 use serde_json::Value;
 use std::path::Path;
 
@@ -87,10 +87,7 @@ fn load(catalog: &Value, profile_path: Option<&Path>) -> Option<image::DynamicIm
         let data = std::fs::read(base.join(logo)).ok()?;
         image::load_from_memory(&data).ok()
     } else {
-        image::load_from_memory(include_bytes!(
-            "../../src/assets/brands/krab-kata-hybrid.png"
-        ))
-        .ok()
+        None
     }
 }
 
@@ -209,6 +206,6 @@ mod tests {
         .is_none());
         assert!(load(&json!({"product":{"logo":"missing.png"}}), Some(&profile)).is_none());
         assert!(load(&json!({"product":{}}), Some(&profile)).is_none());
-        assert!(load(&json!({}), None).is_some());
+        assert!(load(&json!({}), None).is_none());
     }
 }
