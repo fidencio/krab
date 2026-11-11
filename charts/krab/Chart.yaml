@@ -45,6 +45,6 @@ dependencies:
     repository: oci://ghcr.io/kata-containers/kata-device-provisioner-charts
     condition: kata-device-provisioner.enabled,nvidia.enabled
   - name: intel-tdx-qgs
-    version: "0.27.0-alpha.1"
+    version: "0.27.0"
     repository: oci://ghcr.io/intel
     condition: intel-tdx-qgs.enabled

@@ -163,11 +163,11 @@ sources:
     sha256: b06fe38375fe2a2196f33c6e6a4ef8bd945c965a5399476677f314d39fc68c87
   - id: qgs-chart
     repository: intel/confidential-computing.tee.dcap.k8s.qgs
-    ref: d21e62cc2d5cba8f886364e75613916c39ece506
-    release: v0.27.0-alpha.1
+    ref: b138827811ee58571503e2a9ca991c58124977a5
+    release: v0.27.0
     path: charts/intel-tdx-qgs/Chart.yaml
     cache: intel-tdx-qgs/Chart.yaml
-    sha256: 4870202c3a9f563adaaa1f1344381af63f0236d8909e6896ac079f2fa953c0b0
+    sha256: 2374fa469b6d908891fc7379ad23a3adb6c5c7bc6a9226f4685335a7acad9e3e
   - id: kata-nvidia-cpu-profile
     repository: kata-containers/kata-containers
     ref: 03cf2ec06a5d302f23af811744f6bcea49988bfb

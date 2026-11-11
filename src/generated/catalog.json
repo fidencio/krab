@@ -88,8 +88,8 @@
       },
       "qgs": {
         "chartName": "intel-tdx-qgs",
-        "version": "0.27.0-alpha.1",
-        "sourceUrl": "https://github.com/intel/confidential-computing.tee.dcap.k8s.qgs/blob/d21e62cc2d5cba8f886364e75613916c39ece506/charts/intel-tdx-qgs/Chart.yaml"
+        "version": "0.27.0",
+        "sourceUrl": "https://github.com/intel/confidential-computing.tee.dcap.k8s.qgs/blob/b138827811ee58571503e2a9ca991c58124977a5/charts/intel-tdx-qgs/Chart.yaml"
       },
       "nfd": {
         "chartName": "node-feature-discovery",
