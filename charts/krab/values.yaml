@@ -8,7 +8,7 @@ nvidia:
 global:
   krab:
     continuousConformance: false
-    nodeImage: ghcr.io/kata-containers/krab-preflight:0.3.1
+    nodeImage: ghcr.io/kata-containers/krab-preflight:0.4.0
     nvidiaCpuTees: []
     conformancePolicy: []
 
@@ -17,7 +17,7 @@ node-feature-discovery:
   enabled: true
   image:
     repository: registry.k8s.io/nfd/node-feature-discovery
-    tag: v0.20.0
+    tag: v0.20.1
   worker:
     # KRAB renders the pinned worker template with its conformance result mount.
     enable: false
@@ -36,7 +36,7 @@ kata-deploy:
     enabled: false
   image:
     reference: quay.io/kata-containers/kata-deploy
-    tag: "4.3.1"
+    tag: "4.4.0"
   kubectlImage:
     reference: quay.io/kata-containers/kubectl
     tag: v1.37.0

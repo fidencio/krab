@@ -2751,7 +2751,7 @@ function App() {
                             Pinned by Kata Containers{' '}
                             {catalog.plannedArchitecture.charts.kataDeploy.version}
                           </strong>
-                          <code>{catalog.plannedArchitecture.attestation.trustee.commit}</code>
+                          <code>{catalog.plannedArchitecture.attestation.trustee.ref}</code>
                           <ExternalLink size={13} />
                         </a>
                       </div>

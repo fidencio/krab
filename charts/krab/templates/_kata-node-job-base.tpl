@@ -1,4 +1,4 @@
-{{/* Generated from https://github.com/kata-containers/kata-containers/blob/03cf2ec06a5d302f23af811744f6bcea49988bfb/tools/packaging/kata-deploy/helm-chart/kata-deploy/templates/_helpers.tpl; do not edit. */}}
+{{/* Generated from https://github.com/kata-containers/kata-containers/blob/f9cbda4d235b345340bf461e4aaba8c89e841d8d/tools/packaging/kata-deploy/helm-chart/kata-deploy/templates/_helpers.tpl; do not edit. */}}
 {{- define "krab.kata.perNodeJobBase" -}}
 {{- $root := .root -}}
 {{- $stage := .stage -}}

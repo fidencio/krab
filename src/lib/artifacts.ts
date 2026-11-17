@@ -143,7 +143,7 @@ export type ExplorerCatalog = {
       trustee: {
         displayName: string
         repository: string
-        commit: string
+        ref: string
         sourceUrl: string
         documentationUrl: string
         kataSourceUrl: string

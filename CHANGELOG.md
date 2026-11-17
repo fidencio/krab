@@ -4,6 +4,16 @@ All notable changes to KRAB are documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-18
+
+### Changed
+
+- Update Kata Containers chart, deployment image, and runtime definitions to 4.4.0.
+- Update Node Feature Discovery chart and image to 0.20.1.
+- Update Intel TDX QGS to 0.27.0.
+- Support Trustee release tags pinned by Kata Containers and link to their releases.
+- Update JavaScript and Rust dependencies, build images, and GitHub Actions.
+
 ## [0.3.1] - 2026-11-09
 
 - Remove the KRAB logo after OpenInfra Foundation flagged it as a copyright

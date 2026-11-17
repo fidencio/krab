@@ -23,7 +23,7 @@
   "plannedArchitecture.charts.provisioner.required": "upstream/architecture.yaml",
   "plannedArchitecture.charts.provisioner.**": "provisioner-chart",
   "plannedArchitecture.attestation.trustee.repository": "kata-versions",
-  "plannedArchitecture.attestation.trustee.commit": "kata-versions",
+  "plannedArchitecture.attestation.trustee.ref": "kata-versions",
   "plannedArchitecture.attestation.trustee.*": "Generator contract and kata-versions",
   "vendors[].id": "Generator contract",
   "vendors[].displayName": "upstream/presentation.json",

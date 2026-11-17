@@ -82,20 +82,20 @@ export async function buildCatalog({ root, shouldFetch, sources, policies, input
     trustee.url,
     'Kata Trustee repository is missing',
   ).replace(/\.git$/, '')
-  const trusteeCommit = requireValue(
+  const trusteeRef = requireValue(
     trustee.version,
-    'Kata Trustee commit is missing',
+    'Kata Trustee reference is missing',
   )
-  if (!/^[0-9a-f]{40}$/.test(trusteeCommit)) {
-    throw new Error(`Kata Trustee reference is not a full commit: ${trusteeCommit}`)
+  if (!/^(?:[0-9a-f]{40}|v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/.test(trusteeRef)) {
+    throw new Error(`Kata Trustee reference is not a commit or release tag: ${trusteeRef}`)
   }
   plannedArchitecture.attestation = {
     trustee: {
       displayName: 'Trustee',
       repository: trusteeRepository,
-      commit: trusteeCommit,
-      sourceUrl: `${trusteeRepository}/commit/${trusteeCommit}`,
-      documentationUrl: `${trusteeRepository}/blob/${trusteeCommit}/README.md`,
+      ref: trusteeRef,
+      sourceUrl: `${trusteeRepository}/${/^[0-9a-f]{40}$/.test(trusteeRef) ? 'commit' : 'releases/tag'}/${trusteeRef}`,
+      documentationUrl: `${trusteeRepository}/blob/${trusteeRef}/README.md`,
       kataSourceUrl: sourceLink('kata-versions'),
     },
   }

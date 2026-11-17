@@ -176,8 +176,8 @@ test('generated catalog carries accurate upstream chart data', async () => {
   assert.deepEqual(catalog.plannedArchitecture.attestation.trustee, {
     displayName: 'Trustee',
     repository: trusteeRepository,
-    commit: trustee.version,
-    sourceUrl: `${trusteeRepository}/commit/${trustee.version}`,
+    ref: trustee.version,
+    sourceUrl: `${trusteeRepository}/${/^[0-9a-f]{40}$/.test(trustee.version) ? 'commit' : 'releases/tag'}/${trustee.version}`,
     documentationUrl: `${trusteeRepository}/blob/${trustee.version}/README.md`,
     kataSourceUrl: `https://github.com/${kataVersions.source.repository}/blob/${kataVersions.source.ref}/${kataVersions.source.path}`,
   })

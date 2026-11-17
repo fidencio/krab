@@ -41,7 +41,7 @@ generator itself owns derived labels, links, ordering, and schema versions.
 | `plannedArchitecture.charts.provisioner.chartName`, `.version`, `.appVersion` | `provisioner-chart` | Provisioner chart metadata. |
 | `plannedArchitecture.charts.{kataDeploy,devicePlugin,provisioner}.required` | `upstream/architecture.yaml` | KRAB dependency policy. |
 | `plannedArchitecture.charts.{nfd,kataDeploy,devicePlugin,provisioner}.sourceUrl` | Corresponding chart ID in `sources.lock.yaml` | Link to the pinned chart. |
-| `plannedArchitecture.attestation.trustee.repository`, `.commit` | `kata-versions` | Trustee source pinned by Kata. |
+| `plannedArchitecture.attestation.trustee.repository`, `.ref` | `kata-versions` | Trustee source pinned by Kata. |
 | `plannedArchitecture.attestation.trustee.displayName`, `.sourceUrl`, `.documentationUrl`, `.kataSourceUrl` | Generator contract | Label and links built from `kata-versions`. |
 | `vendors[].id`, `.capabilities[].id`, `.capabilities[].resourceName`, `.hardwareFamilies`, `.runtime`, `.devicePlugin`, `.workload` | Rows below | These objects combine inputs; use their specific rows. |
 | `vendors[].displayName`, `.tagline`, `.description`, `.logo`, and vendor order | `upstream/presentation.json` | Editorial copy and branding. |
