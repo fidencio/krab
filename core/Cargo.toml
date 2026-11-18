@@ -17,7 +17,7 @@ configuration = ["dep:jsonschema", "dep:serde_yaml_ng"]
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 serde_yaml_ng = { version = "0.10", optional = true }
-jsonschema = { version = "0.60", default-features = false, optional = true }
+jsonschema = { version = "0.61", default-features = false, optional = true }
 toml = "1.1"
 
 [profile.release]
